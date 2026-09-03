@@ -1,0 +1,2 @@
+class BallisticWeaponPickup extends KFWeaponPickup
+	placeable;
