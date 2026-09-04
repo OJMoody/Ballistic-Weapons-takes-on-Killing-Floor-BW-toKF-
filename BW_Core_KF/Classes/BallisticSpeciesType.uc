@@ -13,4 +13,5 @@ class BallisticSpeciesType extends KFSpeciesType
 defaultproperties
 {
     SleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
+    //SleeveTexture=Combiner'KF_Weapons_Trip_T.hands.hands_1stP_military_cmb'
 }

@@ -612,7 +612,7 @@ defaultproperties
     bHasAimingMode=True
 
 	HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Unselected'
-     SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806'
+    SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806'
 
     PlayerViewOffset=(X=-7.000000,Y=12.000000,Z=-7.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
@@ -623,7 +623,8 @@ defaultproperties
     ClipHitSound=(Sound=Sound'BWKF_M806_SN.M806-ClipHit')
     ClipOutSound=(Sound=Sound'BWKF_M806_SN.M806-ClipOut')
     ClipInSound=(Sound=Sound'BWKF_M806_SN.M806-ClipIn')
-    SkinRefs(0)=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
-    SkinRefs(1)=Shader'BWKF_M806_T.Weapon.M806Weapon-Shine'
-    SkinRefs(2)=Texture'BWKF_M806_T.Weapon.M806-Laser-Tex'
+    SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
+    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
+    SkinRefs(2)=Shader'BWKF_M806_T.Weapon.M806Weapon-Shine'
+    SkinRefs(3)=Texture'BWKF_M806_T.Weapon.M806-Laser-Tex'
 }

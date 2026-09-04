@@ -9,7 +9,7 @@ class BallisticLaserActor_FPStandard extends Actor;
 defaultproperties
 {
      DrawType=DT_StaticMesh
-     StaticMesh=StaticMesh'BW_M806_SM.Muzzle.LaserHex'
+     StaticMesh=StaticMesh'BWKF_M806_SM.Muzzle.LaserHex'
      bHidden=True
      bAcceptsProjectors=False
      RemoteRole=ROLE_None

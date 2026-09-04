@@ -8,4 +8,4 @@ defaultproperties
      PickupMessage="You picked up .45 high velocity M806 bullets"
      PickupForce="AssaultAmmoPickup"
      DrawType=DT_StaticMesh
-     StaticMesh=StaticMesh'BW_M806_SM.M806_ClipPickup_SM'
+     StaticMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'

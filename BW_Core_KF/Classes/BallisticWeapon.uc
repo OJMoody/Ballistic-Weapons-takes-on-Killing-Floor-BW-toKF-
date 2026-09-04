@@ -23,6 +23,11 @@ var() travel byte CurrentWeaponMode;
 
 var byte PendingMode;
 
+var() bool BUseBWHands;
+var() Material BWSleeveTexture;
+var() Material KFSleeveTexture;
+var() Material InvisibleSleeveTexture;
+
 //=============================================================================
 // MELEE
 //=============================================================================
@@ -169,21 +174,29 @@ simulated function PostBeginPlay()
 //------------------------------------------------------------------------------
 simulated function HandleSleeveSwapping()
 {
-	local XPawn XP;
-	local Material SleeveTexture;
+    local XPawn XP;
 
-	if( !Instigator.IsHumanControlled() || !Instigator.IsLocallyControlled() )
-		return;
+    if( !Instigator.IsHumanControlled() || !Instigator.IsLocallyControlled() )
+        return;
 
-	XP = XPawn(Instigator);
+    XP = XPawn(Instigator);
 
-	if( XP == none )
-		return;
+    if( XP == none )
+        return;
 
-	SleeveTexture = Class<BallisticSpeciesType>(XP.Species).static.GetSleeveTexture();
+    Skins[0] = InvisibleSleeveTexture;
+    Skins[1] = InvisibleSleeveTexture;
 
-	if( SleeveTexture != none )
-		Skins[SleeveNum] = SleeveTexture;
+    if( BUseBWHands )
+    {
+        SleeveNum = 0;
+        Skins[0] = BWSleeveTexture;
+    }
+    else
+    {
+        SleeveNum = 1;
+        Skins[1] = KFSleeveTexture;
+    }
 }
 
 //=============================================================================
@@ -1194,8 +1207,12 @@ defaultproperties
     WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto")
 	CurrentWeaponMode=0
 
-	
 	SleeveNum=500
+    BUseBWHands=True
+    BWSleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
+    KFSleeveTexture=Texture'KF_Weapons_Trip_T.hands.hands_1stP_military_diff'
+	InvisibleSleeveTexture=Texture'BWKF_Core_T.Misc.Invisible'
+	
 	IdleAimAnim=SightIdle
 	ReloadResumeTime=1.900000
 	ReloadRate=2.0
