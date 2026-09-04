@@ -1,4 +1,4 @@
-class Weapon_M806Pistol_Main extends BallisticWeapon;
+class Weapon_M806DualPistol_Main extends BallisticWeapon;
 
 #exec OBJ LOAD FILE="BWKF_M806_SN.uax"
 
@@ -22,7 +22,6 @@ var bool bLaserToggleInProgress;
 
 var() name LaserToggleAnim;
 
-
 //=============================================================================
 // REPLICATION
 //=============================================================================
@@ -36,21 +35,42 @@ replication
         ServerStartLaserToggle;
 }
 
-function bool HandlePickupQuery( pickup Item )
+simulated function ZoomIn(bool bAnimateTransition)
 {
-	if ( Item.InventoryType == Class )
+	Super.ZoomIn(bAnimateTransition);
+
+	if (bAnimateTransition)
 	{
-		if ( KFPlayerController(Instigator.Controller) != none )
-		{
-			KFPlayerController(Instigator.Controller).PendingAmmo = WeaponPickup(Item).AmmoAmount[0];
-		}
+		UpdateM806AnimationSet();
 
-		return false; // Allow to "pickup" so this weapon can be replaced with dual deagle.
+		if (SightIronsAnim != '' && HasAnim(SightIronsAnim))
+			PlayAnim(SightIronsAnim, 1.0, 0.1);
 	}
-
-	return Super.HandlePickupQuery(Item);
 }
 
+
+simulated function ZoomOut(bool bAnimateTransition)
+{
+	local float AnimLength;
+	local float AnimSpeed;
+
+	Super.ZoomOut(false);
+
+	if (bAnimateTransition)
+	{
+		UpdateM806AnimationSet();
+
+		AnimLength = GetAnimDuration(SightHipAnim, 1.0);
+
+		if (ZoomTime > 0 && AnimLength > 0)
+			AnimSpeed = AnimLength / ZoomTime;
+		else
+			AnimSpeed = 1.0;
+
+		if (SightHipAnim != '' && HasAnim(SightHipAnim))
+			PlayAnim(SightHipAnim, AnimSpeed, 0.1);
+	}
+}
 
 //=============================================================================
 // M806 ANIMATION STATE
@@ -58,46 +78,231 @@ function bool HandlePickupQuery( pickup Item )
 
 simulated function bool IsChamberOpen()
 {
-    return MagAmmoRemaining <= 0;
+	return MagAmmoRemaining <= 2;
+}
+
+simulated function name GetDualFireAnim(bool bLeft)
+{
+	if (MagAmmoRemaining <= 0)
+		return 'FireLeftOpen';
+
+	if (MagAmmoRemaining == 1 && !bLeft)
+		return 'FireRightOpen';
+
+	if (bLeft)
+		return 'FireLeft';
+
+	return 'FireRight';
+}
+
+simulated function name GetDualSightFireAnim(bool bLeft)
+{
+	if (MagAmmoRemaining <= 0)
+		return 'SightFireLeftOpen';
+
+	if (MagAmmoRemaining == 1 && !bLeft)
+		return 'SightFireRightOpen';
+
+	if (bLeft)
+		return 'SightFireLeft';
+
+	return 'SightFireRight';
 }
 
 simulated function UpdateM806AnimationSet()
 {
-    if (IsChamberOpen())
-    {
-        IdleAnim = 'IdleOpen';
-        IdleAimAnim = 'SightIdleOpen';
-        ReloadAnim = 'ReloadOpen';
-        SelectAnim = 'PulloutOpen';
-        PutDownAnim = 'PutawayOpen';
-        LaserToggleAnim = 'LightOnOffOpen';
-		WeaponReloadResumeAnimation = 'ReloadResumeOpen';
-    }
-    else
-    {
-        IdleAnim = 'Idle';
-        IdleAimAnim = 'SightIdle';
-        ReloadAnim = 'Reload';
-        SelectAnim = 'Pullout';
-        PutDownAnim = 'Putaway';
-        LaserToggleAnim = 'LightOnOff';
-		WeaponReloadResumeAnimation = 'ReloadResume';
-    }
+	//=========================================================================
+	// IDLE
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		IdleAnim = 'IdleOpen';
+	else if (MagAmmoRemaining == 1)
+		IdleAnim = 'IdleOpenRight';
+	else
+		IdleAnim = 'Idle';
+
+
+	//=========================================================================
+	// IDLE AIM
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		IdleAimAnim = 'SightIdleOpen';
+	else if (MagAmmoRemaining == 1)
+		IdleAimAnim = 'SightIdleOpenRight';
+	else
+		IdleAimAnim = 'SightIdle';
+
+
+	//=========================================================================
+	// RELOAD
+	//=========================================================================
+	// To be added.
+
+
+	//=========================================================================
+	// FIRE
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+	{
+		FireAnimLeft = 'FireLeftOpen';
+		FireAnimRight = 'FireRightOpen';
+	}
+	else
+	{
+		FireAnimLeft = 'FireLeft';
+		FireAnimRight = 'FireRight';
+	}
+
+
+	//=========================================================================
+	// SIGHT FIRE
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+	{
+		SightFireAnimLeft = 'SightFireLeftOpen';
+		SightFireAnimRight = 'SightFireRightOpen';
+	}
+	else
+	{
+		SightFireAnimLeft = 'SightFireLeft';
+		SightFireAnimRight = 'SightFireRight';
+	}
+
+
+	//=========================================================================
+	// SIGHT FIRE
+	//=========================================================================
+	// To be added.
+
+
+	//=============================================================================
+	// SIGHT HIP
+	//=============================================================================
+
+	if (MagAmmoRemaining <= 0)
+		SightHipAnim = 'SightHipOpen';
+	else if (MagAmmoRemaining == 1)
+		SightHipAnim = 'SightHipOpenRight';
+	else
+		SightHipAnim = 'SightHip';
+
+
+	//=============================================================================
+	// SIGHT IDLE
+	//=============================================================================
+
+	if (MagAmmoRemaining <= 0)
+		IdleAimAnim = 'SightIdleOpen';
+	else if (MagAmmoRemaining == 1)
+		IdleAimAnim = 'SightIdleOpenRight';
+	else
+		IdleAimAnim = 'SightIdle';
+
+
+	//=============================================================================
+	// SIGHT IRONS
+	//=============================================================================
+
+	if (MagAmmoRemaining <= 0)
+		SightIronsAnim = 'SightIronsOpen';
+	else if (MagAmmoRemaining == 1)
+		SightIronsAnim = 'SightIronsOpenRight';
+	else
+		SightIronsAnim = 'SightIrons';
+
+
+	//=========================================================================
+	// PULLOUT
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		SelectAnim = 'PulloutOpen';
+	else if (MagAmmoRemaining == 1)
+		SelectAnim = 'PulloutOpenRight';
+	else
+		SelectAnim = 'Pullout';
+
+
+	//=========================================================================
+	// PUTAWAY
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		PutDownAnim = 'PutawayOpen';
+	else if (MagAmmoRemaining == 1)
+		PutDownAnim = 'PutawayOpenRight';
+	else
+		PutDownAnim = 'Putaway';
+
+
+	//=========================================================================
+	// LASER
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		LaserToggleAnim = 'LightOnOffOpen';
+	else if (MagAmmoRemaining == 1)
+		LaserToggleAnim = 'LightOnOffOpenRight';
+	else
+		LaserToggleAnim = 'LightOnOff';
+		
+		
+	//=========================================================================
+	// MELEE FIRE
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		MeleeFireAnim = 'MeleeFireOpen';
+	else if (MagAmmoRemaining == 1)
+		MeleeFireAnim = 'MeleeFireOpenRight';
+	else
+		MeleeFireAnim = 'MeleeFire';
+
+
+	//=========================================================================
+	// MELEE PREP
+	//=========================================================================
+
+	if (MagAmmoRemaining <= 0)
+		MeleePrepAnim = 'MeleePrepOpen';
+	else if (MagAmmoRemaining == 1)
+		MeleePrepAnim = 'MeleePrepOpenRight';
+	else
+		MeleePrepAnim = 'MeleePrep';
+
+	if (MeleeFireMode != None)
+	{
+		MeleeFireMode.FireAnim = MeleeFireAnim;
+		MeleeFireMode.PreFireAnim = MeleePrepAnim;
+	}
+
+
+	//=========================================================================
+	// RELOAD RESUME
+	//=========================================================================
+	// To be added.
 }
+
 
 simulated function PlayIdle()
 {
-    UpdateM806AnimationSet();
+	UpdateM806AnimationSet();
 
-    Super.PlayIdle();
+	Super.PlayIdle();
 }
+
 
 simulated function ClientReload()
 {
-    UpdateM806AnimationSet();
+	UpdateM806AnimationSet();
 
-    Super.ClientReload();
+	Super.ClientReload();
 }
+
 
 simulated function bool IsActionLocked()
 {
@@ -197,7 +402,7 @@ simulated function Notify_LaserToggle()
             FlashLight.bHasLight = false;
 
         if (ThirdPersonActor != None)
-            Weapon_M806Pistol_Attachment(ThirdPersonActor).bLaserOn = false;
+            Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = false;
 
         ClientSwitchLaser();
 
@@ -214,7 +419,7 @@ simulated function Notify_LaserToggle()
         FlashLight.bHasLight = bLaserOn;
 
     if (ThirdPersonActor != None)
-        Weapon_M806Pistol_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
+        Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
 
     ClientSwitchLaser();
 
@@ -333,7 +538,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
     if (ThirdPersonActor != None)
     {
-        Weapon_M806Pistol_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
+        Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
     }
 }
 
@@ -358,7 +563,7 @@ simulated function bool PutDown()
 
         if (ThirdPersonActor != None)
         {
-            Weapon_M806Pistol_Attachment(ThirdPersonActor).bLaserOn = false;
+            Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = false;
         }
 
         return true;
@@ -592,35 +797,35 @@ defaultproperties
     LaserOnSound=Sound'BWKF_M806_SN.M806.M806LSight'
     LaserOffSound=Sound'BWKF_M806_SN.M806.M806LSight'
 
-    FireModeClass(0)=Class'BW_WD001_KF.Weapon_M806Pistol_PrimaryFire'
-    FireModeClass(1)=Class'BW_WD001_KF.Weapon_M806Pistol_SecondaryFire'
-    MeleeFireClass=Class'BW_WD001_KF.Weapon_M806Pistol_MeleeFire'
+    FireModeClass(0)=Class'BW_WD001_KF.Weapon_M806DualPistol_PrimaryFire'
+    FireModeClass(1)=Class'BW_WD001_KF.Weapon_M806DualPistol_SecondaryFire'
+    MeleeFireClass=Class'BW_WD001_KF.Weapon_M806DualPistol_MeleeFire'
 
-    PickupClass=Class'BW_WD001_KF.Weapon_M806Pistol_Pickup'
-    AttachmentClass=Class'BW_WD001_KF.Weapon_M806Pistol_Attachment'
+    PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup'
+    AttachmentClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Attachment'
 
     ItemName="M806A2 Pistol"
     Description=""
 
     bShovelLoad=False
-    MagCapacity=8
+    MagCapacity=16
     bShowChargingBar=True
     bTorchEnabled=True
 
-    Mesh=Mesh'BWKF_M806_A.M806_FP_Mesh'
+    Mesh=Mesh'BWKF_M806_A.M806Dual_FP_Mesh'
 
 	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
 	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000)
 	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto")
 	CurrentWeaponMode=0
-
+	
     Priority=3
     InventoryGroup=2
     GroupOffset=100
     Weight=0.000000
     bModeZeroCanDryFire=True
     SellValue=-1
-
+	bDualWeapon=True
     PlayerIronSightFOV=65
     ZoomTime=0.25
     FastZoomOutTime=0.2
@@ -628,13 +833,15 @@ defaultproperties
 
 	HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Unselected'
     SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806'
-
-    PlayerViewOffset=(X=-7.000000,Y=12.000000,Z=-7.000000)
+	ZoomInRotation=(Pitch=0,Yaw=0,Roll=0)
+    PlayerViewOffset=(X=3.000000,Y=0.500000,Z=-2.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
     PulloutSound=(Sound=Sound'BWKF_M806_SN.M806Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     SightFXClass=Class'BW_WD001_KF.Weapon_M806Pistol_SightLEDs'
     SightFXBone="Slide"
+	LeftSightFXClass=Class'BW_WD001_KF.Weapon_M806Pistol_SightLEDs'
+    LeftSightFXBone="Slide-2"
     ClipHitSound=(Sound=Sound'BWKF_M806_SN.M806-ClipHit')
     ClipOutSound=(Sound=Sound'BWKF_M806_SN.M806-ClipOut')
     ClipInSound=(Sound=Sound'BWKF_M806_SN.M806-ClipIn')

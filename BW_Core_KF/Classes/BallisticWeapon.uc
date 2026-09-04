@@ -2,7 +2,8 @@ class BallisticWeapon extends KFWeapon
     abstract
 	DependsOn(BUtil)
 	HideDropDown
-	CacheExempt;
+	CacheExempt
+	Config(BW_Core_KF);
 
 //=============================================================================
 // FIRE MODES
@@ -47,6 +48,9 @@ var EMeleeState MeleeState;
 var float MeleeInterval, MeleeHoldTime;
 var float MeleeFatigue;
 
+var() name MeleeFireAnim;
+var() name MeleePrepAnim;
+
 var() class<BallisticMeleeFire> MeleeFireClass;
 
 //=============================================================================
@@ -57,18 +61,39 @@ var Actor SightFX;
 var() class<Actor> SightFXClass;
 var() name SightFXBone;
 
+var Actor LeftSightFX;
+var() class<Actor> LeftSightFXClass;
+var() name LeftSightFXBone;
+
+var() name SightHipAnim;
+var() name SightIronsAnim;
+
 
 //=============================================================================
 // RELOAD
 //=============================================================================
 
+var bool bBallisticReload;
 var() bool bShovelLoad;
-
+var bool bPuttingDown;
 var bool bReloadCancelRequested;
 var bool bReloadResumePending;
 var bool bBallisticClipOut;
 
+var byte BallisticReloadStage;
+
 var int CurrentShovelLoadAmount;
+
+//=============================================================================
+// Dual Weapons
+//=============================================================================
+
+var() name FlashBoneLeft;
+var() name FlashBoneRight;
+var() name FireAnimLeft;
+var() name FireAnimRight;
+var() name SightFireAnimLeft;
+var() name SightFireAnimRight;
 
 
 //=============================================================================
@@ -77,7 +102,7 @@ var int CurrentShovelLoadAmount;
 
 var() name WeaponReloadFinishAnimation;
 var() name WeaponReloadResumeAnimation;
-var() float ReloadResumeTime;
+var() name WeaponReloadResumeAnimation2;
 
 
 //=============================================================================
@@ -134,7 +159,6 @@ var ScriptedTexture ScopeScriptedTexture;
 var Combiner ScopeScriptedCombiner;
 var Shader ScopeScriptedShader;
 
-
 replication
 {
 	reliable if (Role < ROLE_Authority)
@@ -144,29 +168,60 @@ replication
 	ClientSwitchWeaponMode;
 }
 
-simulated function PostBeginPlay()
+simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 
-	if (MeleeFireClass != none)
-	{
-		MeleeFireMode = BallisticMeleeFire(Level.ObjectPool.AllocateObject(MeleeFireClass));
+	//=========================================================================
+	// FIRE MODES
+	//=========================================================================
 
-		if (MeleeFireMode != none)
-		{
-			MeleeFireMode.ThisModeNum = 2;
-			MeleeFireMode.Weapon = self;
-			MeleeFireMode.Instigator = Instigator;
-			MeleeFireMode.Level = Level;
-			MeleeFireMode.Owner = self;
-			MeleeFireMode.PreBeginPlay();
-			MeleeFireMode.BeginPlay();
-			MeleeFireMode.PostBeginPlay();
-			MeleeFireMode.PostNetBeginPlay();
-		}
+	if (FireMode[0] != None)
+	{
+		FireMode[0].Weapon = self;
+		FireMode[0].Instigator = Instigator;
 	}
-	InitializeScope();
+
+	if (FireMode[1] != None)
+	{
+		FireMode[1].Weapon = self;
+		FireMode[1].Instigator = Instigator;
+	}
+
+	//=========================================================================
+	// MELEE FIRE MODE
+	//=========================================================================
+
+	if (MeleeFireClass != None)
+	{
+		MeleeFireMode = new MeleeFireClass;
+		MeleeFireMode.ThisModeNum = 2;
+		MeleeFireMode.Weapon = self;
+		MeleeFireMode.Instigator = Instigator;
+		MeleeFireMode.Level = Level;
+		MeleeFireMode.Owner = self;
+
+		MeleeFireMode.FireAnim = MeleeFireAnim;
+		MeleeFireMode.PreFireAnim = MeleePrepAnim;
+	}
 }
+
+simulated function name GetDualFireAnim(bool bLeft)
+{
+	if (bLeft)
+		return FireAnimLeft;
+
+	return FireAnimRight;
+}
+
+simulated function name GetDualSightFireAnim(bool bLeft)
+{
+	if (bLeft)
+		return SightFireAnimLeft;
+
+	return SightFireAnimRight;
+}
+
 
 //------------------------------------------------------------------------------
 // HandleSleeveSwapping() - This function will handle sleeve swapping for
@@ -301,17 +356,12 @@ simulated function CommonSwitchWeaponMode(byte NewMode)
 	LastMode = CurrentWeaponMode;
 	CurrentWeaponMode = NewMode;
 
-	log("BALLISTIC MODE: Switching "$LastMode$" -> "$CurrentWeaponMode);
-	log("BALLISTIC MODE: "$WeaponModes[CurrentWeaponMode].ModeName$" / "$WeaponModes[CurrentWeaponMode].ModeID$" / Value "$WeaponModes[CurrentWeaponMode].Value);
-
 	if (FireMode[0] != None)
 	{
 		BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
 	}
 
 	CheckBurstMode();
-
-	log("BALLISTIC MODE: CurrentWeaponMode="$CurrentWeaponMode$" bBurstMode="$BallisticInstantFire(FireMode[0]).bBurstMode$" MaxBurst="$BallisticInstantFire(FireMode[0]).MaxBurst);
 }
 
 //-----------------------------------------------------------------------------
@@ -357,11 +407,8 @@ simulated function CheckBurstMode()
 	if (CurrentWeaponMode >= WeaponModes.Length)
 		return;
 
-	log("BALLISTIC MODE: CheckBurstMode - ModeID="$WeaponModes[CurrentWeaponMode].ModeID);
-
 	BF.SwitchWeaponMode(CurrentWeaponMode);
 
-	log("BALLISTIC MODE: CurrentWeaponMode="$CurrentWeaponMode$" bBurstMode="$BF.bBurstMode$" MaxBurst="$BF.MaxBurst);
 }
 
 
@@ -425,7 +472,7 @@ simulated function MeleeHoldImpl()
 	}
 
 	if (bAimingRifle)
-		PerformZoom(false);
+		return;
 
 	MeleeState = MS_Held;
 
@@ -584,8 +631,6 @@ simulated function CheckPendingMelee()
 	if (MeleeState != MS_Pending)
 		return;
 
-	log("BALLISTIC MELEE: Checking pending melee.");
-
 	if (MeleeFireMode == None)
 		return;
 
@@ -597,8 +642,6 @@ simulated function CheckPendingMelee()
 
 	if (IsFiring())
 		return;
-
-	log("BALLISTIC MELEE: Pending melee -> Held.");
 
 	MeleeState = MS_Held;
 
@@ -620,30 +663,139 @@ simulated function CheckPendingMelee()
 
 exec function ReloadMeNow()
 {
-    if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
-        return;
+	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+		return;
 
-    if (IsActionLocked())
-        return;
+	if (IsActionLocked())
+		return;
 
-    if (!AllowReload())
-        return;
-		
-    bReloadCancelRequested = false;
-    bReloadResumePending = false;
-    bBallisticClipOut = false;
+	if (!AllowReload())
+		return;
 
-    /*
-        KFWeapon remains responsible for the actual reload,
-        ammunition, perk modifiers and replication.
+	bReloadCancelRequested = false;
+	bReloadResumePending = false;
+	bBallisticClipOut = false;
+	BallisticReloadStage = 0;
+	bBallisticReload = true;
 
-        Ballistic only adds its reload layer around it.
-    */
+	Super.ReloadMeNow();
 
-    Super.ReloadMeNow();
+	if (bShovelLoad)
+		BeginBallisticShovelReload();
+}
 
-    if (bShovelLoad)
-        BeginBallisticShovelReload();
+simulated function WeaponTick(float dt)
+{
+	local float LastSeenSeconds, ReloadMulti;
+
+	if (bHasAimingMode)
+	{
+		if (bForceLeaveIronsights)
+		{
+			if (bAimingRifle)
+			{
+				ZoomOut(true);
+
+				if (Role < ROLE_Authority)
+					ServerZoomOut(false);
+			}
+
+			bForceLeaveIronsights = false;
+		}
+
+		if (ForceZoomOutTime > 0)
+		{
+			if (bAimingRifle)
+			{
+				if (Level.TimeSeconds - ForceZoomOutTime > 0)
+				{
+					ForceZoomOutTime = 0;
+
+					ZoomOut(true);
+
+					if (Role < ROLE_Authority)
+						ServerZoomOut(false);
+				}
+			}
+			else
+			{
+				ForceZoomOutTime = 0;
+			}
+		}
+	}
+
+	if ((Level.NetMode == NM_Client) || Instigator == None || KFFriendlyAI(Instigator.Controller) == none && Instigator.PlayerReplicationInfo == None)
+		return;
+
+	if (FlashLight != none)
+	{
+		AdjustLightGraphic();
+
+		if (FlashLight.bHasLight)
+		{
+			if (Instigator.Health <= 0 || KFHumanPawn(Instigator).TorchBatteryLife <= 0 || Instigator.PendingWeapon != none)
+			{
+				KFHumanPawn(Instigator).bTorchOn = false;
+				ServerSpawnLight();
+			}
+		}
+	}
+
+	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+	if (!bIsReloading)
+	{
+		if (!Instigator.IsHumanControlled())
+		{
+			LastSeenSeconds = Level.TimeSeconds - Instigator.Controller.LastSeenTime;
+
+			if (MagAmmoRemaining == 0 || ((LastSeenSeconds >= 5 || LastSeenSeconds > MagAmmoRemaining) && MagAmmoRemaining < MagCapacity))
+				ReloadMeNow();
+		}
+	}
+	else
+	{
+		if (bBallisticReload)
+			return;
+
+		if ((Level.TimeSeconds - ReloadTimer) >= ReloadRate)
+		{
+			if (AmmoAmount(0) <= MagCapacity && !bHoldToReload)
+			{
+				MagAmmoRemaining = AmmoAmount(0);
+				ActuallyFinishReloading();
+			}
+			else
+			{
+				if (KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != none && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != none)
+				{
+					ReloadMulti = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.Static.GetReloadSpeedModifier(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self);
+				}
+				else
+				{
+					ReloadMulti = 1.0;
+				}
+
+				AddReloadedAmmo();
+
+				if (bHoldToReload)
+					NumLoadedThisReload++;
+
+				if (MagAmmoRemaining < MagCapacity && MagAmmoRemaining < AmmoAmount(0) && bHoldToReload)
+					ReloadTimer = Level.TimeSeconds;
+
+				if (MagAmmoRemaining >= MagCapacity || MagAmmoRemaining >= AmmoAmount(0) || !bHoldToReload || bDoSingleReload)
+					ActuallyFinishReloading();
+				else if (Level.NetMode != NM_Client)
+					Instigator.SetAnimAction(WeaponReloadAnim);
+			}
+		}
+		else if (bIsReloading && !bReloadEffectDone && Level.TimeSeconds - ReloadTimer >= ReloadRate / 2)
+		{
+			bReloadEffectDone = true;
+			ClientReloadEffects();
+		}
+	}
 }
 
 
@@ -674,37 +826,52 @@ function int GetShovelLoadAmount()
 
 simulated function bool InterruptReload()
 {
-    if (!bIsReloading)
-        return false;
+	if (!bIsReloading && BallisticReloadStage == 0)
+		return false;
 
-    log("BALLISTIC RELOAD: InterruptReload - bShovelLoad="$bShovelLoad$" bBallisticClipOut="$bBallisticClipOut$" bReloadResumePending="$bReloadResumePending);
+	bReloadCancelRequested = true;
 
-    bReloadCancelRequested = true;
+	if (bShovelLoad && bIsReloading)
+		return true;
 
-    if (bShovelLoad)
-    {
-        log("BALLISTIC RELOAD: Shovel reload - normal cancellation.");
-        return true;
-    }
+	bIsReloading = false;
 
-    bIsReloading = false;
+	switch (BallisticReloadStage)
+	{
+		case 0:
+			bReloadResumePending = false;
+			bReloadCancelRequested = false;
 
-    if (bBallisticClipOut)
-    {
-        log("BALLISTIC RELOAD: Clip OUT detected - playing ReloadResume.");
-        bReloadResumePending = true;
-        bReloadCancelRequested = false;
-        PlayReloadResumeAnimation();
-    }
-    else
-    {
-        log("BALLISTIC RELOAD: Clip OUT not detected - playing ReloadFinish.");
-        bReloadResumePending = false;
-        bReloadCancelRequested = false;
-        PlayReloadFinishAnimation();
-    }
+			if (!bPuttingDown)
+				PlayReloadFinishAnimation();
+			break;
 
-    return true;
+		case 1:
+			bReloadResumePending = true;
+			bReloadCancelRequested = false;
+
+			if (!bPuttingDown)
+				PlayReloadResumeAnimation();
+			break;
+
+		case 2:
+			bReloadResumePending = true;
+			bReloadCancelRequested = false;
+
+			if (!bPuttingDown)
+				PlayReloadResumeAnimation2();
+			break;
+
+		case 3:
+			bReloadResumePending = false;
+			bReloadCancelRequested = false;
+
+			if (!bPuttingDown)
+				PlayAnim(SelectAnim, SelectAnimRate, 0.0);
+			break;
+	}
+
+	return true;
 }
 
 
@@ -714,19 +881,18 @@ simulated function bool InterruptReload()
 
 simulated function PlayReloadResumeAnimation()
 {
-    log("BALLISTIC RELOAD: PlayReloadResumeAnimation - Animation="$WeaponReloadResumeAnimation);
-    log("BALLISTIC RELOAD: HasAnim="$HasAnim(WeaponReloadResumeAnimation));
-
     if (WeaponReloadResumeAnimation != '' && HasAnim(WeaponReloadResumeAnimation))
-    {
-        log("BALLISTIC RELOAD: Playing ReloadResume.");
         PlayAnim(WeaponReloadResumeAnimation, 1.0, 0.0);
-    }
     else
-    {
-        log("BALLISTIC RELOAD: ReloadResume animation NOT FOUND.");
         PlayIdle();
-    }
+}
+
+simulated function PlayReloadResumeAnimation2()
+{
+    if (WeaponReloadResumeAnimation2 != '' && HasAnim(WeaponReloadResumeAnimation2))
+        PlayAnim(WeaponReloadResumeAnimation2, 1.0, 0.0);
+    else
+        PlayIdle();
 }
 
 function ServerClipIn()
@@ -752,6 +918,13 @@ simulated function PlayReloadFinishAnimation()
 		PlayIdle();
 }
 
+simulated function ActuallyFinishReloading()
+{
+	Log("M806 DEBUG: ActuallyFinishReloading - bIsReloading=" $ bIsReloading $ " bBallisticReload=" $ bBallisticReload $ " BallisticReloadStage=" $ BallisticReloadStage);
+
+	Super.ActuallyFinishReloading();
+}
+
 //=============================================================================
 // CLIP NOTIFIERS
 //=============================================================================
@@ -768,37 +941,84 @@ simulated function Notify_SlideIn()
 
 simulated function Notify_ClipOut()
 {
-    bBallisticClipOut = true;
+	bBallisticClipOut = true;
 
-    log("BALLISTIC RELOAD: ===== Notify_ClipOut ===== bBallisticClipOut="$bBallisticClipOut);
+	if (!bDualWeapon)
+		BallisticReloadStage = 1;
 
-    class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
+	class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
 }
 
 simulated function Notify_ClipIn()
 {
-    log("BALLISTIC RELOAD: ===== Notify_ClipIn =====");
+	bBallisticClipOut = false;
+	bReloadResumePending = false;
+	bBallisticReload = false;
 
-    bBallisticClipOut = false;
-    bReloadResumePending = false;
+	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+	if (AmmoAmount(0) >= MagCapacity)
+		MagAmmoRemaining = MagCapacity;
+	else
+		MagAmmoRemaining = AmmoAmount(0);
 
-    if (AmmoAmount(0) >= MagCapacity)
-        MagAmmoRemaining = MagCapacity;
-    else
-        MagAmmoRemaining = AmmoAmount(0);
+	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+	if (Role < ROLE_Authority)
+		ServerClipIn();
 
-    if (Role < ROLE_Authority)
-        ServerClipIn();
+	BallisticReloadStage = 0;
 }
-
 
 simulated function Notify_CockStart()
 {
     class'BUtil'.static.PlayFullSound(self, CockSound, true);
+}
+
+simulated function Notify_ClipOut1()
+{
+    class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
+}
+
+simulated function Notify_ClipOut2()
+{
+    BallisticReloadStage = 1;
+    class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
+}
+
+simulated function Notify_ClipIn1()
+{
+	BallisticReloadStage = 2;
+	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+
+	Log("M806 DEBUG: ClipIn1 - bIsReloading=" $ bIsReloading $ " bBallisticReload=" $ bBallisticReload $ " ClientState=" $ ClientState);
+
+	if (BallisticInstantFire(FireMode[0]) != None)
+		BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
+}
+
+simulated function Notify_ClipIn2()
+{
+	BallisticReloadStage = 3;
+	bBallisticReload = false;
+
+	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+	if (AmmoAmount(0) >= MagCapacity)
+		MagAmmoRemaining = MagCapacity;
+	else
+		MagAmmoRemaining = AmmoAmount(0);
+
+	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+
+	if (Role < ROLE_Authority)
+		ServerClipIn();
+
+	if (BallisticInstantFire(FireMode[0]) != None)
+		BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
+
+	bIsReloading = false;
+	bReloadEffectDone = false;
 }
 
 
@@ -904,161 +1124,156 @@ simulated exec function ToggleIronSights()
 
 simulated function BringUp(optional Weapon PrevWeapon)
 {
-    local int Mode;
-    local bool bResumeReload;
-    local KFPlayerController Player;
+	local int Mode;
+	local bool bResumeReload;
+	local bool bPlayingBringUpAnim;
+	local KFPlayerController Player;
 
-    HandleSleeveSwapping();
+	HandleSleeveSwapping();
 
-    Player = KFPlayerController(Instigator.Controller);
+	Player = KFPlayerController(Instigator.Controller);
 
-    if (Player != none && ClientGrenadeState != GN_BringUp)
-    {
-        if (class == class'Single')
-        {
-            Player.CheckForHint(10);
-        }
-        else if (class == class'Dualies')
-        {
-            Player.CheckForHint(11);
-        }
-        else if (class == class'Deagle')
-        {
-            Player.CheckForHint(12);
-        }
-        else if (class == class'Bullpup')
-        {
-            Player.CheckForHint(13);
-        }
-        else if (class == class'Shotgun')
-        {
-            Player.CheckForHint(14);
-        }
-        else if (class == class'Winchester')
-        {
-            Player.CheckForHint(15);
-        }
-        else if (class == class'Crossbow')
-        {
-            Player.CheckForHint(16);
-        }
-        else if (class == class'BoomStick')
-        {
-            Player.CheckForHint(17);
-            Player.WeaponPulloutRemark(21);
-        }
-        else if (class == class'FlameThrower')
-        {
-            Player.CheckForHint(18);
-        }
-        else if (class == class'LAW')
-        {
-            Player.CheckForHint(19);
-            Player.WeaponPulloutRemark(23);
-        }
-        else if (class == class'Knife' && bShowPullOutHint)
-        {
-            Player.CheckForHint(20);
-        }
-        else if (class == class'Machete')
-        {
-            Player.CheckForHint(21);
-        }
-        else if (class == class'Axe')
-        {
-            Player.CheckForHint(22);
-            Player.WeaponPulloutRemark(24);
-        }
-        else if (class == class'DualDeagle' || class == class'GoldenDualDeagle')
-        {
-            Player.WeaponPulloutRemark(22);
-        }
+	if (KFHumanPawn(Instigator) != none)
+		KFHumanPawn(Instigator).SetAiming(false);
 
-        bShowPullOutHint = true;
-    }
+	bAimingRifle = false;
+	bIsReloading = false;
+	IdleAnim = default.IdleAnim;
 
-    if (KFHumanPawn(Instigator) != none)
-        KFHumanPawn(Instigator).SetAiming(false);
+	bResumeReload = bReloadResumePending;
 
-    bAimingRifle = false;
-    bIsReloading = false;
-    IdleAnim = default.IdleAnim;
+	if (ClientState == WS_Hidden || ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0)
+	{
+		class'BUtil'.static.PlayFullSound(self, PulloutSound, true);
 
-    bResumeReload = bReloadResumePending;
+		ClientPlayForceFeedback(SelectForce);
 
-    if (ClientState == WS_Hidden || ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0)
-    {
-        class'BUtil'.static.PlayFullSound(self, PulloutSound, true);
+		if (Instigator.IsLocallyControlled())
+		{
+			if ((Mesh != none) && bResumeReload && ClientGrenadeState != GN_BringUp && KFPawn(Instigator).bIsQuickHealing <= 0)
+			{
+				if (BallisticReloadStage == 2 && WeaponReloadResumeAnimation2 != '' && HasAnim(WeaponReloadResumeAnimation2))
+				{
+					PlayAnim(WeaponReloadResumeAnimation2, 1.0, 0.0);
+					bPlayingBringUpAnim = true;
+				}
+				else if (WeaponReloadResumeAnimation != '' && HasAnim(WeaponReloadResumeAnimation))
+				{
+					PlayAnim(WeaponReloadResumeAnimation, 1.0, 0.0);
+					bPlayingBringUpAnim = true;
+				}
+			}
+			else if ((Mesh != none) && HasAnim(SelectAnim))
+			{
+				if (ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0)
+				{
+					PlayAnim(SelectAnim, SelectAnimRate * (BringUpTime / QuickBringUpTime), 0.0);
+				}
+				else
+				{
+					PlayAnim(SelectAnim, SelectAnimRate, 0.0);
+				}
 
-        ClientPlayForceFeedback(SelectForce);
+				bPlayingBringUpAnim = true;
+			}
+		}
 
-        if (Instigator.IsLocallyControlled())
-        {
-            if ((Mesh != none) && bResumeReload && WeaponReloadResumeAnimation != '' && HasAnim(WeaponReloadResumeAnimation) && ClientGrenadeState != GN_BringUp && KFPawn(Instigator).bIsQuickHealing <= 0)
-            {
-                log("BALLISTIC RELOAD: BringUp playing ReloadResume.");
-                PlayAnim(WeaponReloadResumeAnimation, 1.0, 0.0);
-            }
-            else if ((Mesh != none) && HasAnim(SelectAnim))
-            {
-                if (ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0)
-                {
-                    PlayAnim(SelectAnim, SelectAnimRate * (BringUpTime / QuickBringUpTime), 0.0);
-                }
-                else
-                {
-                    PlayAnim(SelectAnim, SelectAnimRate, 0.0);
-                }
-            }
-        }
+		ClientState = WS_BringUp;
 
-        ClientState = WS_BringUp;
+		if (ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0)
+		{
+			ClientGrenadeState = GN_None;
+		}
+		else if (bResumeReload)
+		{
+			bReloadResumePending = false;
+		}
 
-        if (ClientGrenadeState == GN_BringUp || KFPawn(Instigator).bIsQuickHealing > 0)
-        {
-            ClientGrenadeState = GN_None;
-            SetTimer(QuickBringUpTime, false);
-        }
-        else if (bResumeReload)
-        {
-            log("BALLISTIC RELOAD: BringUp using ReloadResumeTime="$ReloadResumeTime);
-            SetTimer(ReloadResumeTime, false);
-        }
-        else
-        {
-            SetTimer(BringUpTime, false);
-        }
+		if (!bPlayingBringUpAnim)
+		{
+			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
+				FireMode[Mode].InitEffects();
 
-        if (bResumeReload)
-            bReloadResumePending = false;
-    }
+			PlayIdle();
+			ClientState = WS_ReadyToFire;
+		}
+	}
 
-    for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
-    {
-        FireMode[Mode].bIsFiring = false;
-        FireMode[Mode].HoldTime = 0.0;
-        FireMode[Mode].bServerDelayStartFire = false;
-        FireMode[Mode].bServerDelayStopFire = false;
-        FireMode[Mode].bInstantStop = false;
-    }
+	for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
+	{
+		FireMode[Mode].bIsFiring = false;
+		FireMode[Mode].HoldTime = 0.0;
+		FireMode[Mode].bServerDelayStartFire = false;
+		FireMode[Mode].bServerDelayStopFire = false;
+		FireMode[Mode].bInstantStop = false;
+	}
 
-    if ((PrevWeapon != none) && PrevWeapon.HasAmmo() && !PrevWeapon.bNoVoluntarySwitch)
-        OldWeapon = PrevWeapon;
-    else
-        OldWeapon = none;
+	if ((PrevWeapon != none) && PrevWeapon.HasAmmo() && !PrevWeapon.bNoVoluntarySwitch)
+		OldWeapon = PrevWeapon;
+	else
+		OldWeapon = none;
 
-    if (SightFX == none && SightFXClass != none)
-    {
-        SightFX = Spawn(SightFXClass);
+	if (SightFX == none && SightFXClass != none)
+	{
+		SightFX = Spawn(SightFXClass);
 
-        if (SightFX != none)
-        {
-            log("BallisticWeapon: Spawned SightFX "$SightFX$" for "$self);
-            log("BallisticWeapon: Attaching SightFX to bone "$SightFXBone);
-            AttachToBone(SightFX, SightFXBone);
-            log("BallisticWeapon: SightFX location after attach "$SightFX.Location);
-        }
-    }
+		if (SightFX != none)
+		{
+			AttachToBone(SightFX, SightFXBone);
+		}
+	}
+
+	if (bDualWeapon && LeftSightFX == none && LeftSightFXClass != none)
+	{
+		LeftSightFX = Spawn(LeftSightFXClass);
+
+		if (LeftSightFX != none)
+		{
+			AttachToBone(LeftSightFX, LeftSightFXBone);
+		}
+	}
+}
+
+simulated function Timer()
+{
+	if (ClientState == WS_BringUp)
+		return;
+
+	Super.Timer();
+}
+
+simulated function bool StartFire(int Mode)
+{
+	local bool RetVal;
+
+	if (ClientState == WS_BringUp)
+		return false;
+
+	RetVal = Super.StartFire(Mode);
+
+	if (RetVal)
+	{
+		if (Mode == 0 && ForceZoomOutOnFireTime > 0)
+			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnFireTime;
+		else if (Mode == 1 && ForceZoomOutOnAltFireTime > 0)
+			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnAltFireTime;
+
+		NumClicks = 0;
+		InterruptReload();
+	}
+
+	return RetVal;
+}
+
+simulated function bool PutDown()
+{
+	local bool bResult;
+
+	bPuttingDown = true;
+	bResult = Super.PutDown();
+	bPuttingDown = false;
+
+	return bResult;
 }
 
 
@@ -1136,8 +1351,18 @@ simulated event RenderTexture(ScriptedTexture Tex)
 
 simulated function AnimEnd(int Channel)
 {
+	local name AnimName;
+	local float Frame;
+	local float Rate;
+	local int Mode;
+
 	if (Channel == 0)
 	{
+		GetAnimParams(0, AnimName, Frame, Rate);
+
+		if (bIsReloading)
+			Log("BallisticWeapon: AnimEnd during reload - Anim=" $ AnimName);
+
 		if (MeleeState == MS_Strike)
 		{
 			MeleeStrikeFinished();
@@ -1151,13 +1376,26 @@ simulated function AnimEnd(int Channel)
 		}
 
 		if (MeleeState == MS_Held)
+			return;
+
+		if (ClientState == WS_BringUp &&
+			(AnimName == SelectAnim ||
+				AnimName == WeaponReloadResumeAnimation ||
+				AnimName == WeaponReloadResumeAnimation2))
 		{
+			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
+				FireMode[Mode].InitEffects();
+
+			PlayIdle();
+			ClientState = WS_ReadyToFire;
 			return;
 		}
 	}
 
-	Super.AnimEnd(Channel);
+	if (bIsReloading)
+		return;
 
+	Super.AnimEnd(Channel);
 	CheckPendingMelee();
 }
 
@@ -1208,17 +1446,17 @@ defaultproperties
 	CurrentWeaponMode=0
 
 	SleeveNum=500
-    BUseBWHands=True
+    BUseBWHands=False
     BWSleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
     KFSleeveTexture=Texture'KF_Weapons_Trip_T.hands.hands_1stP_military_diff'
 	InvisibleSleeveTexture=Texture'BWKF_Core_T.Misc.Invisible'
-	
+
 	IdleAimAnim=SightIdle
-	ReloadResumeTime=1.900000
 	ReloadRate=2.0
 	ReloadAnim="Reload"
 	ReloadAnimRate=1.000000
 	WeaponReloadResumeAnimation="ReloadResume"
+	WeaponReloadResumeAnimation2="ReloadResumeLeft"
 	SelectAnim="Pullout"
     SelectAnimRate=1.0
 	PutDownAnim="Putaway"
@@ -1235,6 +1473,15 @@ defaultproperties
     PlayerIronSightFOV=70
     ZoomedDisplayFOV=40
 	PlayerViewPivot=(Yaw=32768)
+	
+	//Dual Weapon Props
+	bDualWeapon=False
+	FlashBoneRight="Tip"
+	FlashBoneLeft="Tip-2"
+	FireAnimRight="FireRight"
+	FireAnimLeft="FireLeft"
+	SightFireAnimRight="SightFireRight"
+	SightFireAnimLeft="SightFireLeft"
 	
 	//BScoped Related Defaults
 	bScoped=False

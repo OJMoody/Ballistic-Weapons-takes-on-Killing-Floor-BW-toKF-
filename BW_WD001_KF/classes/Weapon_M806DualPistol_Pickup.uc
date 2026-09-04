@@ -7,28 +7,7 @@
 // Copyright (C) 2011 Tripwire Interactive LLC
 // - John "Ramm-Jaeger" Gibson
 //=============================================================================
-class Weapon_M806Pistol_Pickup extends BallisticPickup;
-
-function inventory SpawnCopy( pawn Other )
-{
-	local Inventory I;
-
-	For( I=Other.Inventory; I!=None; I=I.Inventory )
-	{
-		if( Weapon_M806Pistol_Main(I)!=None )
-		{
-			if( Inventory!=None )
-				Inventory.Destroy();
-
-			InventoryType = Class'Weapon_M806DualPistol_Main';
-			I.Destroy();
-			return Super.SpawnCopy(Other);
-		}
-	}
-
-	InventoryType = Default.InventoryType;
-	Return Super.SpawnCopy(Other);
-}
+class Weapon_M806DualPistol_Pickup extends BallisticPickup;
 
 defaultproperties
 {
@@ -44,7 +23,7 @@ defaultproperties
 	ItemShortName="M806A2 Pistol"
 	AmmoItemName=".45 high velocity M806 bullets"
 	AmmoMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'
-	InventoryType=Class'BW_WD001_KF.Weapon_M806Pistol_Main'
+	InventoryType=Class'BW_WD001_KF.Weapon_M806DualPistol_Main'
 	PickupMessage="You got the M806A2 Pistol"
 	PickupForce="AssaultRiflePickup"
 	StaticMesh=StaticMesh'BWKF_M806_SM.M806_MainPickup_SM'

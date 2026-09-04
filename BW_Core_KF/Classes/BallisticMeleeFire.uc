@@ -167,23 +167,14 @@ function DoFireEffect()
 	local Rotator PointAim;
 	local int i;
 
-	log("BALLISTIC MELEE: DoFireEffect() called");
-	log("BALLISTIC MELEE: Instigator="$Instigator);
-	log("BALLISTIC MELEE: Weapon="$Weapon);
-
 	if (Instigator == none)
 	{
-		log("BALLISTIC MELEE: ERROR - Instigator is none");
 		return;
 	}
 
 	StartTrace = Instigator.Location + Instigator.EyePosition();
 
 	Aim = AdjustAim(StartTrace, AimError);
-
-	log("BALLISTIC MELEE: StartTrace="$StartTrace);
-	log("BALLISTIC MELEE: Aim="$Aim);
-	log("BALLISTIC MELEE: NumSwipePoints="$NumSwipePoints);
 
 	for (i = 0; i < NumSwipePoints; i++)
 	{
@@ -200,12 +191,8 @@ function DoFireEffect()
 		);
 	}
 
-	log("BALLISTIC MELEE: SwipeHits="$SwipeHits.Length);
-
 	for (i = 0; i < SwipeHits.Length; i++)
 	{
-		log("BALLISTIC MELEE: Hit "$i$" Victim="$SwipeHits[i].Victim$" Weight="$SwipeHits[i].Weight$" HitLoc="$SwipeHits[i].HitLoc);
-
 		ApplyMeleeDamage(
 			SwipeHits[i].Victim,
 			SwipeHits[i].HitLoc,
@@ -238,8 +225,6 @@ function MeleeDoTrace(Vector InitialStart, Rotator Dir, bool bWallHitter, int We
 	local Actor Other;
 	local Actor LastOther;
 	local Material HitMaterial;
-
-	log("BALLISTIC MELEE: MeleeDoTrace() Weight="$Weight$" Start="$InitialStart$" Dir="$Dir);
 
 	Dist = MaxRange();
 	
@@ -401,11 +386,8 @@ function ApplyMeleeDamage(
 	local float DamageFactor;
 	local array<int> HitPoints;
 
-	log("BALLISTIC MELEE: ApplyMeleeDamage() Victim="$Victim$" HitLocation="$HitLocation);
-
 	if (Victim == none || Victim == Instigator)
 	{
-		log("BALLISTIC MELEE: Damage rejected - invalid victim or instigator");
 		return;
 	}
 
@@ -559,29 +541,11 @@ simulated event ModeHoldFire()
 
 function PlayFiring()
 {
-	log("BALLISTIC MELEE: PlayFiring() called");
-	log("BALLISTIC MELEE: Weapon="$Weapon);
-	log("BALLISTIC MELEE: bMeleeHolding="$bMeleeHolding);
-	log("BALLISTIC MELEE: HoldTime="$HoldTime);
-	log("BALLISTIC MELEE: MeleeState="$BallisticWeapon(Weapon).MeleeState);
-
 	bMeleeHolding = false;
 	bMeleeStrikeAnimationPlayed = true;
 
-	if (Weapon.Mesh != none)
-	{
-		log("BALLISTIC MELEE: Weapon mesh valid");
-
-		if (FireAnim != '' && Weapon.HasAnim(FireAnim))
-		{
-			log("BALLISTIC MELEE: Playing "$FireAnim);
-			Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
-		}
-		else
-		{
-			log("BALLISTIC MELEE: ERROR - Melee fire animation not found: "$FireAnim);
-		}
-	}
+	if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
+		Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
 
 	if (FireSound != none)
 		Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);

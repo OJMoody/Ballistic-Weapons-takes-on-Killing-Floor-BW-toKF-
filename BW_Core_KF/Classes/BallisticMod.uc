@@ -26,7 +26,6 @@ var   BallisticMod					BallisticMod;
 
 static function InitializeMod()
 {
-	log("Ballistic Core: Initialized Mod: FIXME");
 }
 
 static function BallisticMod Get(actor a)

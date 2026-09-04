@@ -3,14 +3,16 @@
 //=============================================================================
 class BallisticInstantFire extends KFFire;
 
-var name FireAnim2;
+var bool bDualFireLeft;
+var bool bLastDualFireLeft;
+
+var Emitter FlashEmitterLeft;
 
 var int BurstCount;
 var int MaxBurst;
 var bool bBurstMode;
 var bool bBurstComplete;
 var float BurstFireRateFactor;
-
 
 //=============================================================================
 // BERSERK
@@ -92,6 +94,115 @@ simulated function bool AllowFire()
 		return false;
 
 	return Super.AllowFire();
+}
+
+function PlayFiring()
+{
+	local float RandPitch;
+	local BallisticWeapon BW;
+	local name DualFireAnim;
+
+	BW = BallisticWeapon(Weapon);
+
+	if (BW != None && BW.bDualWeapon)
+	{
+		bLastDualFireLeft = bDualFireLeft;
+		DualFireAnim = BW.GetDualFireAnim(bDualFireLeft);
+	}
+	else
+	{
+		DualFireAnim = FireAnim;
+	}
+
+	if (Weapon.Mesh != None)
+	{
+		if (FireCount > 0)
+		{
+			if (KFWeap.bAimingRifle)
+			{
+				if (BW != None && BW.bDualWeapon)
+				{
+					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+				}
+				else if (Weapon.HasAnim(FireLoopAimedAnim))
+				{
+					Weapon.PlayAnim(FireLoopAimedAnim, FireLoopAnimRate, 0.0);
+				}
+				else if (Weapon.HasAnim(FireAimedAnim))
+				{
+					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
+				}
+				else
+				{
+					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+				}
+			}
+			else
+			{
+				if (BW != None && BW.bDualWeapon)
+					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+				else if (Weapon.HasAnim(FireLoopAnim))
+					Weapon.PlayAnim(FireLoopAnim, FireLoopAnimRate, 0.0);
+				else
+					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+			}
+		}
+		else
+		{
+			if (KFWeap.bAimingRifle)
+			{
+				if (BW != None && BW.bDualWeapon)
+				{
+					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+				}
+				else if (Weapon.HasAnim(FireAimedAnim))
+					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
+				else
+					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+			}
+			else
+			{
+				if (BW != None && BW.bDualWeapon)
+					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+				else
+					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+			}
+		}
+	}
+
+	if (Weapon.Instigator != None && Weapon.Instigator.IsLocallyControlled() && Weapon.Instigator.IsFirstPerson() && StereoFireSound != None)
+	{
+		if (bRandomPitchFireSound)
+		{
+			RandPitch = FRand() * RandomPitchAdjustAmt;
+
+			if (FRand() < 0.5)
+				RandPitch *= -1.0;
+		}
+
+		Weapon.PlayOwnedSound(StereoFireSound, SLOT_Interact, TransientSoundVolume * 0.85,, TransientSoundRadius, (1.0 + RandPitch), false);
+	}
+	else
+	{
+		if (bRandomPitchFireSound)
+		{
+			RandPitch = FRand() * RandomPitchAdjustAmt;
+
+			if (FRand() < 0.5)
+				RandPitch *= -1.0;
+		}
+
+		Weapon.PlayOwnedSound(FireSound, SLOT_Interact, TransientSoundVolume,, TransientSoundRadius, (1.0 + RandPitch), false);
+	}
+
+	ClientPlayForceFeedback(FireForce);
+
+	ShakeView();
+
+	FireCount++;
+
+	if (BW != None && BW.bDualWeapon)
+		bDualFireLeft = !bDualFireLeft;
 }
 
 
@@ -216,6 +327,70 @@ simulated function StopFiring()
 	}
 }
 
+simulated function InitEffects()
+{
+	local BallisticWeapon BW;
+
+	Super.InitEffects();
+
+	BW = BallisticWeapon(Weapon);
+
+	if (BW == None || !BW.bDualWeapon)
+		return;
+
+	if (FlashEmitterLeft == None && FlashEmitterClass != None)
+	{
+		FlashEmitterLeft = Weapon.Spawn(FlashEmitterClass);
+		Weapon.AttachToBone(FlashEmitterLeft, BW.FlashBoneLeft);
+	}
+
+	if (FlashEmitter != None)
+		Weapon.AttachToBone(FlashEmitter, BW.FlashBoneRight);
+}
+
+function FlashMuzzleFlash()
+{
+	local BallisticWeapon BW;
+
+	BW = BallisticWeapon(Weapon);
+
+	if (BW == None || !BW.bDualWeapon)
+	{
+		Super.FlashMuzzleFlash();
+		return;
+	}
+
+	if (bLastDualFireLeft)
+	{
+		if (FlashEmitterLeft != None)
+			FlashEmitterLeft.Trigger(Weapon, Instigator);
+	}
+	else
+	{
+		if (FlashEmitter != None)
+			FlashEmitter.Trigger(Weapon, Instigator);
+	}
+
+	if (ShellEjectEmitter != None)
+		ShellEjectEmitter.Trigger(Weapon, Instigator);
+}
+
+simulated function DestroyEffects()
+{
+	Super.DestroyEffects();
+
+	if (FlashEmitterLeft != None)
+	{
+		FlashEmitterLeft.Destroy();
+		FlashEmitterLeft = None;
+	}
+}
+
+simulated function ResetDualFire()
+{
+	bDualFireLeft = false;
+	bLastDualFireLeft = false;
+}
 
 //=============================================================================
 // DEFAULTS

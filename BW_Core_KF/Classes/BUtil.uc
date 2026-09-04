@@ -90,12 +90,10 @@ final simulated static function PlayFullSound (Actor A, FullSound Snd, optional 
 {
 	if (A == None)
 	{
-		log("PlayFullSound: tried to play "$Snd.Sound$" with no actor", 'Warning');
 		return;
 	}
 	if (Snd.Sound == None)
 	{
-		log("PlayFullSound: "$A$" tried to play Null sound", 'Warning');
 		return;
 	}
 	if (Snd.Pitch == 0)
