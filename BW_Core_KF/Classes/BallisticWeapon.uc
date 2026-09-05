@@ -26,7 +26,6 @@ var byte PendingMode;
 
 var() bool BUseBWHands;
 var() Material BWSleeveTexture;
-var() Material KFSleeveTexture;
 var() Material InvisibleSleeveTexture;
 
 //=============================================================================
@@ -226,15 +225,10 @@ simulated function name GetDualSightFireAnim(bool bLeft)
 
 simulated function ZoomIn(bool bAnimateTransition)
 {
-    Log("BW TRACE: ZoomIn ENTER - bReloadResumePlaying=" $ bReloadResumePlaying $ " bIsReloading=" $ bIsReloading $ " ClientState=" $ ClientState);
-
     if (bReloadResumePlaying)
     {
-        Log("BW TRACE: ZoomIn BLOCKED");
         return;
     }
-
-    Log("BW TRACE: ZoomIn ALLOWED");
     Super.ZoomIn(bAnimateTransition);
 }
 
@@ -242,9 +236,11 @@ simulated function ZoomIn(bool bAnimateTransition)
 // HandleSleeveSwapping() - This function will handle sleeve swapping for
 //	weapons depending on which player the person who picked the weapon up is.
 //------------------------------------------------------------------------------
+
 simulated function HandleSleeveSwapping()
 {
     local XPawn XP;
+    local class<KFSpeciesType> KFSpecies;
 
     if( !Instigator.IsHumanControlled() || !Instigator.IsLocallyControlled() )
         return;
@@ -265,7 +261,11 @@ simulated function HandleSleeveSwapping()
     else
     {
         SleeveNum = 1;
-        Skins[1] = KFSleeveTexture;
+
+        KFSpecies = class<KFSpeciesType>(XP.Species);
+
+        if( KFSpecies != none )
+            Skins[1] = KFSpecies.default.SleeveTexture;
     }
 }
 
@@ -841,9 +841,6 @@ function int GetShovelLoadAmount()
 
 simulated function bool InterruptReload()
 {
-	
-	Log("BW TRACE: InterruptReload ENTER - Stage=" $ BallisticReloadStage $ " bIsReloading=" $ bIsReloading $ " bReloadResumePlaying=" $ bReloadResumePlaying $ " bBallisticReload=" $ bBallisticReload);
-	
 	if (!bIsReloading && BallisticReloadStage == 0)
 		return false;
 
@@ -853,8 +850,6 @@ simulated function bool InterruptReload()
 		return true;
 
 	bIsReloading = false;
-
-	Log("BW TRACE: InterruptReload SWITCH - Stage=" $ BallisticReloadStage);
 
 	switch (BallisticReloadStage)
 	{
@@ -901,12 +896,10 @@ simulated function bool InterruptReload()
 
 simulated function PlayReloadResumeAnimation()
 {
-    Log("BW TRACE: PlayReloadResumeAnimation ENTER - Anim=" $ WeaponReloadResumeAnimation $ " Stage=" $ BallisticReloadStage);
 
     if (WeaponReloadResumeAnimation != '' && HasAnim(WeaponReloadResumeAnimation))
     {
         bReloadResumePlaying = true;
-        Log("BW TRACE: PlayReloadResumeAnimation SET FLAG TRUE");
         PlayAnim(WeaponReloadResumeAnimation, 1.0, 0.0);
     }
     else
@@ -915,12 +908,9 @@ simulated function PlayReloadResumeAnimation()
 
 simulated function PlayReloadResumeAnimation2()
 {
-    Log("BW TRACE: PlayReloadResumeAnimation2 ENTER - Anim=" $ WeaponReloadResumeAnimation2 $ " Stage=" $ BallisticReloadStage);
-
     if (WeaponReloadResumeAnimation2 != '' && HasAnim(WeaponReloadResumeAnimation2))
     {
         bReloadResumePlaying = true;
-        Log("BW TRACE: PlayReloadResumeAnimation2 SET FLAG TRUE");
         PlayAnim(WeaponReloadResumeAnimation2, 1.0, 0.0);
     }
     else
@@ -952,8 +942,6 @@ simulated function PlayReloadFinishAnimation()
 
 simulated function ActuallyFinishReloading()
 {
-	Log("M806 DEBUG: ActuallyFinishReloading - bIsReloading=" $ bIsReloading $ " bBallisticReload=" $ bBallisticReload $ " BallisticReloadStage=" $ BallisticReloadStage);
-
 	Super.ActuallyFinishReloading();
 }
 
@@ -1055,8 +1043,6 @@ simulated function Notify_ClipIn1()
 	BallisticReloadStage = 2;
 	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-	Log("M806 DEBUG: ClipIn1 - bIsReloading=" $ bIsReloading $ " bBallisticReload=" $ bBallisticReload $ " ClientState=" $ ClientState);
-
 	if (BallisticInstantFire(FireMode[0]) != None)
 		BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
 }
@@ -1143,8 +1129,6 @@ simulated function HandleShovelEnd()
 
 simulated exec function IronSightZoomIn()
 {
-	Log("BW TRACE: IronSightZoomIn - bReloadResumePlaying=" $ bReloadResumePlaying $ " bIsReloading=" $ bIsReloading);
-
 	if( bHasAimingMode )
 	{
         if (ClientState == WS_BringUp)
@@ -1165,8 +1149,6 @@ simulated exec function IronSightZoomIn()
 
 simulated exec function ToggleIronSights()
 {
-    Log("BW TRACE: ToggleIronSights - bReloadResumePlaying=" $ bReloadResumePlaying $ " bIsReloading=" $ bIsReloading $ " bAimingRifle=" $ bAimingRifle);
-
     if( bHasAimingMode )
     {
         if (ClientState == WS_BringUp)
@@ -1208,8 +1190,6 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	local bool bResumeReload;
 	local bool bPlayingBringUpAnim;
 	local KFPlayerController Player;
-
-	Log("BW TRACE: BringUp ENTER - ClientState=" $ ClientState $ " SelectAnim=" $ SelectAnim $ " ReloadResume=" $ WeaponReloadResumeAnimation $ " ReloadResume2=" $ WeaponReloadResumeAnimation2 $ " Stage=" $ BallisticReloadStage);
 
 	HandleSleeveSwapping();
 
@@ -1320,8 +1300,6 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 simulated function Timer()
 {
-	Log("BW TRACE: Timer - ClientState=" $ ClientState);
-	
 	if (ClientState == WS_BringUp)
 		return;
 
@@ -1332,17 +1310,12 @@ simulated function bool StartFire(int Mode)
 {
 	local bool RetVal;
 
-	Log("BW TRACE: StartFire ENTER - Mode=" $ Mode $ " ClientState=" $ ClientState $ " bAimingRifle=" $ bAimingRifle $ " bIsReloading=" $ bIsReloading $ " MeleeState=" $ MeleeState);
-
 	if (ClientState == WS_BringUp)
 	{
-		Log("BW TRACE: StartFire BLOCKED - WS_BringUp");
 		return false;
 	}
 
 	RetVal = Super.StartFire(Mode);
-
-	Log("BW TRACE: StartFire AFTER SUPER - RetVal=" $ RetVal $ " ClientState=" $ ClientState $ " bAimingRifle=" $ bAimingRifle);
 
 	if (RetVal)
 	{
@@ -1449,13 +1422,9 @@ simulated function AnimEnd(int Channel)
 	local float Rate;
 	local int Mode;
 
-	Log("BW TRACE: AnimEnd ENTER - Channel=" $ Channel $ " ClientState=" $ ClientState $ " bAimingRifle=" $ bAimingRifle $ " bIsReloading=" $ bIsReloading);
-
 	if (Channel == 0)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
-
-		Log("BW TRACE: AnimEnd Channel0 - Anim=" $ AnimName $ " Frame=" $ Frame $ " Rate=" $ Rate $ " ClientState=" $ ClientState);
 
 		if (bReloadResumePlaying &&
 			(AnimName == WeaponReloadResumeAnimation ||
@@ -1465,7 +1434,6 @@ simulated function AnimEnd(int Channel)
 		}
 
 		if (bIsReloading)
-			Log("BallisticWeapon: AnimEnd during reload - Anim=" $ AnimName);
 
 		if (MeleeState == MS_Strike)
 		{
@@ -1487,15 +1455,12 @@ simulated function AnimEnd(int Channel)
 				AnimName == WeaponReloadResumeAnimation ||
 				AnimName == WeaponReloadResumeAnimation2))
 		{
-			Log("BW TRACE: BringUp AnimEnd MATCH - Anim=" $ AnimName $ " SelectAnim=" $ SelectAnim);
 
 			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
 				FireMode[Mode].InitEffects();
 
 			PlayIdle();
 			ClientState = WS_ReadyToFire;
-
-			Log("BW TRACE: BringUp AnimEnd SET READY - ClientState=" $ ClientState);
 
 			return;
 		}
@@ -1557,7 +1522,6 @@ defaultproperties
 	SleeveNum=500
     BUseBWHands=False
     BWSleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
-    KFSleeveTexture=Texture'KF_Weapons_Trip_T.hands.hands_1stP_military_diff'
 	InvisibleSleeveTexture=Texture'BWKF_Core_T.Misc.Invisible'
 
 	IdleAimAnim=SightIdle
