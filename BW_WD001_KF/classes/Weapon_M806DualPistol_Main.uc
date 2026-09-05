@@ -37,40 +37,58 @@ replication
 
 simulated function ZoomIn(bool bAnimateTransition)
 {
+	Log("M806 TRACE: ZoomIn ENTER - bAnimateTransition=" $ bAnimateTransition $ " bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState $ " ZoomTime=" $ ZoomTime $ " PlayerIronSightFOV=" $ PlayerIronSightFOV);
+
+	if (Instigator != none)
+		Log("M806 TRACE: ZoomIn Instigator=" $ Instigator $ " Controller=" $ Instigator.Controller);
+
 	Super.ZoomIn(bAnimateTransition);
 
-	if (bAnimateTransition)
+	Log("M806 TRACE: ZoomIn AFTER SUPER - bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState);
+
+	UpdateM806AnimationSet();
+
+	if (SightIronsAnim != '' && HasAnim(SightIronsAnim))
 	{
-		UpdateM806AnimationSet();
-
-		if (SightIronsAnim != '' && HasAnim(SightIronsAnim))
-			PlayAnim(SightIronsAnim, 1.0, 0.1);
+		Log("M806 TRACE: ZoomIn PlayAnim=" $ SightIronsAnim);
+		PlayAnim(SightIronsAnim, 1.0, 0.1);
 	}
+	else
+		Log("M806 TRACE: ZoomIn SightIronsAnim INVALID");
 }
-
 
 simulated function ZoomOut(bool bAnimateTransition)
 {
 	local float AnimLength;
 	local float AnimSpeed;
 
+	Log("M806 TRACE: ZoomOut ENTER - bAnimateTransition=" $ bAnimateTransition $ " bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState $ " ZoomTime=" $ ZoomTime $ " PlayerIronSightFOV=" $ PlayerIronSightFOV);
+
+	if (Instigator != none)
+		Log("M806 TRACE: ZoomOut Instigator=" $ Instigator $ " Controller=" $ Instigator.Controller);
+
 	Super.ZoomOut(false);
 
-	if (bAnimateTransition)
+	Log("M806 TRACE: ZoomOut AFTER SUPER - bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState);
+
+	UpdateM806AnimationSet();
+
+	AnimLength = GetAnimDuration(SightHipAnim, 1.0);
+
+	if (ZoomTime > 0 && AnimLength > 0)
+		AnimSpeed = AnimLength / ZoomTime;
+	else
+		AnimSpeed = 1.0;
+
+	if (SightHipAnim != '' && HasAnim(SightHipAnim))
 	{
-		UpdateM806AnimationSet();
-
-		AnimLength = GetAnimDuration(SightHipAnim, 1.0);
-
-		if (ZoomTime > 0 && AnimLength > 0)
-			AnimSpeed = AnimLength / ZoomTime;
-		else
-			AnimSpeed = 1.0;
-
-		if (SightHipAnim != '' && HasAnim(SightHipAnim))
-			PlayAnim(SightHipAnim, AnimSpeed, 0.1);
+		Log("M806 TRACE: ZoomOut PlayAnim=" $ SightHipAnim $ " AnimSpeed=" $ AnimSpeed);
+		PlayAnim(SightHipAnim, AnimSpeed, 0.1);
 	}
+	else
+		Log("M806 TRACE: ZoomOut SightHipAnim INVALID");
 }
+
 
 //=============================================================================
 // M806 ANIMATION STATE
@@ -138,7 +156,15 @@ simulated function UpdateM806AnimationSet()
 	//=========================================================================
 	// RELOAD
 	//=========================================================================
-	// To be added.
+
+	if (MagAmmoRemaining >= 15)
+		ReloadAnim = 'ReloadRight';
+	else if (MagAmmoRemaining >= 2)
+		ReloadAnim = 'Reload';
+	else if (MagAmmoRemaining == 1)
+		ReloadAnim = 'ReloadEmptyRight';
+	else
+		ReloadAnim = 'ReloadEmpty';
 
 
 	//=========================================================================
@@ -171,12 +197,6 @@ simulated function UpdateM806AnimationSet()
 		SightFireAnimLeft = 'SightFireLeft';
 		SightFireAnimRight = 'SightFireRight';
 	}
-
-
-	//=========================================================================
-	// SIGHT FIRE
-	//=========================================================================
-	// To be added.
 
 
 	//=============================================================================
@@ -284,7 +304,27 @@ simulated function UpdateM806AnimationSet()
 	//=========================================================================
 	// RELOAD RESUME
 	//=========================================================================
-	// To be added.
+
+	if (MagAmmoRemaining >= 15)
+	{
+		WeaponReloadResumeAnimation = 'ReloadResumeRight';
+		WeaponReloadResumeAnimation2 = '';
+	}
+	else if (MagAmmoRemaining >= 2)
+	{
+		WeaponReloadResumeAnimation = 'ReloadResume';
+		WeaponReloadResumeAnimation2 = 'ReloadResumeLeft';
+	}
+	else if (MagAmmoRemaining == 1)
+	{
+		WeaponReloadResumeAnimation = 'ReloadResumeRightOpen';
+		WeaponReloadResumeAnimation2 = 'ReloadResumeLeft';
+	}
+	else
+	{
+		WeaponReloadResumeAnimation = 'ReloadResumeOpen';
+		WeaponReloadResumeAnimation2 = 'ReloadResumeOpenLeft';
+	}
 }
 
 
