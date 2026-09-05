@@ -2,6 +2,10 @@ class BallisticAttachment extends KFWeaponAttachment;
 
 var() float mMuzFlashScale;
 
+simulated function SetDualMesh(bool bOffHand)
+{
+}
+
 simulated function DoFlashEmitter()
 {
     if (mMuzFlash3rd == None)

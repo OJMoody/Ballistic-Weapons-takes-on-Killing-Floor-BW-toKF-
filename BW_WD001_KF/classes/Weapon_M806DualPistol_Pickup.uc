@@ -11,14 +11,14 @@ class Weapon_M806DualPistol_Pickup extends BallisticPickup;
 
 defaultproperties
 {
-	Weight=0.000000
-	cost=0
+	Weight=4.000000
+	cost=150
 	AmmoCost=20
 	BuyClipSize=8
 	PowerValue=30
 	SpeedValue=40
 	RangeValue=40
-	Description="M806A2 Pistol"
+	Description="A Pair of M806A2 Pistols"
 	ItemName="M806A2 Pistol"
 	ItemShortName="M806A2 Pistol"
 	AmmoItemName=".45 high velocity M806 bullets"

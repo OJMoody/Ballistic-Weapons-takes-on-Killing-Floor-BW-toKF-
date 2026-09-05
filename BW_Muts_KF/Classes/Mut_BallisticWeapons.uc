@@ -18,6 +18,30 @@ function string GetInventoryClassOverride(string InventoryClassName)
 	return Super.GetInventoryClassOverride(InventoryClassName);
 }
 
+function PreBeginPlay()
+{
+    Super.PreBeginPlay();
+
+    class'KFRandomItemSpawn'.default.PickupClasses[7] = class'BWArmorPickup';
+}
+
+function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
+{
+    if (Other.Class == class'Vest')
+    {
+        ReplaceWith(Other, "BW_Core_KF.BWArmorPickup");
+        return false;
+    }
+
+    if (Other.Class == class'KFAmmoPickup')
+    {
+        ReplaceWith(Other, "BW_Core_KF.BWAmmoPickup");
+        return false;
+    }
+
+    return true;
+}
+
 simulated function PostBeginPlay()
 {
     Super.PostBeginPlay();
@@ -53,15 +77,14 @@ simulated function SetupBWTrader(KFLevelRules KFLRules)
 		AddBWTraderWeapon(KFLRules, BWTraderWeapons[i].PickupClass, BWTraderWeapons[i].TraderList);
 }
 
-simulated function AddBWTraderWeapon(
-	KFLevelRules KFLRules,
-	class<KFWeaponPickup> PickupClass,
-	byte TraderList)
+simulated function AddBWTraderWeapon(KFLevelRules KFLRules,class<KFWeaponPickup> PickupClass,byte TraderList)
 {
 	local int i;
 
 	if (KFLRules == None || PickupClass == None)
 		return;
+
+	Log("BW TRADER: Adding " $ PickupClass $ " to trader list " $ TraderList);
 
 	switch (TraderList)
 	{
@@ -87,6 +110,9 @@ simulated function AddBWTraderWeapon(
 					return;
 
 			KFLRules.ShrpItemForSale[KFLRules.ShrpItemForSale.Length] = PickupClass;
+
+			Log("BW TRADER: Added " $ PickupClass $ " to ShrpItemForSale");
+			Log("BW TRADER: ShrpItemForSale Length = " $ KFLRules.ShrpItemForSale.Length);
 			break;
 
 		case 3:
@@ -141,5 +167,5 @@ defaultproperties
 	RemoteRole=ROLE_SimulatedProxy
 	bNetNotify=True
 
-	BWTraderWeapons(0)=(PickupClass=Class'BW_WD001_KF.Weapon_M806Pistol_Pickup',TraderList=2)
+	BWTraderWeapons(0)=(PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup',TraderList=2)
 }

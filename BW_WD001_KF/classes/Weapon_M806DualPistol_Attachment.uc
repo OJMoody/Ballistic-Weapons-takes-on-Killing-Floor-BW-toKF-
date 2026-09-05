@@ -1,5 +1,6 @@
 class Weapon_M806DualPistol_Attachment extends BallisticAttachment;
 
+#exec OBJ LOAD FILE="BWKF_M806_A.ukx"
 
 //=============================================================================
 // LASER
@@ -12,6 +13,7 @@ var BallisticLaserActor_TPStandard Laser;
 var Rotator LaserRot;
 
 var Weapon_M806DualPistol_Main myWeap;
+var bool bIsOffHand;
 
 
 //=============================================================================
@@ -40,6 +42,15 @@ function InitFor(Inventory I)
         myWeap = Weapon_M806DualPistol_Main(I);
 }
 
+simulated function SetDualMesh(bool bOffHand)
+{
+    bIsOffHand = bOffHand;
+
+    if (bIsOffHand)
+        LinkMesh(Mesh'BWKF_M806_A.M806Dual_TP_Mesh');
+    else
+        LinkMesh(Mesh'BWKF_M806_A.M806_TP_Mesh');
+}
 
 //=============================================================================
 // LASER

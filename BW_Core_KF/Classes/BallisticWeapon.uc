@@ -96,6 +96,8 @@ var() name FireAnimRight;
 var() name SightFireAnimLeft;
 var() name SightFireAnimRight;
 
+var Actor AltThirdPersonActor;
+
 
 //=============================================================================
 // RELOAD ANIMATION
@@ -1121,11 +1123,53 @@ simulated function HandleShovelEnd()
     }
 }
 
+//=============================================================================
+// Third Person
+//=============================================================================
+
+simulated function AttachToPawn(Pawn P)
+{
+    local name BoneName;
+    local BallisticAttachment AltAttachment;
+
+    Super.AttachToPawn(P);
+
+    if (!bDualWeapon)
+        return;
+
+    if (AltThirdPersonActor == None)
+    {
+        AltThirdPersonActor = Spawn(AttachmentClass, Owner);
+
+        if (InventoryAttachment(AltThirdPersonActor) != None)
+            InventoryAttachment(AltThirdPersonActor).InitFor(self);
+
+        AltAttachment = BallisticAttachment(AltThirdPersonActor);
+
+        if (AltAttachment != None)
+            AltAttachment.SetDualMesh(true);
+    }
+    else
+        AltThirdPersonActor.NetUpdateTime = Level.TimeSeconds - 1;
+
+    if (AltThirdPersonActor == None)
+        return;
+
+    BoneName = P.GetOffhandBoneFor(self);
+
+    if (BoneName == '')
+    {
+        AltThirdPersonActor.SetLocation(P.Location);
+        AltThirdPersonActor.SetBase(P);
+    }
+    else
+        P.AttachToBone(AltThirdPersonActor, BoneName);
+}
+
 
 //=============================================================================
 // Iron Sight Code
 //=============================================================================
-
 
 simulated exec function IronSightZoomIn()
 {
@@ -1500,6 +1544,12 @@ simulated function Destroyed()
         Level.ObjectPool.FreeObject(ScopeScriptedShader);
         ScopeScriptedShader = none;
     }
+	
+	if (AltThirdPersonActor != None)
+	{
+		AltThirdPersonActor.Destroy();
+		AltThirdPersonActor = None;
+	}
 
     Super.Destroyed();
 }

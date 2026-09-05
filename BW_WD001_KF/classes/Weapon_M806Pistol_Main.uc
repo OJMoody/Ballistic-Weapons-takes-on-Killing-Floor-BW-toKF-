@@ -598,9 +598,11 @@ defaultproperties
 
     PickupClass=Class'BW_WD001_KF.Weapon_M806Pistol_Pickup'
     AttachmentClass=Class'BW_WD001_KF.Weapon_M806Pistol_Attachment'
-
+	WeaponReloadAnim=Reload_Single9mm
     ItemName="M806A2 Pistol"
     Description=""
+
+	bKFNeverThrow=True
 
     bShovelLoad=False
     MagCapacity=8
@@ -627,7 +629,7 @@ defaultproperties
     bHasAimingMode=True
 
 	HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Unselected'
-    SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806'
+    SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Selected'
 
     PlayerViewOffset=(X=-7.000000,Y=12.000000,Z=-7.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
