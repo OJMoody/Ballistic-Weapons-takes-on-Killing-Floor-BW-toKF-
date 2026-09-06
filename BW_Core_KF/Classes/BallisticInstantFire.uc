@@ -76,6 +76,14 @@ simulated function SwitchWeaponMode(byte NewMode)
 	}
 }
 
+simulated function ResetBurst()
+{
+	BurstCount = 0;
+	bBurstComplete = false;
+	bWaitForRelease = true;
+	bNowWaiting = false;
+}
+
 
 //=============================================================================
 // ALLOW FIRE
@@ -307,18 +315,11 @@ simulated function StopFiring()
 
 	if (bBurstMode)
 	{
-		if (BurstCount < MaxBurst)
-		{
-			bWaitForRelease = true;
-			bNowWaiting = true;
-		}
-		else
-		{
-			BurstCount = 0;
-			bBurstComplete = false;
-			bWaitForRelease = true;
-			bNowWaiting = true;
-		}
+		BurstCount = 0;
+		bBurstComplete = false;
+		bWaitForRelease = true;
+		bNowWaiting = true;
+		NextFireTime = Level.TimeSeconds + FireRate;
 	}
 	else
 	{

@@ -945,7 +945,7 @@ defaultproperties
     PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup'
     AttachmentClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Attachment'
 
-    ItemName="M806A2 Pistol"
+    ItemName="Dual M806A2 Pistols"
     Description=""
 	WeaponReloadAnim=Reload_Dual9mm
 	//altTPAnim="DualiesAttackLeft"
@@ -957,13 +957,13 @@ defaultproperties
     Mesh=Mesh'BWKF_M806_A.M806Dual_FP_Mesh'
 
 	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
-	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000)
-	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto")
+	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000,bUnavailable=True)
+	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto",bUnavailable=True)
 	CurrentWeaponMode=0
 	
     Priority=3
     InventoryGroup=2
-    GroupOffset=100
+    GroupOffset=2
     Weight=0.000000
     bModeZeroCanDryFire=True
 	bDualWeapon=True

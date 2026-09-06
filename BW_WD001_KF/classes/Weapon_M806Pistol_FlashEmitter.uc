@@ -34,8 +34,8 @@ defaultproperties
          FadeOutStartTime=0.048000
          CoordinateSystem=PTCS_Relative
          MaxParticles=1
-         SizeScale(1)=(RelativeTime=0.070000,RelativeSize=0.200000)
-		 SizeScale(2)=(RelativeTime=1.000000,RelativeSize=0.200000)
+         SizeScale(1)=(RelativeTime=0.070000,RelativeSize=0.100000)
+		 SizeScale(2)=(RelativeTime=1.000000,RelativeSize=0.100000)
          DrawStyle=PTDS_Brighten
          SecondsBeforeInactive=0.000000
          LifetimeRange=(Min=0.300000,Max=0.300000)
@@ -60,7 +60,7 @@ defaultproperties
          CoordinateSystem=PTCS_Relative
          MaxParticles=1
          StartLocationRange=(X=(Min=16.000000,Max=16.000000))
-         StartSizeRange=(X=(Min=60.000000,Max=60.000000),Y=(Min=60.000000,Max=60.000000),Z=(Min=60.000000,Max=60.000000))
+         StartSizeRange=(X=(Min=30.000000,Max=30.000000),Y=(Min=30.000000,Max=30.000000),Z=(Min=30.000000,Max=30.000000))
          Texture=Texture'BWKF_Core_T.Particles.FlareB1'
          SecondsBeforeInactive=0.000000
          LifetimeRange=(Min=0.300000,Max=0.300000)
@@ -89,7 +89,7 @@ defaultproperties
          MaxParticles=20
          StartLocationOffset=(Z=1.200000)
          StartSpinRange=(X=(Min=0.270000,Max=0.270000))
-         StartSizeRange=(X=(Min=8.000000,Max=12.000000),Y=(Min=8.000000,Max=12.000000),Z=(Min=8.000000,Max=12.000000))
+         StartSizeRange=(X=(Min=4.000000,Max=6.000000),Y=(Min=4.000000,Max=6.000000),Z=(Min=4.000000,Max=6.000000))
          Texture=Texture'BWKF_Core_T.Effects.SparkA1'
          TextureUSubdivisions=2
          TextureVSubdivisions=2

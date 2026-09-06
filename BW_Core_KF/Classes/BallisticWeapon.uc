@@ -945,6 +945,9 @@ simulated function PlayReloadFinishAnimation()
 simulated function ActuallyFinishReloading()
 {
 	Super.ActuallyFinishReloading();
+
+	if (FireMode[0] != None)
+		BallisticInstantFire(FireMode[0]).ResetBurst();
 }
 
 //=============================================================================
@@ -1380,7 +1383,21 @@ simulated function bool PutDown()
 	local bool bResult;
 
 	bPuttingDown = true;
+
+	if (SightFX != none)
+	{
+		SightFX.Destroy();
+		SightFX = none;
+	}
+
+	if (LeftSightFX != none)
+	{
+		LeftSightFX.Destroy();
+		LeftSightFX = none;
+	}
+
 	bResult = Super.PutDown();
+
 	bPuttingDown = false;
 
 	return bResult;
@@ -1478,18 +1495,10 @@ simulated function AnimEnd(int Channel)
 		}
 
 		if (bIsReloading)
-
-		if (MeleeState == MS_Strike)
-		{
-			MeleeStrikeFinished();
 			return;
-		}
 
-		if (MeleeState == MS_StrikePending)
-		{
+		if (MeleeState == MS_Strike || MeleeState == MS_StrikePending)
 			MeleeStrikeFinished();
-			return;
-		}
 
 		if (MeleeState == MS_Held)
 			return;
@@ -1499,7 +1508,6 @@ simulated function AnimEnd(int Channel)
 				AnimName == WeaponReloadResumeAnimation ||
 				AnimName == WeaponReloadResumeAnimation2))
 		{
-
 			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
 				FireMode[Mode].InitEffects();
 

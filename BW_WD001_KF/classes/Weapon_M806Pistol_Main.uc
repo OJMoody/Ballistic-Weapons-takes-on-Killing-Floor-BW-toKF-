@@ -613,7 +613,7 @@ defaultproperties
 
 	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
 	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000)
-	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto")
+	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto",bUnavailable=True)
 	CurrentWeaponMode=0
 
     Priority=3

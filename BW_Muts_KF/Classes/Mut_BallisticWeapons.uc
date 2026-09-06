@@ -75,6 +75,8 @@ simulated function SetupBWTrader(KFLevelRules KFLRules)
 
 	for (i = 0; i < BWTraderWeapons.Length; i++)
 		AddBWTraderWeapon(KFLRules, BWTraderWeapons[i].PickupClass, BWTraderWeapons[i].TraderList);
+
+	SortBWTraderLists(KFLRules);
 }
 
 simulated function AddBWTraderWeapon(KFLevelRules KFLRules,class<KFWeaponPickup> PickupClass,byte TraderList)
@@ -155,6 +157,56 @@ simulated function AddBWTraderWeapon(KFLevelRules KFLRules,class<KFWeaponPickup>
 			KFLRules.NeutItemForSale[KFLRules.NeutItemForSale.Length] = PickupClass;
 			break;
 	}
+}
+
+simulated function SortBWTraderLists(KFLevelRules KFLRules)
+{
+	SortTraderList(KFLRules.MediItemForSale);
+	SortTraderList(KFLRules.SuppItemForSale);
+	SortTraderList(KFLRules.ShrpItemForSale);
+	SortTraderList(KFLRules.CommItemForSale);
+	SortTraderList(KFLRules.BersItemForSale);
+	SortTraderList(KFLRules.FireItemForSale);
+	SortTraderList(KFLRules.DemoItemForSale);
+	SortTraderList(KFLRules.NeutItemForSale);
+}
+
+simulated function SortTraderList(out array<class<Pickup> > TraderItems)
+{
+	local int i;
+	local int j;
+	local class<Pickup> SortClass;
+	local int SortCost;
+
+	for (i = 1; i < TraderItems.Length; i++)
+	{
+		SortClass = TraderItems[i];
+		SortCost = GetTraderItemCost(SortClass);
+		j = i - 1;
+
+		while (j >= 0 && GetTraderItemCost(TraderItems[j]) > SortCost)
+		{
+			TraderItems[j + 1] = TraderItems[j];
+			j--;
+		}
+
+		TraderItems[j + 1] = SortClass;
+	}
+}
+
+simulated function int GetTraderItemCost(class<Pickup> PickupClass)
+{
+	local class<KFWeaponPickup> WeaponPickupClass;
+
+	if (PickupClass == None)
+		return 2147483647;
+
+	WeaponPickupClass = class<KFWeaponPickup>(PickupClass);
+
+	if (WeaponPickupClass == None)
+		return 2147483647;
+
+	return WeaponPickupClass.default.Cost;
 }
 
 defaultproperties
