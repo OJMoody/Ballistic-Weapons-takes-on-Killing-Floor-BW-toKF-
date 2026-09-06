@@ -595,9 +595,9 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD001_KF.Weapon_M806Pistol_PrimaryFire'
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_M806Pistol_SecondaryFire'
     MeleeFireClass=Class'BW_WD001_KF.Weapon_M806Pistol_MeleeFire'
-
     PickupClass=Class'BW_WD001_KF.Weapon_M806Pistol_Pickup'
     AttachmentClass=Class'BW_WD001_KF.Weapon_M806Pistol_Attachment'
+	
 	WeaponReloadAnim=Reload_Single9mm
     ItemName="M806A2 Pistol"
     Description=""

@@ -793,13 +793,13 @@ simulated function WeaponTick(float dt)
 					ReloadMulti = 1.0;
 				}
 
-				AddReloadedAmmo();
+				if (MagAmmoRemaining < MagCapacity)
+				{
+					AddReloadedAmmo();
 
-				if (bHoldToReload)
-					NumLoadedThisReload++;
-
-				if (MagAmmoRemaining < MagCapacity && MagAmmoRemaining < AmmoAmount(0) && bHoldToReload)
-					ReloadTimer = Level.TimeSeconds;
+					if (bHoldToReload)
+						NumLoadedThisReload++;
+				}
 
 				if (MagAmmoRemaining >= MagCapacity || MagAmmoRemaining >= AmmoAmount(0) || !bHoldToReload || bDoSingleReload)
 					ActuallyFinishReloading();
