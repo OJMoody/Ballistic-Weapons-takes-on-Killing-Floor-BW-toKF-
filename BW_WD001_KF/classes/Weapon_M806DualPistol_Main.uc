@@ -22,6 +22,8 @@ var bool bLaserToggleInProgress;
 
 var() name LaserToggleAnim;
 
+var bool bNextFireLeft;
+
 //=============================================================================
 // REPLICATION
 //=============================================================================
@@ -188,6 +190,11 @@ function GiveTo(pawn Other, optional Pickup Pickup)
         AddAmmo(OldAmmo, 0);
         Clamp(Ammo[0].AmmoAmount, 0, MaxAmmo(0));
     }
+}
+
+simulated function bool GetNextFireLeft()
+{
+	return bNextFireLeft;
 }
 
 
@@ -364,12 +371,24 @@ simulated function UpdateM806AnimationSet()
 	// LASER
 	//=========================================================================
 
-	if (MagAmmoRemaining <= 0)
-		LaserToggleAnim = 'LightOnOffOpen';
-	else if (MagAmmoRemaining == 1)
-		LaserToggleAnim = 'LightOnOffOpenRight';
+	if (bAimingRifle)
+	{
+		if (MagAmmoRemaining <= 0)
+			LaserToggleAnim = 'SightLightOnOffOpen';
+		else if (MagAmmoRemaining == 1)
+			LaserToggleAnim = 'SightLightOnOffOpenRight';
+		else
+			LaserToggleAnim = 'SightLightOnOff';
+	}
 	else
-		LaserToggleAnim = 'LightOnOff';
+	{
+		if (MagAmmoRemaining <= 0)
+			LaserToggleAnim = 'LightOnOffOpen';
+		else if (MagAmmoRemaining == 1)
+			LaserToggleAnim = 'LightOnOffOpenRight';
+		else
+			LaserToggleAnim = 'LightOnOff';
+	}
 		
 		
 	//=========================================================================

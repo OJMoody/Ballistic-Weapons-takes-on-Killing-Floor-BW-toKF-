@@ -42,14 +42,37 @@ function InitFor(Inventory I)
         myWeap = Weapon_M806DualPistol_Main(I);
 }
 
+//=============================================================================
+// THIRD PERSON FIRE
+//=============================================================================
+
+simulated function ThirdPersonEffects()
+{
+    if (myWeap != None && myWeap.WasLastDualFireLeft())
+    {
+        myWeap.PlayAltThirdPersonFire();
+        myWeap.PlayAltThirdPersonFlash();
+        return;
+    }
+
+    Super.ThirdPersonEffects();
+    PlayThirdPersonFire();
+}
+
 simulated function SetDualMesh(bool bOffHand)
 {
     bIsOffHand = bOffHand;
 
     if (bIsOffHand)
+    {
         LinkMesh(Mesh'BWKF_M806_A.M806Dual_TP_Mesh');
+        Log("M806 TP: LEFT attachment SetDualMesh called");
+    }
     else
+    {
         LinkMesh(Mesh'BWKF_M806_A.M806_TP_Mesh');
+        Log("M806 TP: RIGHT attachment SetDualMesh called");
+    }
 }
 
 //=============================================================================

@@ -21,6 +21,12 @@ simulated function DoFlashEmitter()
         mMuzFlash3rd.SpawnParticle(1);
 }
 
+simulated function PlayThirdPersonFire()
+{
+	if (Mesh != None && HasAnim('Fire'))
+		PlayAnim('Fire', 1.0, 0.0);
+}
+
 defaultproperties
 {
 	mMuzFlashScale=1.000000

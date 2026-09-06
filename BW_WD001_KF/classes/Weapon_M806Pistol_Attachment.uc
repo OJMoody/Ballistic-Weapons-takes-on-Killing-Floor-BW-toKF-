@@ -40,6 +40,16 @@ function InitFor(Inventory I)
         myWeap = Weapon_M806Pistol_Main(I);
 }
 
+//=============================================================================
+// THIRD PERSON FIRE
+//=============================================================================
+
+simulated function ThirdPersonEffects()
+{
+	Super.ThirdPersonEffects();
+
+	PlayThirdPersonFire();
+}
 
 //=============================================================================
 // LASER

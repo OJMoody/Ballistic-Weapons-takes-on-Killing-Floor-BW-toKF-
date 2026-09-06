@@ -944,10 +944,24 @@ simulated function PlayReloadFinishAnimation()
 
 simulated function ActuallyFinishReloading()
 {
-	Super.ActuallyFinishReloading();
+    Super.ActuallyFinishReloading();
 
-	if (FireMode[0] != None)
-		BallisticInstantFire(FireMode[0]).ResetBurst();
+    if (FireMode[0] != None && BallisticInstantFire(FireMode[0]) != None)
+    {
+        BallisticInstantFire(FireMode[0]).ResetBurst();
+        BallisticInstantFire(FireMode[0]).ResetDualFire();
+    }
+}
+
+simulated function bool WasLastDualFireLeft()
+{
+    if (FireMode[0] == None)
+        return false;
+
+    if (BallisticInstantFire(FireMode[0]) == None)
+        return false;
+
+    return BallisticInstantFire(FireMode[0]).bLastDualFireLeft;
 }
 
 //=============================================================================
@@ -1167,6 +1181,36 @@ simulated function AttachToPawn(Pawn P)
     }
     else
         P.AttachToBone(AltThirdPersonActor, BoneName);
+}
+
+simulated function PlayAltThirdPersonFire()
+{
+    local BallisticAttachment AltAttachment;
+
+    if (AltThirdPersonActor == None)
+        return;
+
+    AltAttachment = BallisticAttachment(AltThirdPersonActor);
+
+    if (AltAttachment == None)
+        return;
+
+    AltAttachment.PlayThirdPersonFire();
+}
+
+simulated function PlayAltThirdPersonFlash()
+{
+    local BallisticAttachment AltAttachment;
+
+    if (AltThirdPersonActor == None)
+        return;
+
+    AltAttachment = BallisticAttachment(AltThirdPersonActor);
+
+    if (AltAttachment == None)
+        return;
+
+    AltAttachment.DoFlashEmitter();
 }
 
 
