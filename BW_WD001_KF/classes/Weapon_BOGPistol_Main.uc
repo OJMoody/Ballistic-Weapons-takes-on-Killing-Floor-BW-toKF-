@@ -1,6 +1,9 @@
 class Weapon_BOGPistol_Main extends BallisticShotgun;
 
 var bool bBOGReloadAnimFinished;
+var bool bChangingFireMode;
+var bool bFireAnimPlaying;
+var bool bFireModeReloading;
 
 //=============================================================================
 // SERVER FIRE
@@ -8,15 +11,40 @@ var bool bBOGReloadAnimFinished;
 
 function ServerStopFire(byte Mode)
 {
+	local bool bWasLoaded;
+
+	bWasLoaded = MagAmmoRemaining > 0;
+
 	Super(KFWeapon).ServerStopFire(Mode);
 
-	if (MagCapacity == 1)
+	if (MagCapacity == 1 && !bWasLoaded)
 		MagAmmoRemaining = 0;
+}
+
+simulated function PlayIdle()
+{
+	if (bAimingRifle)
+	{
+		if (MagAmmoRemaining > 0)
+			PlayAnim('SightIdle', IdleAnimRate, 0.0);
+		else
+			PlayAnim('SightIdleOpen', IdleAnimRate, 0.0);
+	}
+	else
+	{
+		if (MagAmmoRemaining > 0)
+			PlayAnim('Idle', IdleAnimRate, 0.0);
+		else
+			PlayAnim('IdleOpen', IdleAnimRate, 0.0);
+	}
 }
 
 exec function ReloadMeNow()
 {
 	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+		return;
+
+	if (bChangingFireMode)
 		return;
 
 	if (IsActionLocked())
@@ -56,15 +84,140 @@ simulated function AnimEnd(int Channel)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
 
+		if (bReloadResumePlaying &&
+			(AnimName == WeaponReloadResumeAnimation ||
+				AnimName == WeaponReloadResumeAnimation2))
+		{
+			bReloadResumePlaying = false;
+
+			if (bChangingFireMode)
+			{
+				bChangingFireMode = false;
+				bFireModeReloading = false;
+				bFireAnimPlaying = false;
+			}
+		}
+
+		if (bFireModeReloading && AnimName == ReloadAnim)
+		{
+			bFireModeReloading = false;
+			bChangingFireMode = false;
+			bIsReloading = false;
+			bFireAnimPlaying = false;
+			PlayIdle();
+			return;
+		}
+
 		if (bIsReloading && AnimName == ReloadAnim)
 		{
 			bBOGReloadAnimFinished = true;
+			bFireAnimPlaying = false;
 			ActuallyFinishReloading();
+			return;
+		}
+
+		if (bFireAnimPlaying && AnimName == FireMode[0].FireAnim)
+		{
+			bFireAnimPlaying = false;
+			PlayIdle();
+			return;
+		}
+
+		if (bChangingFireMode && AnimName == 'ChangeFireMode')
+		{
+			bChangingFireMode = false;
+			PlayIdle();
 			return;
 		}
 	}
 
+	if (bIsReloading)
+		return;
+
 	Super.AnimEnd(Channel);
+}
+
+simulated function ClientSwitchWeaponMode(byte NewMode)
+{
+	Super.ClientSwitchWeaponMode(NewMode);
+
+	if (bAimingRifle)
+	{
+		ZoomOut(true);
+
+		if (Role < ROLE_Authority)
+			ServerZoomOut(false);
+	}
+
+	if (MagAmmoRemaining > 0)
+	{
+		if (HasAnim('ChangeFireMode'))
+		{
+			bChangingFireMode = true;
+			bFireModeReloading = false;
+			PlayAnim('ChangeFireMode', 1.0, 0.0);
+		}
+	}
+	else
+	{
+		if (HasAnim(ReloadAnim))
+		{
+			bChangingFireMode = true;
+			bFireModeReloading = true;
+			bIsReloading = false;
+			PlayAnim(ReloadAnim, 1.0, 0.0);
+		}
+	}
+}
+
+simulated function ZoomIn(bool bClient)
+{
+	if (bChangingFireMode)
+		return;
+
+	Super.ZoomIn(bClient);
+}
+
+simulated exec function SwitchWeaponMode(optional byte ModeNum)
+{
+	if (bChangingFireMode)
+		return;
+
+	if (bFireAnimPlaying)
+		return;
+
+	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+		return;
+
+	Super.SwitchWeaponMode(ModeNum);
+}
+
+simulated function MeleeHoldImpl()
+{
+	if (bChangingFireMode)
+		return;
+
+	Super.MeleeHoldImpl();
+}
+
+simulated function BringUp(optional Weapon PrevWeapon)
+{
+	if (MagAmmoRemaining > 0)
+		SelectAnim = 'Pullout';
+	else
+		SelectAnim = 'PulloutOpen';
+
+	Super.BringUp(PrevWeapon);
+}
+
+simulated function bool PutDown()
+{
+	if (MagAmmoRemaining > 0)
+		PutDownAnim = 'Putaway';
+	else
+		PutDownAnim = 'PutawayOpen';
+
+	return Super.PutDown();
 }
 
 function float GetAIRating()
@@ -128,6 +281,11 @@ defaultproperties
     bHasAimingMode=true
 	bModeZeroCanDryFire=True
 	Weight=4.000000
+	
+	WeaponModes(0)=(ModeName="Grenade",ModeID="WM_SemiAuto",Value=1.000000)
+    WeaponModes(1)=(ModeName="Flare",ModeID="WM_SemiAuto",Value=1.000000)
+    WeaponModes(2)=(ModeName="Medical Aerosol",ModeID="WM_SemiAuto",Value=1.000000)
+	CurrentWeaponMode=0
 	
 	//HudImageRef="KillingFloor2HUD.WeaponSelect.M32_unselected"
 	//SelectedHudImageRef="KillingFloor2HUD.WeaponSelect.M32"

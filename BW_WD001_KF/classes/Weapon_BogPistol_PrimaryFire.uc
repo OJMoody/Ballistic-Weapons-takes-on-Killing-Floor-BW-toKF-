@@ -5,10 +5,25 @@ simulated function bool AllowFire()
 	if (BallisticWeapon(Weapon) != None && BallisticWeapon(Weapon).bIsReloading)
 		return false;
 
+	if (Weapon_BOGPistol_Main(Weapon) != None && Weapon_BOGPistol_Main(Weapon).bChangingFireMode)
+		return false;
+
 	if (BallisticWeapon(Weapon) != None && BallisticWeapon(Weapon).MagAmmoRemaining < AmmoPerFire)
 		return false;
 
 	return (Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire);
+}
+
+function PlayFiring()
+{
+	local Weapon_BOGPistol_Main BOGP;
+
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BOGP != None)
+		BOGP.bFireAnimPlaying = true;
+
+	Super.PlayFiring();
 }
 
 function float MaxRange()

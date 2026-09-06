@@ -7,6 +7,13 @@ class Weapon_BOGPistol_MeleeFire extends BallisticMeleeFire;
 
 simulated function bool HasAmmo()
 {
+	local Weapon_BOGPistol_Main BOGP;
+
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BOGP != None && BOGP.bChangingFireMode)
+		return false;
+
 	return true;
 }
 
@@ -15,13 +22,25 @@ simulated function bool HasAmmo()
 // MELEE ANIMATION
 //=============================================================================
 
+simulated function bool AllowFire()
+{
+	local Weapon_BOGPistol_Main BOGP;
+
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BOGP != None && BOGP.bChangingFireMode)
+		return false;
+
+	return Super.AllowFire();
+}
+
 function UpdateMeleeAnimation()
 {
 	local Weapon_BOGPistol_Main BOGP;
 
 	BOGP = Weapon_BOGPistol_Main(Weapon);
 
-	if (BOGP == none)
+	if (BOGP == None)
 		return;
 
 	if (BOGP.MagAmmoRemaining <= 0)
@@ -36,21 +55,29 @@ function UpdateMeleeAnimation()
 	}
 }
 
-
-//=============================================================================
-// PREP
-//=============================================================================
-
 function PlayMeleeHold()
 {
+	local Weapon_BOGPistol_Main BOGP;
+
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BOGP != None && BOGP.bChangingFireMode)
+		return;
+
 	UpdateMeleeAnimation();
 
 	Super.PlayMeleeHold();
 }
 
-
 function PlayPreFire()
 {
+	local Weapon_BOGPistol_Main BOGP;
+
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BOGP != None && BOGP.bChangingFireMode)
+		return;
+
 	UpdateMeleeAnimation();
 
 	Super.PlayPreFire();
