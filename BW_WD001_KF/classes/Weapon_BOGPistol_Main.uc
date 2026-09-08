@@ -137,8 +137,29 @@ simulated function AnimEnd(int Channel)
 	Super.AnimEnd(Channel);
 }
 
+simulated function Notify_ChangeFireMode()
+{
+	switch (CurrentWeaponMode)
+	{
+		case 0:
+			Skins[3] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Main", class'Material'));
+			break;
+
+		case 1:
+			Skins[3] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Flame", class'Material'));
+			break;
+
+		case 2:
+			Skins[3] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Medic", class'Material'));
+			break;
+	}
+}
+
 simulated function ClientSwitchWeaponMode(byte NewMode)
 {
+	if (bIsReloading)
+		return;
+
 	Super.ClientSwitchWeaponMode(NewMode);
 
 	if (bAimingRifle)
@@ -186,6 +207,9 @@ simulated exec function SwitchWeaponMode(optional byte ModeNum)
 	if (bFireAnimPlaying)
 		return;
 
+	if (bIsReloading)
+		return;
+
 	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
 		return;
 
@@ -218,6 +242,39 @@ simulated function bool PutDown()
 		PutDownAnim = 'PutawayOpen';
 
 	return Super.PutDown();
+}
+
+function GiveTo(Pawn Other, optional Pickup Pickup)
+{
+	Super.GiveTo(Other, Pickup);
+
+	if (Role == ROLE_Authority && (Pickup == None || !Pickup.bDropped))
+		SetDefaultFireMode();
+}
+
+function SetDefaultFireMode()
+{
+	local KFPlayerReplicationInfo KFPRI;
+	local byte NewMode;
+
+	KFPRI = KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo);
+
+	if (KFPRI == None)
+		return;
+
+	if (KFPRI.ClientVeteranSkill == class'KFVetFieldMedic')
+		NewMode = 2;
+	else if (KFPRI.ClientVeteranSkill == class'KFVetFirebug')
+		NewMode = 1;
+	else
+		NewMode = 0;
+
+	CurrentWeaponMode = NewMode;
+
+	if (FireMode[0] != None && BallisticInstantFire(FireMode[0]) != None)
+		BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+
+	CheckBurstMode();
 }
 
 function float GetAIRating()
@@ -295,11 +352,13 @@ defaultproperties
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
 	PulloutSound=(Sound=Sound'BWKF_M806_SN.M806Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-	//SightFXClass=Class'BW_WD001_KF.Weapon_M806Pistol_SightLEDs'
+	SightFXClass=Class'BW_WD001_KF.Weapon_BOGPistol_SightLEDs'
     SightFXBone="GrenadePistolBarrel"
     ClipOutSound=(Sound=Sound'BWKF_M806_SN.M806-ClipOut')
     ClipInSound=(Sound=Sound'BWKF_M806_SN.M806-ClipIn')
+	
 	SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
     SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
 	SkinRefs(2)=Texture'BWKF_BOGP_T.Weapon.BOGP_Main'
+	SkinRefs(3)=Texture'BWKF_BOGP_T.Weapon.BOGP_Main'
 }

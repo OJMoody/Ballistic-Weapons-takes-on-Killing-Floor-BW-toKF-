@@ -1,5 +1,9 @@
 class Weapon_BOGPistol_PrimaryFire extends BallisticShotgunFire;
 
+var() class<Projectile> GrenadeProjectileClass;
+var() class<Projectile> FlareProjectileClass;
+var() class<Projectile> MedicalProjectileClass;
+
 simulated function bool AllowFire()
 {
 	if (BallisticWeapon(Weapon) != None && BallisticWeapon(Weapon).bIsReloading)
@@ -33,12 +37,42 @@ function float MaxRange()
 
 function DoFireEffect()
 {
-   Super(KFShotgunFire).DoFireEffect();
+	local Weapon_BOGPistol_Main BOGP;
+
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BOGP != None)
+	{
+		switch (BOGP.CurrentWeaponMode)
+		{
+		case 0:
+			ProjectileClass = GrenadeProjectileClass;
+			break;
+
+		case 1:
+			ProjectileClass = FlareProjectileClass;
+			break;
+
+		case 2:
+			ProjectileClass = MedicalProjectileClass;
+			break;
+
+		default:
+			ProjectileClass = GrenadeProjectileClass;
+			break;
+		}
+	}
+
+	Super(KFShotgunFire).DoFireEffect();
 }
 
 defaultproperties
 {
-     KickMomentum=(X=0,y=0,Z=0)
+     GrenadeProjectileClass=Class'BW_WD001_KF.Weapon_BOGPistol_GrenadeProj'
+	 FlareProjectileClass=Class'BW_WD001_KF.Weapon_BOGPistol_FlameProj'
+	 MedicalProjectileClass=Class'BW_WD001_KF.Weapon_BOGPistol_MedicProj'
+	 
+	 KickMomentum=(X=0,y=0,Z=0)
      ProjPerFire=1
      TransientSoundVolume=1.8
      FireSoundRef="KF_M79Snd.M79_Fire"
