@@ -21,12 +21,12 @@ defaultproperties
 	Description="BORT-85 Grenade Pistol"
 	ItemName="BORT-85 Grenade Pistol"
 	ItemShortName="BORT-85 Grenade Pistol"
-	AmmoItemName=".45 high velocity M806 bullets"
-	AmmoMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'
+	AmmoItemName="BORT-85 Grenades"
+	AmmoMesh=StaticMesh'BWKF_BOGP_SM.BOGP_ClipPickup_SM'
 	InventoryType=Class'BW_WD001_KF.Weapon_BOGPistol_Main'
-	PickupMessage="You got the M806A2 Pistol"
+	PickupMessage="You got the BORT-85 MP Grenade Pistol"
 	PickupForce="AssaultRiflePickup"
-	StaticMesh=StaticMesh'BWKF_M806_SM.M806_MainPickup_SM'
+	StaticMesh=StaticMesh'BWKF_BOGP_SM.BOGP_MainPickup_SM'
 	CollisionRadius=35.000000
 	CollisionHeight=5.000000
 	PickupSound=Sound'BWKF_M806_SN.M806Pullout'

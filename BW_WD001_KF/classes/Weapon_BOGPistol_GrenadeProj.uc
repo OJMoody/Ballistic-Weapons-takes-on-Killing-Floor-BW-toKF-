@@ -1,5 +1,7 @@
 class Weapon_BOGPistol_GrenadeProj extends BallisticProjectile;
 
+#exec OBJ LOAD FILE="BWKF_BOGP_SN.uax"
+
 var PanzerfaustTrail SmokeTrail;
 var vector Dir;
 var bool bRing,bHitWater,bWaterStart;
@@ -94,7 +96,8 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 		SetPhysics(PHYS_Falling);
 	}
 
-	PlaySound(ExplosionSound,,2.0);
+	PlaySound(SoundGroup'BWKF_BOGP_SN.BOGP_Explosion',,2.0);
+
 	if ( EffectIsRelevant(Location,false) )
 	{
 		Spawn(class'KFMod.KFNadeLExplosion',,,HitLocation + HitNormal*20,rotator(HitNormal));
@@ -442,9 +445,8 @@ defaultproperties
     bUnlit=False
     ForceRadius=300.000000
     ForceScale=10.000000
-    ExplosionSoundRef="KF_GrenadeSnd.Nade_Explode_1"
     bTrueBallistics=true
-    AmbientSound=none//sound'KF_LAWSnd.Rocket_Propel'
+    AmbientSound=none
     SoundVolume=255
     SoundRadius=250
     AmbientVolumeScale=5.0

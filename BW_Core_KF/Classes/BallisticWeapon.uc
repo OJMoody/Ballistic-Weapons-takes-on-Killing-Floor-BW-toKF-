@@ -126,6 +126,7 @@ var() BUtil.FullSound ClipOutSound;
 var() BUtil.FullSound ClipInSound;
 var() BUtil.FullSound ClipHitSound;
 var() BUtil.FullSound SlideInSound;
+var() BUtil.FullSound SlideOutSound;
 var() BUtil.FullSound CockSound;
 
 var() BUtil.FullSound ShovelStartSound;
@@ -978,6 +979,11 @@ simulated function Notify_SlideIn()
     class'BUtil'.static.PlayFullSound(self, SlideInSound, true);
 }
 
+simulated function Notify_SlideOut()
+{
+    class'BUtil'.static.PlayFullSound(self, SlideOutSound, true);
+}
+
 simulated function Notify_ClipOut()
 {
 	bBallisticClipOut = true;
@@ -1613,6 +1619,7 @@ defaultproperties
     ClipInSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	CockSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	SlideInSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+	SlideOutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	PulloutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	

@@ -630,6 +630,7 @@ defaultproperties
 
 	HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Unselected'
     SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Selected'
+	TraderInfoTexture=Texture'BWKF_M806_T.Icons.MedIcon_M806'
 
     PlayerViewOffset=(X=-7.000000,Y=12.000000,Z=-7.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"

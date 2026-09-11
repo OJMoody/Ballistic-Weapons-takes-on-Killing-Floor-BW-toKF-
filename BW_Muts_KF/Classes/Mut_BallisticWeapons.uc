@@ -220,4 +220,7 @@ defaultproperties
 	bNetNotify=True
 
 	BWTraderWeapons(0)=(PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup',TraderList=2)
+	BWTraderWeapons(1)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=0)
+	BWTraderWeapons(2)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=5)
+	BWTraderWeapons(3)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=6)
 }

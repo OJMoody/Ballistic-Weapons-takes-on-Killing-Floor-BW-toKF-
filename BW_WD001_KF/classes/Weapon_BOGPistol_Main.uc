@@ -315,7 +315,13 @@ defaultproperties
     FireModeClass(1)=Class'KFMod.NoFire'
     MeleeFireClass=Class'BW_WD001_KF.Weapon_BOGPistol_MeleeFire'
     PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup'
-    AttachmentClass=Class'BW_WD001_KF.Weapon_M806Pistol_Attachment'
+    AttachmentClass=Class'BW_WD001_KF.Weapon_BOGPistol_Attachment'
+	
+	ClipOutSound=(Sound=Sound'BWKF_BOGP_SN.BOGP_GrenOut')
+    ClipInSound=(Sound=Sound'BWKF_BOGP_SN.BOGP_GrenLoad')
+    ClipHitSound=(Sound=Sound'BWKF_BOGP_SN.BOGP_Close')
+	SlideInSound=(Sound=Sound'BWKF_BOGP_SN.BOGP_Cock')
+	SlideOutSound=(Sound=Sound'BWKF_BOGP_SN.BOGP_Open')
 	
 	WeaponReloadAnim=Reload_Crossbow
 	ItemName="BORT-85 Grenade Pistol"
@@ -344,9 +350,10 @@ defaultproperties
     WeaponModes(2)=(ModeName="Medical Aerosol",ModeID="WM_SemiAuto",Value=1.000000)
 	CurrentWeaponMode=0
 	
-	//HudImageRef="KillingFloor2HUD.WeaponSelect.M32_unselected"
-	//SelectedHudImageRef="KillingFloor2HUD.WeaponSelect.M32"
-	//TraderInfoTexture=texture'KillingFloor2HUD.Trader_Weapon_Icons.Trader_M32'
+	HudImage=Texture'BWKF_BOGP_T.Icons.MedIcon_BOGP_Unselected'
+    SelectedHudImage=Texture'BWKF_BOGP_T.Icons.MedIcon_BOGP_Selected'
+	TraderInfoTexture=Texture'BWKF_BOGP_T.Icons.MedIcon_BOGP'
+	
 	bHoldToReload=False
 	PlayerViewOffset=(X=2.000000,Y=11.000000,Z=-7.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
@@ -354,9 +361,7 @@ defaultproperties
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	SightFXClass=Class'BW_WD001_KF.Weapon_BOGPistol_SightLEDs'
     SightFXBone="GrenadePistolBarrel"
-    ClipOutSound=(Sound=Sound'BWKF_M806_SN.M806-ClipOut')
-    ClipInSound=(Sound=Sound'BWKF_M806_SN.M806-ClipIn')
-	
+
 	SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
     SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
 	SkinRefs(2)=Texture'BWKF_BOGP_T.Weapon.BOGP_Main'
