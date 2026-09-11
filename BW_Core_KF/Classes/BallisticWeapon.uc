@@ -343,15 +343,20 @@ simulated function string GetCurrentWeaponModeName()
 
 simulated function ClientSwitchWeaponMode(byte NewMode)
 {
-	if (NewMode >= WeaponModes.Length)
-		return;
+    if (NewMode >= WeaponModes.Length)
+        return;
 
-	CurrentWeaponMode = NewMode;
+    CurrentWeaponMode = NewMode;
 
-	if (FireMode[0] != None && BallisticInstantFire(FireMode[0]) != None)
-		BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+    if (FireMode[0] != None)
+    {
+        if (BallisticInstantFire(FireMode[0]) != None)
+            BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+        else if (BallisticShotgunFire(FireMode[0]) != None)
+            BallisticShotgunFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+    }
 
-	CheckBurstMode();
+    CheckBurstMode();
 }
 
 //-----------------------------------------------------------------------------
@@ -360,26 +365,25 @@ simulated function ClientSwitchWeaponMode(byte NewMode)
 
 simulated function CommonSwitchWeaponMode(byte NewMode)
 {
-	local int LastMode;
+    local BallisticInstantFire BIF;
+    local BallisticShotgunFire BSF;
 
-	if (Instigator == None)
-		return;
+    CurrentWeaponMode = NewMode;
 
-	if (NewMode >= WeaponModes.Length)
-		return;
+    if (FireMode[0] != None)
+    {
+        BIF = BallisticInstantFire(FireMode[0]);
+        if (BIF != None)
+            BIF.SwitchWeaponMode(CurrentWeaponMode);
+        else
+        {
+            BSF = BallisticShotgunFire(FireMode[0]);
+            if (BSF != None)
+                BSF.SwitchWeaponMode(CurrentWeaponMode);
+        }
+    }
 
-	if (WeaponModes[NewMode].bUnavailable)
-		return;
-
-	LastMode = CurrentWeaponMode;
-	CurrentWeaponMode = NewMode;
-
-	if (FireMode[0] != None)
-	{
-		BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
-	}
-
-	CheckBurstMode();
+    CheckBurstMode();
 }
 
 //-----------------------------------------------------------------------------

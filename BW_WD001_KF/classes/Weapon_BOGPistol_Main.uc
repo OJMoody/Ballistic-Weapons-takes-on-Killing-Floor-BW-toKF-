@@ -5,6 +5,10 @@ var bool bChangingFireMode;
 var bool bFireAnimPlaying;
 var bool bFireModeReloading;
 
+var bool bServerBOGClipInReady;
+var float ServerBOGClipInTime;
+var() float ServerClipInDelay;
+
 //=============================================================================
 // SERVER FIRE
 //=============================================================================
@@ -61,9 +65,48 @@ exec function ReloadMeNow()
 	bIsReloading = true;
 	bBOGReloadAnimFinished = false;
 	ReloadTimer = Level.TimeSeconds;
+	
+	if (Role == ROLE_Authority)
+	{
+		bServerBOGClipInReady = false;
+		ServerBOGClipInTime = Level.TimeSeconds + ServerClipInDelay;
+	}
 
 	ClientReload();
 	Instigator.SetAnimAction(WeaponReloadAnim);
+}
+
+function ServerClipIn()
+{
+	if (Role != ROLE_Authority)
+		return;
+
+	if (!bIsReloading)
+		return;
+
+	if (!bServerBOGClipInReady)
+		return;
+
+	if (MagAmmoRemaining >= MagCapacity)
+		return;
+
+	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+	if (AmmoAmount(0) >= MagCapacity)
+		MagAmmoRemaining = MagCapacity;
+	else
+		MagAmmoRemaining = AmmoAmount(0);
+
+	bServerBOGClipInReady = false;
+}
+
+simulated function WeaponTick(float DeltaTime)
+{
+	Super.WeaponTick(DeltaTime);
+
+	if (Role == ROLE_Authority && bIsReloading && !bServerBOGClipInReady &&
+		Level.TimeSeconds >= ServerBOGClipInTime)
+		bServerBOGClipInReady = true;
 }
 
 simulated function ActuallyFinishReloading()
@@ -271,8 +314,13 @@ function SetDefaultFireMode()
 
 	CurrentWeaponMode = NewMode;
 
-	if (FireMode[0] != None && BallisticInstantFire(FireMode[0]) != None)
-		BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+	if (FireMode[0] != None)
+	{
+		if (BallisticInstantFire(FireMode[0]) != None)
+			BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+		else if (BallisticShotgunFire(FireMode[0]) != None)
+			BallisticShotgunFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+	}
 
 	CheckBurstMode();
 }
@@ -349,6 +397,8 @@ defaultproperties
     WeaponModes(1)=(ModeName="Flare",ModeID="WM_SemiAuto",Value=1.000000)
     WeaponModes(2)=(ModeName="Medical Aerosol",ModeID="WM_SemiAuto",Value=1.000000)
 	CurrentWeaponMode=0
+	
+	ServerClipInDelay=1.0
 	
 	HudImage=Texture'BWKF_BOGP_T.Icons.MedIcon_BOGP_Unselected'
     SelectedHudImage=Texture'BWKF_BOGP_T.Icons.MedIcon_BOGP_Selected'

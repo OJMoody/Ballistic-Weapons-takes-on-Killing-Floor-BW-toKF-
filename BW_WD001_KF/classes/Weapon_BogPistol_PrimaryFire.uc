@@ -12,6 +12,13 @@ simulated function bool AllowFire()
 	if (Weapon_BOGPistol_Main(Weapon) != None && Weapon_BOGPistol_Main(Weapon).bChangingFireMode)
 		return false;
 
+	if (Weapon_BOGPistol_Main(Weapon) != None &&
+		(Weapon_BOGPistol_Main(Weapon).MeleeState == MS_Held ||
+		 Weapon_BOGPistol_Main(Weapon).MeleeState == MS_Pending ||
+		 Weapon_BOGPistol_Main(Weapon).MeleeState == MS_Strike ||
+		 Weapon_BOGPistol_Main(Weapon).MeleeState == MS_StrikePending))
+		return false;
+
 	if (BallisticWeapon(Weapon) != None && BallisticWeapon(Weapon).MagAmmoRemaining < AmmoPerFire)
 		return false;
 
