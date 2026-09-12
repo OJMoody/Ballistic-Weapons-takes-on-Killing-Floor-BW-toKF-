@@ -11,7 +11,12 @@ class BallisticMeleeFire extends BallisticInstantFire
 
 var() float MeleeDamageMin;
 var() float MeleeDamageMax;
+var() array<Sound> MeleeHitSounds;
+var() float MeleeHitVolume;
+var() class<KFMeleeHitEffect> HitEffectClass;
 var bool bMeleeStrikeAnimationPlayed;
+
+var() name MeleeThirdPersonAnim;
 
 //=============================================================================
 // SWIPE DATA
@@ -19,8 +24,9 @@ var bool bMeleeStrikeAnimationPlayed;
 
 struct SwipePoint
 {
-	var() int Weight;
-	var() Rotator Offset;
+    var() int Weight;
+    var() Rotator Offset;
+    var() float Delay;
 };
 
 struct SwipeHit
@@ -162,48 +168,80 @@ function float GetDamageFactor(Actor Victim, Vector TraceStart, Vector HitLocati
 
 function DoFireEffect()
 {
+	SwipeHits.Length = 0;
+}
+
+function ProcessSwipePoint(int PointIndex)
+{
 	local Vector StartTrace;
 	local Rotator Aim;
 	local Rotator PointAim;
-	local int i;
+	local KFPawn HitPawn;
 
 	if (Instigator == none)
-	{
 		return;
-	}
+
+	if (PointIndex < 0 || PointIndex >= NumSwipePoints)
+		return;
 
 	StartTrace = Instigator.Location + Instigator.EyePosition();
-
 	Aim = AdjustAim(StartTrace, AimError);
 
-	for (i = 0; i < NumSwipePoints; i++)
+	if (SwipePoints[PointIndex].Weight < 0)
+		return;
+
+	PointAim = Rotator(Vector(SwipePoints[PointIndex].Offset) >> Aim);
+
+	MeleeDoTrace(
+		StartTrace,
+		PointAim,
+		PointIndex == WallHitPoint,
+		SwipePoints[PointIndex].Weight
+	);
+
+	while (SwipeHits.Length > 0)
 	{
-		if (SwipePoints[i].Weight < 0)
-			continue;
+		HitPawn = KFPawn(SwipeHits[0].Victim);
 
-		PointAim = Rotator(Vector(SwipePoints[i].Offset) >> Aim);
-
-		MeleeDoTrace(
-			StartTrace,
-			PointAim,
-			i == WallHitPoint,
-			SwipePoints[i].Weight
-		);
-	}
-
-	for (i = 0; i < SwipeHits.Length; i++)
-	{
 		ApplyMeleeDamage(
-			SwipeHits[i].Victim,
-			SwipeHits[i].HitLoc,
+			SwipeHits[0].Victim,
+			SwipeHits[0].HitLoc,
 			StartTrace,
-			SwipeHits[i].HitDir
+			SwipeHits[0].HitDir
 		);
 
-		SwipeHits[i].Victim = none;
-	}
+		if (HitPawn != none && MeleeHitSounds.Length > 0)
+		{
+			Weapon.PlaySound(MeleeHitSounds[Rand(MeleeHitSounds.Length)],SLOT_None,MeleeHitVolume,,,,false);
+		}
 
-	SwipeHits.Length = 0;
+		SwipeHits.Remove(0, 1);
+	}
+}
+
+function Notify_SwipePoint1()
+{
+	ProcessSwipePoint(0);
+}
+
+function Notify_SwipePoint2()
+{
+	// Process Swipe Point 1
+}
+
+function Notify_SwipePoint3()
+{
+	// Process Swipe Point 2
+}
+
+function Notify_SwipePoint4()
+{
+	// Process Swipe Point 3
+}
+
+function Notify_SwipePoint5()
+{
+	// Process Swipe Point 4
 }
 
 
@@ -330,6 +368,9 @@ function MeleeDoTrace(Vector InitialStart, Rotator Dir, bool bWallHitter, int We
 
 		if (Other.bWorldGeometry || Mover(Other) != none)
 		{
+			if (HitEffectClass != none)
+				Spawn(HitEffectClass,,, HitLocation, rotator(HitLocation - InitialStart));
+
 			break;
 		}
 
@@ -350,6 +391,7 @@ function MeleeDoTrace(Vector InitialStart, Rotator Dir, bool bWallHitter, int We
 	Weapon.bTraceWater = false;
 }
 
+
 //=============================================================================
 // MELEE HOLD ANIMATION
 //=============================================================================
@@ -366,6 +408,9 @@ simulated function PlayMeleeHold()
 	{
 		Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
 	}
+	
+	if (BallisticWeapon(Weapon) != none)
+		BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleePrepAnimTP);
 }
 
 
@@ -373,81 +418,65 @@ simulated function PlayMeleeHold()
 // DAMAGE APPLICATION
 //=============================================================================
 
-function ApplyMeleeDamage(
-	Actor Victim,
-	Vector HitLocation,
-	Vector TraceStart,
-	Vector HitDir
-)
+function ApplyMeleeDamage(Actor Victim,Vector HitLocation,Vector TraceStart,Vector HitDir)
 {
-	local KFPawn HitPawn;
-	local KFWeaponAttachment WeapAttach;
-	local float Damage;
-	local float DamageFactor;
-	local array<int> HitPoints;
+    local KFPawn HitPawn;
+    local KFWeaponAttachment WeapAttach;
+    local float Damage;
+    local float DamageFactor;
+    local array<int> HitPoints;
 
-	if (Victim == none || Victim == Instigator)
-	{
-		return;
-	}
+    if (Victim == none || Victim == Instigator)
+    {
+        return;
+    }
 
-	DamageFactor = GetDamageFactor(
-		Victim,
-		TraceStart,
-		HitLocation
-	);
+    Weapon.PlaySound(Sound'KF_AxeSnd.Axe_HitFlesh',SLOT_None,1.0,,,,false);
 
-	Damage = MeleeDamageMax * DamageFactor;
+    DamageFactor = GetDamageFactor(
+        Victim,
+        TraceStart,
+        HitLocation
+    );
 
-	HitPawn = KFPawn(Victim);
+    Damage = MeleeDamageMax * DamageFactor;
 
-	//-------------------------------------------------------------------------
-	// Pawn damage.
-	//-------------------------------------------------------------------------
+    HitPawn = KFPawn(Victim);
 
-	if (HitPawn != none)
-	{
-		if (HitPawn.bDeleteMe)
-			return;
+    if (HitPawn != none)
+    {
+        if (HitPawn.bDeleteMe)
+            return;
 
-		HitPawn.ProcessLocationalDamage(
-			Damage,
-			Instigator,
-			HitLocation,
-			Momentum * HitDir,
-			DamageType,
-			HitPoints
-		);
-	}
-	else
-	{
-		//-------------------------------------------------------------------------
-		// Non-pawn damage.
-		//-------------------------------------------------------------------------
+        HitPawn.ProcessLocationalDamage(
+            Damage,
+            Instigator,
+            HitLocation,
+            Momentum * HitDir,
+            DamageType,
+            HitPoints
+        );
+    }
+    else
+    {
+        Victim.TakeDamage(
+            Damage,
+            Instigator,
+            HitLocation,
+            Momentum * HitDir,
+            DamageType
+        );
+    }
 
-		Victim.TakeDamage(
-			Damage,
-			Instigator,
-			HitLocation,
-			Momentum * HitDir,
-			DamageType
-		);
-	}
-
-	//-------------------------------------------------------------------------
-	// KF hit effect.
-	//-------------------------------------------------------------------------
-
-	WeapAttach = KFWeaponAttachment(Weapon.ThirdPersonActor);
-
-	if (WeapAttach != none)
-	{
-		WeapAttach.UpdateHit(
-			Victim,
-			HitLocation,
-			Normal(HitLocation - TraceStart)
-		);
-	}
+    WeapAttach = KFWeaponAttachment(Weapon.ThirdPersonActor);
+    if (WeapAttach != none)
+    {
+        WeapAttach.UpdateHit(
+            Victim,
+            HitLocation,
+            Normal(HitLocation - TraceStart)
+        );
+    }
 }
 
 
@@ -546,6 +575,9 @@ function PlayFiring()
 
 	if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
 		Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+		
+	if (BallisticWeapon(Weapon) != none)
+		BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleeFireAnimTP);
 
 	if (FireSound != none)
 		Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
@@ -598,11 +630,14 @@ function StopBerserk()
 
 defaultproperties
 {
-	SwipePoints(0)=(Weight=3,Offset=(Yaw=2560))
-	SwipePoints(1)=(Weight=5,Offset=(Yaw=1280))
-	SwipePoints(2)=(Weight=6)
-	SwipePoints(3)=(Weight=4,Offset=(Yaw=-1280))
-	SwipePoints(4)=(Weight=2,Offset=(Yaw=-2560))
+	MeleeHitSounds(0)=Sound'KF_AxeSnd.Axe_HitFlesh'
+    MeleeHitVolume=1.000000
+
+    SwipePoints(0)=(Weight=3,Offset=(Yaw=2560),Delay=0.00)
+	SwipePoints(1)=(Weight=5,Offset=(Yaw=1280),Delay=0.20)
+	SwipePoints(2)=(Weight=6,Delay=0.40)
+	SwipePoints(3)=(Weight=4,Offset=(Yaw=-1280),Delay=0.60)
+	SwipePoints(4)=(Weight=2,Offset=(Yaw=-2560),Delay=0.70)
 
 	FireSound=Sound'BWKF_M806_SN.M806.M806MeleeFire'
     StereoFireSoundRef="BWKF_M806_SN.M806.M806MeleeFire"
@@ -630,7 +665,7 @@ defaultproperties
 	FireRate=0.800000
 
 	//HitDamageClass=Class'KFMod.DamTypeMelee'
-	//HitEffectClass=class'KFMeleeHitEffect'
+	HitEffectClass=class'KFMeleeHitEffect'
 	
 	bFireOnRelease=True
 	bWaitForRelease=True

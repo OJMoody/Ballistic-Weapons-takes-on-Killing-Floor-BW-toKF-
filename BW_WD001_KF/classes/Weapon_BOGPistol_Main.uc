@@ -78,26 +78,31 @@ exec function ReloadMeNow()
 
 function ServerClipIn()
 {
-	if (Role != ROLE_Authority)
-		return;
+    if (Role != ROLE_Authority)
+        return;
 
-	if (!bIsReloading)
-		return;
+    if (!bIsReloading)
+        return;
 
-	if (!bServerBOGClipInReady)
-		return;
+    if (!bServerBOGClipInReady)
+        return;
 
-	if (MagAmmoRemaining >= MagCapacity)
-		return;
+    if (MagAmmoRemaining >= MagCapacity)
+        return;
 
-	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (AmmoAmount(0) >= MagCapacity)
-		MagAmmoRemaining = MagCapacity;
-	else
-		MagAmmoRemaining = AmmoAmount(0);
+    if (AmmoAmount(0) >= MagCapacity)
+        MagAmmoRemaining = MagCapacity;
+    else
+        MagAmmoRemaining = AmmoAmount(0);
 
-	bServerBOGClipInReady = false;
+    bServerBOGClipInReady = false;
+    bBallisticReload = false;
+    bIsReloading = false;
+    bReloadEffectDone = false;
+    bReloadResumePending = false;
+    BallisticReloadStage = 0;
 }
 
 simulated function WeaponTick(float DeltaTime)

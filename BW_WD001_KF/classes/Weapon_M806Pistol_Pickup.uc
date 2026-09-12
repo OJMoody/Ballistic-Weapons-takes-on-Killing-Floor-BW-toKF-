@@ -39,9 +39,9 @@ defaultproperties
 	PowerValue=30
 	SpeedValue=40
 	RangeValue=40
-	Description="M806A2 Pistol"
-	ItemName="M806A2 Pistol"
-	ItemShortName="M806A2 Pistol"
+	Description="Dual M806A2 Pistols"
+	ItemName="Dual M806A2 Pistols"
+	ItemShortName="Dual M806A2 Pistols"
 	AmmoItemName=".45 high velocity M806 bullets"
 	AmmoMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'
 	InventoryType=Class'BW_WD001_KF.Weapon_M806Pistol_Main'

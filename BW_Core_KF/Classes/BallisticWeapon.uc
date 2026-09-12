@@ -49,6 +49,8 @@ var float MeleeFatigue;
 
 var() name MeleeFireAnim;
 var() name MeleePrepAnim;
+var() name MeleePrepAnimTP;
+var() name MeleeFireAnimTP;
 
 var() class<BallisticMeleeFire> MeleeFireClass;
 
@@ -526,6 +528,7 @@ function ServerMeleeHold()
 	MeleeFireMode.HoldTime = 0.0;
 	MeleeFireMode.HoldStartTime = Level.TimeSeconds;
 	MeleeFireMode.Instigator = Instigator;
+	MeleeFireMode.bIsFiring = true;
 
 	MeleeFireMode.PlayPreFire();
 
@@ -932,8 +935,13 @@ function ServerClipIn()
         MagAmmoRemaining = MagCapacity;
     else
         MagAmmoRemaining = AmmoAmount(0);
-}
 
+    bBallisticReload = false;
+    bIsReloading = false;
+    bReloadEffectDone = false;
+    bReloadResumePending = false;
+    BallisticReloadStage = 0;
+}
 
 //=============================================================================
 // RELOAD FINISH
@@ -1100,6 +1108,35 @@ simulated function Notify_ClipIn2()
 	bReloadEffectDone = false;
 }
 
+simulated function Notify_SwipePoint1()
+{
+	if (MeleeFireMode != none)
+		MeleeFireMode.ProcessSwipePoint(0);
+}
+
+simulated function Notify_SwipePoint2()
+{
+	if (MeleeFireMode != none)
+		MeleeFireMode.ProcessSwipePoint(1);
+}
+
+simulated function Notify_SwipePoint3()
+{
+	if (MeleeFireMode != none)
+		MeleeFireMode.ProcessSwipePoint(2);
+}
+
+simulated function Notify_SwipePoint4()
+{
+	if (MeleeFireMode != none)
+		MeleeFireMode.ProcessSwipePoint(3);
+}
+
+simulated function Notify_SwipePoint5()
+{
+	if (MeleeFireMode != none)
+		MeleeFireMode.ProcessSwipePoint(4);
+}
 
 //=============================================================================
 // SHOVEL NOTIFIERS
@@ -1206,6 +1243,20 @@ simulated function PlayAltThirdPersonFire()
         return;
 
     AltAttachment.PlayThirdPersonFire();
+}
+
+simulated function PlayThirdPersonMeleeAnim(name AnimName)
+{
+	local BallisticAttachment WeapAttach;
+
+	if (ThirdPersonActor == None)
+		return;
+
+	WeapAttach = BallisticAttachment(ThirdPersonActor);
+	if (WeapAttach == None)
+		return;
+
+	WeapAttach.PlayThirdPersonAnim(AnimName);
 }
 
 simulated function PlayAltThirdPersonFlash()
@@ -1411,12 +1462,17 @@ simulated function bool StartFire(int Mode)
 {
 	local bool RetVal;
 
+	Log("BW FIRE TRACE: StartFire BEFORE - Mode="$Mode$" bIsReloading="$bIsReloading$" bBallisticReload="$bBallisticReload$" ClientState="$ClientState$" MagAmmoRemaining="$MagAmmoRemaining);
+
 	if (ClientState == WS_BringUp)
 	{
+		Log("BW FIRE TRACE: BLOCKED BY WS_BringUp");
 		return false;
 	}
 
 	RetVal = Super.StartFire(Mode);
+
+	Log("BW FIRE TRACE: Super.StartFire RESULT="$RetVal$" bIsReloading="$bIsReloading$" bBallisticReload="$bBallisticReload$" ClientState="$ClientState$" MagAmmoRemaining="$MagAmmoRemaining);
 
 	if (RetVal)
 	{
@@ -1437,6 +1493,16 @@ simulated function bool PutDown()
 	local bool bResult;
 
 	bPuttingDown = true;
+
+	if (MeleeFireMode != none)
+	{
+		MeleeFireMode.bIsFiring = false;
+		MeleeFireMode.HoldTime = 0.0;
+		MeleeFireMode.HoldStartTime = 0.0;
+	}
+
+	MeleeState = MS_None;
+	MeleeHoldTime = 0.0;
 
 	if (SightFX != none)
 	{
@@ -1659,6 +1725,8 @@ defaultproperties
     PlayerIronSightFOV=70
     ZoomedDisplayFOV=40
 	PlayerViewPivot=(Yaw=32768)
+	
+	MeleeFireAnimTP="Attack2_Knife"
 	
 	//Dual Weapon Props
 	bDualWeapon=False

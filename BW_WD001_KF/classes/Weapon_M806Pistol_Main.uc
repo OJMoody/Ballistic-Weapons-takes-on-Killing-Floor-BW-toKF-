@@ -171,6 +171,27 @@ simulated function MeleeHoldImpl()
 
 simulated function AnimEnd(int Channel)
 {
+    local name AnimName;
+    local float Frame;
+    local float Rate;
+
+    if (Channel == 0)
+    {
+        GetAnimParams(0, AnimName, Frame, Rate);
+
+        Log("M806 SINGLE: AnimEnd - Anim="$AnimName$" Frame="$Frame$" Rate="$Rate$" bIsReloading="$bIsReloading$" bBallisticReload="$bBallisticReload$" MagAmmoRemaining="$MagAmmoRemaining);
+
+        if (bIsReloading &&
+            (AnimName == ReloadAnim ||
+             AnimName == WeaponReloadResumeAnimation))
+        {
+            bIsReloading = false;
+            bReloadEffectDone = false;
+            bReloadResumePending = false;
+            BallisticReloadStage = 0;
+        }
+    }
+
     if (Channel == 0 && bLaserToggleInProgress)
     {
         bLaserToggleInProgress = false;
@@ -599,7 +620,7 @@ defaultproperties
     AttachmentClass=Class'BW_WD001_KF.Weapon_M806Pistol_Attachment'
 	
 	WeaponReloadAnim=Reload_Single9mm
-    ItemName="M806A2 Pistol"
+    ItemName="Dual M806A2 Pistols"
     Description=""
 
 	bKFNeverThrow=True

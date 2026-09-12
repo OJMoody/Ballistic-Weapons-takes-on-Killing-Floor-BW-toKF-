@@ -27,6 +27,12 @@ simulated function PlayThirdPersonFire()
 		PlayAnim('Fire', 1.0, 0.0);
 }
 
+simulated function PlayThirdPersonAnim(name AnimName)
+{
+	if (Mesh != None && AnimName != '' && HasAnim(AnimName))
+		PlayAnim(AnimName, 1.0, 0.0);
+}
+
 defaultproperties
 {
 	mMuzFlashScale=1.000000
