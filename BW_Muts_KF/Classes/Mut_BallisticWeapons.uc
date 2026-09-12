@@ -1,4 +1,7 @@
-class Mut_BallisticWeapons extends Mutator;
+class Mut_BallisticWeapons extends Mutator
+    config(BW_Core_KF);
+
+var() config bool bUseBWHands;
 
 struct BWTraderWeapon
 {
@@ -27,6 +30,13 @@ function PreBeginPlay()
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 {
+    local BallisticWeapon BW;
+
+    BW = BallisticWeapon(Other);
+
+    if (BW != None)
+        BW.BUseBWHands = bUseBWHands;
+
     if (Other.Class == class'Vest')
     {
         ReplaceWith(Other, "BW_Core_KF.BWArmorPickup");
@@ -40,6 +50,31 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
     }
 
     return true;
+}
+
+static function FillPlayInfo(PlayInfo PlayInfo)
+{
+    Super.FillPlayInfo(PlayInfo);
+
+    PlayInfo.AddSetting(
+        "BW Hands",
+        "bUseBWHands",
+        "Use Ballistic Weapons hands",
+        0,
+        0,
+        "Check"
+    );
+}
+
+static function string GetDescriptionText(string SettingName)
+{
+    switch (SettingName)
+    {
+        case "bUseBWHands":
+            return "Use the Ballistic Weapons hand and sleeve system instead of the standard Killing Floor hands.";
+    }
+
+    return Super.GetDescriptionText(SettingName);
 }
 
 simulated function PostBeginPlay()
@@ -219,6 +254,8 @@ defaultproperties
 	RemoteRole=ROLE_SimulatedProxy
 	bNetNotify=True
 
+	bUseBWHands=True
+	
 	BWTraderWeapons(0)=(PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup',TraderList=2)
 	BWTraderWeapons(1)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=0)
 	BWTraderWeapons(2)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=5)

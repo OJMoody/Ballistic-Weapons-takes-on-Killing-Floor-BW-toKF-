@@ -555,7 +555,10 @@ simulated event ModeHoldFire()
 		return;
 
 	if (HoldStartTime == 0.0)
+	{
 		HoldStartTime = Level.TimeSeconds;
+		PlayMeleeHold();
+	}
 
 	if (BallisticWeapon(Weapon) != none)
 	{

@@ -389,7 +389,7 @@ defaultproperties
      DamageRadius=175.000000
      MyDamageType=Class'KFMod.DamTypeMedicNade'
      ExplosionDecal=Class'KFMod.MedicNadeDecal'
-     StaticMesh=StaticMesh'BWKF_BOGP_SM.Pickups.BOGP_ClipPickup_SM'
+     StaticMesh=StaticMesh'BWKF_BOGP_SM.Pickups.BOGP_GrenProj_SM'
      DrawScale=1.000000
      SoundVolume=150
      SoundRadius=100.000000

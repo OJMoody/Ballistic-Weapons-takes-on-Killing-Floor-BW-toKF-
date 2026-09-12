@@ -439,7 +439,7 @@ defaultproperties
     ImpactDamage=200
     ExplosionDecal=Class'KFMod.KFScorchMark'
     DrawType=DT_StaticMesh
-    StaticMeshRef="kf_generic_sm.40mm_Warhead"
+    StaticMeshRef="BWKF_BOGP_SM.Pickups.BOGP_GrenProj_SM"
     LifeSpan=10.000000
     DrawScale=1.000000
     bUnlit=False

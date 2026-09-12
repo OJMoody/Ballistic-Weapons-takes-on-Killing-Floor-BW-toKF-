@@ -33,6 +33,6 @@ defaultproperties
      ExplodeTimer=0.500000
      Damage=80.000000
      MyDamageType=Class'KFMod.DamTypeFlameNade'
-     StaticMesh=StaticMesh'BWKF_BOGP_SM.Pickups.BOGP_ClipPickup_SM'
+     StaticMesh=StaticMesh'BWKF_BOGP_SM.Pickups.BOGP_GrenProj_SM'
      DrawScale=1.000000
 }
