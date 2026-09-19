@@ -1,4 +1,4 @@
-class Weapon_A909Blades_HitEffects extends BallisticHitEffects;
+class Weapon_A909Blades_HitEffects extends BallisticMeleeWeaponHitEffectsDull;
 
 defaultproperties
 {

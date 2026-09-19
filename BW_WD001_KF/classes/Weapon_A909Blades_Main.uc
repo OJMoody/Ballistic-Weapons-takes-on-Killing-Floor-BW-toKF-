@@ -24,7 +24,7 @@ defaultproperties
     BobDamping=8.000000
     AttachmentClass=Class'BW_WD001_KF.Weapon_A909Blades_Attachment'
     IconCoords=(X1=246,Y1=80,X2=332,Y2=106)
-    ItemName="Knife"
+    ItemName="A909 Skrith Blades"
     Mesh=SkeletalMesh'BWKF_A909_A.A909_FP_Mesh'
 	PlayerViewOffset=(X=30.000000,Z=-15.000000)
     AmbientGlow=0

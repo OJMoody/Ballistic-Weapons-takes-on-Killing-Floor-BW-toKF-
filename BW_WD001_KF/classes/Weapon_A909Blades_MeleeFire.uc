@@ -7,7 +7,7 @@ class Weapon_A909Blades_MeleeFire extends BallisticMeleeFire;
 
 defaultproperties
 {
-	HitEffectClass=class'Weapon_A909Blades_HitEffects'
+	MeleeHitEffectClass=class'Weapon_A909Blades_HitEffects'
 	WallHitPoint=2
 	NumSwipePoints=5
 

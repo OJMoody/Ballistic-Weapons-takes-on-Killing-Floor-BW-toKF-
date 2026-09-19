@@ -13,7 +13,7 @@ var() float MeleeDamageMin;
 var() float MeleeDamageMax;
 var() array<Sound> MeleeHitSounds;
 var() float MeleeHitVolume;
-var() class<KFMeleeHitEffect> HitEffectClass;
+var() class<KFMeleeHitEffect> MeleeHitEffectClass;
 var bool bMeleeStrikeAnimationPlayed;
 
 var() name MeleeThirdPersonAnim;
@@ -373,8 +373,8 @@ function MeleeDoTrace(Vector InitialStart, Rotator Dir, bool bWallHitter, int We
 
 		if (Other.bWorldGeometry || Mover(Other) != none)
 		{
-			if (HitEffectClass != none)
-				Spawn(HitEffectClass,,, HitLocation, rotator(HitLocation - InitialStart));
+			if (MeleeHitEffectClass != none)
+				Spawn(MeleeHitEffectClass,,, HitLocation, rotator(HitLocation - InitialStart));
 
 			break;
 		}
@@ -704,7 +704,7 @@ defaultproperties
 	FireRate=0.800000
 
 	//HitDamageClass=Class'KFMod.DamTypeMelee'
-	HitEffectClass=class'KFMeleeHitEffect'
+	MeleeHitEffectClass=class'BW_Core_KF.BallisticMeleeWeaponHitEffectsDull'
 	
 	bHasPrep=True
 	bFireOnRelease=True

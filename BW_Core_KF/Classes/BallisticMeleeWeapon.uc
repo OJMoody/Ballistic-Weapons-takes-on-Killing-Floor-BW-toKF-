@@ -120,7 +120,12 @@ function float SuggestDefenseStyle()
 
 defaultproperties
 {
-    WeaponRange=70.000000
+    WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000,bUnavailable=True)
+    WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000,bUnavailable=True)
+    WeaponModes(2)=(ModeName="",ModeID="WM_FullAuto")
+	CurrentWeaponMode=2
+	
+	WeaponRange=70.000000
     MeleeHitVolume=255
     BloodSkinSwitchArray=2
     AIRating=0.100000

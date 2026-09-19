@@ -53,5 +53,5 @@ defaultproperties
     FireRate=0.600000
     BotRefireRate=0.300000
     MeleeHitSounds(0)=Sound'KF_KnifeSnd.Knife_HitFlesh'
-    HitEffectClass=class'Weapon_A909Blades_HitEffects'
+    MeleeHitEffectClass=class'Weapon_A909Blades_HitEffects'
 }

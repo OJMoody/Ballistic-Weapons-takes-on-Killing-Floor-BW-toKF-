@@ -14,6 +14,8 @@ var bool bBurstMode;
 var bool bBurstComplete;
 var float BurstFireRateFactor;
 
+var() class<Actor> HitEffectClass;
+
 //=============================================================================
 // BERSERK
 //=============================================================================
@@ -218,6 +220,80 @@ function PlayFiring()
 // FIRE
 //=============================================================================
 
+//=============================================================================
+// TRACE
+//=============================================================================
+
+function DoTrace(Vector Start, Rotator Dir)
+{
+	local Vector X,Y,Z, End, HitLocation, HitNormal, ArcEnd;
+	local Actor Other;
+	local KFWeaponAttachment WeapAttach;
+	local array<int> HitPoints;
+	local KFPawn HitPawn;
+
+	MaxRange();
+
+	Weapon.GetViewAxes(X, Y, Z);
+
+	if (Weapon.WeaponCentered())
+		ArcEnd = (Instigator.Location + Weapon.EffectOffset.X * X + 1.5 * Weapon.EffectOffset.Z * Z);
+	else
+		ArcEnd = (Instigator.Location + Instigator.CalcDrawOffset(Weapon) + Weapon.EffectOffset.X * X + Weapon.Hand * Weapon.EffectOffset.Y * Y + Weapon.EffectOffset.Z * Z);
+
+	X = Vector(Dir);
+	End = Start + TraceRange * X;
+	Other = Instigator.HitPointTrace(HitLocation, HitNormal, End, HitPoints, Start,, 1);
+
+	if (Other != None && Other != Instigator && Other.Base != Instigator)
+	{
+		WeapAttach = KFWeaponAttachment(Weapon.ThirdPersonActor);
+
+		if (!Other.bWorldGeometry)
+		{
+			if (!Other.IsA('Pawn') && !Other.IsA('HitScanBlockingVolume') && !Other.IsA('ExtendedZCollision'))
+			{
+				if (WeapAttach != None)
+				{
+					if (BallisticAttachment(WeapAttach) != None)
+						BallisticAttachment(WeapAttach).BallisticHitEffectClass = HitEffectClass;
+
+					WeapAttach.UpdateHit(Other, HitLocation, HitNormal);
+				}
+			}
+
+			HitPawn = KFPawn(Other);
+
+			if (HitPawn != None)
+			{
+				if (!HitPawn.bDeleteMe)
+					HitPawn.ProcessLocationalDamage(DamageMax, Instigator, HitLocation, Momentum * X, DamageType, HitPoints);
+			}
+			else
+			{
+				Other.TakeDamage(DamageMax, Instigator, HitLocation, Momentum * X, DamageType);
+			}
+		}
+		else
+		{
+			HitLocation = HitLocation + 2.0 * HitNormal;
+
+			if (WeapAttach != None)
+			{
+				if (BallisticAttachment(WeapAttach) != None)
+					BallisticAttachment(WeapAttach).BallisticHitEffectClass = HitEffectClass;
+
+				WeapAttach.UpdateHit(Other, HitLocation, HitNormal);
+			}
+		}
+	}
+	else
+	{
+		HitLocation = End;
+		HitNormal = Normal(Start - End);
+	}
+}
+
 simulated event ModeDoFire()
 {
 	local float Rec;
@@ -421,6 +497,7 @@ defaultproperties
 	AmmoPerFire=1
 	BotRefireRate=0.350000
 	FlashEmitterClass=Class'ROEffects.MuzzleFlash1stMP'
+	HitEffectClass=class'BW_Core_KF.BallisticWeaponHitEffects'
 	aimerror=30.000000
 	Spread=0.015000
 	SpreadStyle=SS_Random
