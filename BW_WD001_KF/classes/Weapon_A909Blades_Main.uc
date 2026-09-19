@@ -8,7 +8,7 @@ defaultproperties
 
     WeaponRange=65.000000
     BloodyMaterial=Combiner'KF_Weapons_Trip_T.melee.knife_bloody_cmb'
-    BloodSkinSwitchArray=3
+    BloodSkinSwitchArray=100
     bSpeedMeUp=True
     Weight=0.000000
     bKFNeverThrow=True
@@ -16,7 +16,7 @@ defaultproperties
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_A909Blades_SecondaryFire'
 	MeleeFireClass=Class'BW_WD001_KF.Weapon_A909Blades_MeleeFire'
     SelectSound=Sound'KF_KnifeSnd.Knife_Select'
-    Description="A909 Skrith Blades"
+    Description="The A909 Skrith Blades are a common Skrith melee weapon. They were a terrible bane of the human armies during the first war. The Skrith used them ruthlessly and with great skill to viciously slice up their enemies. Though the blades are useless at range, they are capable of great harm if the user can sneak up on an opponent. All or most Skrith warriors seem to prefer melee battle, and as such hone their skill with close range weapons. The blades can be extremely deadly when close up, as they can jab and slice very fast."
     Priority=45
     SmallViewOffset=(X=0.000000,Y=0.000000,Z=0.000000)
     GroupOffset=1

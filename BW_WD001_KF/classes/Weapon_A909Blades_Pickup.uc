@@ -10,14 +10,14 @@ defaultproperties
 	PowerValue=5
 	SpeedValue=60
 	RangeValue=-20
-	Description="Basic kitchen utensil. Sharp."
+	Description="A909 Skrith Blades"
 	ItemName="A909 Skrith Blades"
 	ItemShortName="A909 Skrith Blades"
 	InventoryType=Class'BW_WD001_KF.Weapon_A909Blades_Main'
 	PickupMessage="You picked up the A909 Skrith Blades"
 	PickupSound=none // can't ever drop this weapon
 	PickupForce="AssaultRiflePickup"
-	StaticMesh=StaticMesh'KF_pickups_Trip.Knife_pickup'
+	StaticMesh=StaticMesh'BWKF_A909_SM.Pickups.A909_MainPickup_SM'
 	CollisionHeight=5.000000
 	CorrespondingPerkIndex=4
 }

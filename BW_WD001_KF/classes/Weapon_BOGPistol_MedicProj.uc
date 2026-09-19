@@ -248,6 +248,23 @@ simulated function Landed( vector HitNormal )
 	Explode(Location,HitNormal);
 }
 
+function AddDamagedHealStats( int MedicReward )
+{
+    local KFSteamStatsAndAchievements KFSteamStats;
+
+	if ( Instigator == none || Instigator.PlayerReplicationInfo == none )
+	{
+		return;
+	}
+
+	KFSteamStats = KFSteamStatsAndAchievements( Instigator.PlayerReplicationInfo.SteamStatsAndAchievements );
+
+	if ( KFSteamStats != none )
+	{
+	 	KFSteamStats.AddDamageHealed(MedicReward);
+	}
+}
+
 defaultproperties
 {
      ProjectileClass=Class'BW_WD001_KF.Weapon_BOGPistol_MedicNade'

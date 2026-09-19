@@ -703,7 +703,7 @@ defaultproperties
 	TweenTime=0.100000
 	FireRate=0.800000
 
-	//HitDamageClass=Class'KFMod.DamTypeMelee'
+	DamageType=Class'KFMod.DamTypeMelee'
 	MeleeHitEffectClass=class'BW_Core_KF.BallisticMeleeWeaponHitEffectsDull'
 	
 	bHasPrep=True

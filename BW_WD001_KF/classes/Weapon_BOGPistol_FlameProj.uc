@@ -259,7 +259,7 @@ defaultproperties
      MaxSpeed=4200.000000
      DamageRadius=0.000000
      MomentumTransfer=0.000000
-     MyDamageType=None
+     MyDamageType=class'DamTypeBurned'
      DrawType=DT_StaticMesh
      bUpdateSimulatedPosition=True
      LifeSpan=10.000000
