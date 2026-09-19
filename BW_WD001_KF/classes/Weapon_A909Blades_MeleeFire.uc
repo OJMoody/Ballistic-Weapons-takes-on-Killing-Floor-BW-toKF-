@@ -7,12 +7,7 @@ class Weapon_A909Blades_MeleeFire extends BallisticMeleeFire;
 
 defaultproperties
 {
-	SwipePoints(0)=(Weight=3,Offset=(Pitch=2048,Yaw=2048))
-	SwipePoints(1)=(Weight=1,Offset=(Pitch=1000,Yaw=1000))
-	SwipePoints(2)=(Weight=2)
-	SwipePoints(3)=(Weight=1,Offset=(Pitch=-1000,Yaw=-1000))
-	SwipePoints(4)=(Weight=3,Offset=(Pitch=-2048,Yaw=-2048))
-
+	HitEffectClass=class'Weapon_A909Blades_HitEffects'
 	WallHitPoint=2
 	NumSwipePoints=5
 
@@ -30,8 +25,8 @@ defaultproperties
 	FlankDamageMult=1.150000
 	BackDamageMult=1.300000
 
-	FireSound=Sound'BWKF_M806_SN.M806.M806MeleeFire'
-	StereoFireSoundRef="BWKF_M806_SN.M806.M806MeleeFire"
+	FireSound=SoundGroup'BWKF_A909_SN.A909.A909Slash'
+	StereoFireSoundRef="BWKF_A909_SN.A909.A909Slash"
 
 	bFireOnRelease=True
 	bWaitForRelease=True

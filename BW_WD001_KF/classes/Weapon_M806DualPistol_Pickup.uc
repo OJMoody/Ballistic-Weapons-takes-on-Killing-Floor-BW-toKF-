@@ -19,12 +19,12 @@ defaultproperties
 	SpeedValue=40
 	RangeValue=40
 	Description="A Pair of M806A2 Pistols"
-	ItemName="M806A2 Pistol"
-	ItemShortName="M806A2 Pistol"
+	ItemName="Dual M806A2 Pistols"
+	ItemShortName="Dual M806A2 Pistols"
 	AmmoItemName=".45 high velocity M806 bullets"
 	AmmoMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'
 	InventoryType=Class'BW_WD001_KF.Weapon_M806DualPistol_Main'
-	PickupMessage="You got the M806A2 Pistol"
+	PickupMessage="You got two M806A2 Pistols"
 	PickupForce="AssaultRiflePickup"
 	StaticMesh=StaticMesh'BWKF_M806_SM.M806_MainPickup_SM'
 	CollisionRadius=35.000000

@@ -24,6 +24,8 @@ var() name LaserToggleAnim;
 
 var bool bNextFireLeft;
 
+var name LaserToggleActiveAnim;
+
 //=============================================================================
 // REPLICATION
 //=============================================================================
@@ -39,6 +41,9 @@ replication
 
 simulated function ZoomIn(bool bAnimateTransition)
 {
+	if (bLaserToggleInProgress)
+		return;
+
 	Log("M806 TRACE: ZoomIn ENTER - bAnimateTransition=" $ bAnimateTransition $ " bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState $ " ZoomTime=" $ ZoomTime $ " PlayerIronSightFOV=" $ PlayerIronSightFOV);
 
 	if (Instigator != none)
@@ -63,6 +68,9 @@ simulated function ZoomOut(bool bAnimateTransition)
 {
 	local float AnimLength;
 	local float AnimSpeed;
+
+	if (bLaserToggleInProgress)
+		return;
 
 	Log("M806 TRACE: ZoomOut ENTER - bAnimateTransition=" $ bAnimateTransition $ " bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState $ " ZoomTime=" $ ZoomTime $ " PlayerIronSightFOV=" $ PlayerIronSightFOV);
 
@@ -450,6 +458,9 @@ simulated function UpdateM806AnimationSet()
 
 simulated function PlayIdle()
 {
+	if (bLaserToggleInProgress)
+		return;
+
 	UpdateM806AnimationSet();
 
 	Super.PlayIdle();
@@ -458,6 +469,9 @@ simulated function PlayIdle()
 
 simulated function ClientReload()
 {
+	if (bLaserToggleInProgress)
+		return;
+
 	UpdateM806AnimationSet();
 
 	Super.ClientReload();
@@ -522,6 +536,7 @@ simulated function StartLaserToggleAnimation()
     UpdateM806AnimationSet();
 
     bLaserToggleInProgress = true;
+    LaserToggleActiveAnim = LaserToggleAnim;
 
     PlayAnim(LaserToggleAnim, 1.000000, 0.000000);
 }
@@ -536,9 +551,19 @@ simulated function MeleeHoldImpl()
 
 simulated function AnimEnd(int Channel)
 {
+    local name AnimName;
+    local float Frame;
+    local float Rate;
+
     if (Channel == 0 && bLaserToggleInProgress)
     {
-        bLaserToggleInProgress = false;
+        GetAnimParams(0, AnimName, Frame, Rate);
+
+        if (AnimName == LaserToggleActiveAnim)
+        {
+            bLaserToggleInProgress = false;
+            LaserToggleActiveAnim = '';
+        }
     }
 
     Super.AnimEnd(Channel);

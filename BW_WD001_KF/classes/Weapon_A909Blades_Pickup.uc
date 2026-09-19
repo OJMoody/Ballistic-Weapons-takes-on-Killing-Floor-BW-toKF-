@@ -1,5 +1,5 @@
 //=============================================================================
-// Knife Pickup.
+// A909 Skrith Blades Pickup.
 //=============================================================================
 class Weapon_A909Blades_Pickup extends BallisticWeaponPickup;
 
@@ -11,10 +11,10 @@ defaultproperties
 	SpeedValue=60
 	RangeValue=-20
 	Description="Basic kitchen utensil. Sharp."
-	ItemName="Knife"
-	ItemShortName="Knife"
+	ItemName="A909 Skrith Blades"
+	ItemShortName="A909 Skrith Blades"
 	InventoryType=Class'BW_WD001_KF.Weapon_A909Blades_Main'
-	PickupMessage="You got the Kitchen Knife."
+	PickupMessage="You picked up the A909 Skrith Blades"
 	PickupSound=none // can't ever drop this weapon
 	PickupForce="AssaultRiflePickup"
 	StaticMesh=StaticMesh'KF_pickups_Trip.Knife_pickup'

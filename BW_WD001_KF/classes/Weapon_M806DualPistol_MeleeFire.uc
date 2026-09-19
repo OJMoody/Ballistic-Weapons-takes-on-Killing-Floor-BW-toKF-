@@ -1,6 +1,5 @@
 class Weapon_M806DualPistol_MeleeFire extends BallisticMeleeFire;
 
-
 //=============================================================================
 // AMMO
 //=============================================================================
@@ -14,6 +13,21 @@ simulated function bool HasAmmo()
 //=============================================================================
 // MELEE ANIMATION
 //=============================================================================
+
+simulated function bool AllowFire()
+{
+	local Weapon_M806DualPistol_Main M806;
+
+	M806 = Weapon_M806DualPistol_Main(Weapon);
+
+	if (M806 != None)
+	{
+		if (M806.bLaserToggleInProgress)
+			return false;
+	}
+
+	return Super.AllowFire();
+}
 
 function UpdateMeleeAnimation()
 {

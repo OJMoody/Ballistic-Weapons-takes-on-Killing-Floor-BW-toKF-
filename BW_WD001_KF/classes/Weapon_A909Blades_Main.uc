@@ -25,14 +25,17 @@ defaultproperties
     AttachmentClass=Class'BW_WD001_KF.Weapon_A909Blades_Attachment'
     IconCoords=(X1=246,Y1=80,X2=332,Y2=106)
     ItemName="Knife"
-    Mesh=SkeletalMesh'BWKF_M909_A.M909_FP_Mesh'
+    Mesh=SkeletalMesh'BWKF_A909_A.A909_FP_Mesh'
 	PlayerViewOffset=(X=30.000000,Z=-15.000000)
     AmbientGlow=0
 
     AIRating=0.2
     CurrentRating=0.2
 
-    //HudImage=texture'KillingFloorHUD.WeaponSelect.knife_unselected'
-    //SelectedHudImage=texture'KillingFloorHUD.WeaponSelect.knife'
-   	//TraderInfoTexture=texture'KillingFloorHUD.Trader_Weapon_Images.Trader_Knife'
+	PulloutSound=(Sound=Sound'BWKF_A909_SN.A909.A909Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    PutAwaySound=(Sound=Sound'BWKF_A909_SN.A909.A909Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+
+    HudImage=texture'BWKF_A909_T.Icon.MedIcon_A909Unselected'
+    SelectedHudImage=texture'BWKF_A909_T.Icon.MedIcon_A909Selected'
+   	TraderInfoTexture=texture'BWKF_A909_T.Icon.MedIcon_A909'
 }

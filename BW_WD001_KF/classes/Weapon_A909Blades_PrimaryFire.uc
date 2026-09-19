@@ -36,11 +36,15 @@ simulated event ModeDoFire()
 
 defaultproperties
 {
-    FireAnims(0)="fire1"
+    FireSound=SoundGroup'BWKF_A909_SN.A909.A909Slash'
+	StereoFireSoundRef="BWKF_A909_SN.A909.A909Slash"
+	
+	FireAnims(0)="fire1"
     FireAnims(1)="fire2"
     FireAnims(2)="fire3"
     FireAnims(3)="fire4"
 
+	AmmoClass=None
 	bHasPrep=False
 	bFireOnRelease=False
 	bWaitForRelease=False
@@ -49,5 +53,5 @@ defaultproperties
     FireRate=0.600000
     BotRefireRate=0.300000
     MeleeHitSounds(0)=Sound'KF_KnifeSnd.Knife_HitFlesh'
-    HitEffectClass=class'KnifeHitEffect'
+    HitEffectClass=class'Weapon_A909Blades_HitEffects'
 }

@@ -13,8 +13,12 @@ simulated function InitEffects()
 
 defaultproperties
 {
-    DamageMin=55.000000
+    FireSound=SoundGroup'BWKF_A909_SN.A909.A909Slash'
+	StereoFireSoundRef="BWKF_A909_SN.A909.A909Slash"
+	
+	DamageMin=55.000000
 	DamageMax=55.000000
+	AmmoClass=None
 	bHasPrep=False
 	bFireOnRelease=False
 	bWaitForRelease=False

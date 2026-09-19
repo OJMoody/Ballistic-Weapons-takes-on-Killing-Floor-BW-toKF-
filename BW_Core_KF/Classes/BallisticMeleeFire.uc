@@ -672,11 +672,11 @@ defaultproperties
 	MeleeHitSounds(0)=Sound'KF_AxeSnd.Axe_HitFlesh'
     MeleeHitVolume=1.000000
 
-    SwipePoints(0)=(Weight=3,Offset=(Yaw=2560),Delay=0.00)
-	SwipePoints(1)=(Weight=5,Offset=(Yaw=1280),Delay=0.20)
-	SwipePoints(2)=(Weight=6,Delay=0.40)
-	SwipePoints(3)=(Weight=4,Offset=(Yaw=-1280),Delay=0.60)
-	SwipePoints(4)=(Weight=2,Offset=(Yaw=-2560),Delay=0.70)
+    SwipePoints(0)=(Weight=3,Offset=(Yaw=1280),Delay=0.00)
+	SwipePoints(1)=(Weight=5,Offset=(Yaw=-1280),Delay=0.00)
+	SwipePoints(2)=(Weight=6,Delay=0.00)
+	SwipePoints(3)=(Weight=4,Offset=(Yaw=-1280),Delay=0.00)
+	SwipePoints(4)=(Weight=2,Offset=(Yaw=-2560),Delay=0.00)
 
 	FireSound=Sound'BWKF_M806_SN.M806.M806MeleeFire'
     StereoFireSoundRef="BWKF_M806_SN.M806.M806MeleeFire"

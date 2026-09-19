@@ -22,6 +22,7 @@ var bool bLaserToggleInProgress;
 
 var() name LaserToggleAnim;
 
+var name LaserToggleActiveAnim;
 
 //=============================================================================
 // REPLICATION
@@ -31,9 +32,6 @@ replication
 {
     reliable if (Role == ROLE_Authority)
         bLaserOn;
-
-    reliable if (Role < ROLE_Authority)
-        ServerStartLaserToggle;
 }
 
 function bool HandlePickupQuery( pickup Item )
@@ -87,6 +85,9 @@ simulated function UpdateM806AnimationSet()
 
 simulated function PlayIdle()
 {
+    if (bLaserToggleInProgress)
+        return;
+
     UpdateM806AnimationSet();
 
     Super.PlayIdle();
@@ -94,6 +95,9 @@ simulated function PlayIdle()
 
 simulated function ClientReload()
 {
+    if (bLaserToggleInProgress)
+        return;
+
     UpdateM806AnimationSet();
 
     Super.ClientReload();
@@ -146,21 +150,6 @@ simulated function RequestLaserToggle()
 // CLIENT ANIMATION
 //=============================================================================
 
-simulated function StartLaserToggleAnimation()
-{
-    if (ClientState == WS_Hidden)
-        return;
-
-    if (bLaserToggleInProgress)
-        return;
-
-    UpdateM806AnimationSet();
-
-    bLaserToggleInProgress = true;
-
-    PlayAnim(LaserToggleAnim, 1.000000, 0.000000);
-}
-
 simulated function MeleeHoldImpl()
 {
     if (bLaserToggleInProgress)
@@ -193,9 +182,13 @@ simulated function AnimEnd(int Channel)
     }
 
     if (Channel == 0 && bLaserToggleInProgress)
-    {
-        bLaserToggleInProgress = false;
-    }
+	{
+		if (AnimName == LaserToggleActiveAnim)
+		{
+			bLaserToggleInProgress = false;
+			LaserToggleActiveAnim = '';
+		}
+	}
 
     Super.AnimEnd(Channel);
 }
@@ -473,6 +466,22 @@ simulated function Vector ConvertFOVs(
 //=============================================================================
 // FIRST PERSON LASER
 //=============================================================================
+
+simulated function StartLaserToggleAnimation()
+{
+    if (ClientState == WS_Hidden)
+        return;
+
+    if (bLaserToggleInProgress)
+        return;
+
+    UpdateM806AnimationSet();
+
+    bLaserToggleInProgress = true;
+    LaserToggleActiveAnim = LaserToggleAnim;
+
+    PlayAnim(LaserToggleAnim, 1.000000, 0.000000);
+}
 
 simulated function DrawLaserSight(Canvas Canvas)
 {

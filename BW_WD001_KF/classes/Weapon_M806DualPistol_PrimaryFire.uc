@@ -3,7 +3,6 @@
 //=============================================================================
 class Weapon_M806DualPistol_PrimaryFire extends BallisticInstantFire;
 
-
 defaultproperties
 {
     DamageType=Class'KFMod.DamTypeDualies'

@@ -1,11 +1,30 @@
 class Weapon_A909Blades_Attachment extends BallisticAttachment ;
 
+var Actor LeftOne;
 
+simulated function PostNetBeginPlay()
+{
+	Super.PostNetBeginPlay();
+
+	if (Instigator != None)
+	{
+		LeftOne = Spawn(class'Weapon_A909Blades_AttachmentLeft');
+		Instigator.AttachToBone(LeftOne,'lefthand');
+	}
+}
+
+simulated function Destroyed()
+{
+	if (LeftOne != None)
+		LeftOne.Destroy();
+
+	super.Destroyed();
+}
 
 defaultproperties
 {
-	Mesh=SkeletalMesh'KF_Weapons3rd_Trip.Knife_3rd'
-
+	Mesh=SkeletalMesh'BWKF_A909_A.A909_TPRight_Mesh'
+	DrawScale=0.150000
 	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Knife
