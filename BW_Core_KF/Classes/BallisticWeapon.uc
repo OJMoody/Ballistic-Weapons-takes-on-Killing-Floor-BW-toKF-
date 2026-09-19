@@ -54,6 +54,9 @@ var() name MeleeFireAnimTP;
 
 var() class<BallisticMeleeFire> MeleeFireClass;
 
+var byte ActiveMeleeFireMode;
+
+
 //=============================================================================
 // SIGHTS
 //=============================================================================
@@ -1110,33 +1113,119 @@ simulated function Notify_ClipIn2()
 
 simulated function Notify_SwipePoint1()
 {
-	if (MeleeFireMode != none)
-		MeleeFireMode.ProcessSwipePoint(0);
+    Log("BW NOTIFY TRACE: Notify_SwipePoint1 State="$MeleeState);
+
+    if (MeleeState != MS_None && MeleeFireMode != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint1 -> MeleeFireMode");
+        MeleeFireMode.ProcessSwipePoint(0);
+    }
+    else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint1 -> FireMode[0]");
+        BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(0);
+    }
+    else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint1 -> FireMode[1]");
+        BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(0);
+    }
+    else
+        Log("BW NOTIFY TRACE: SwipePoint1 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint2()
 {
-	if (MeleeFireMode != none)
-		MeleeFireMode.ProcessSwipePoint(1);
+    Log("BW NOTIFY TRACE: Notify_SwipePoint2 State="$MeleeState);
+
+    if (MeleeState != MS_None && MeleeFireMode != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint2 -> MeleeFireMode");
+        MeleeFireMode.ProcessSwipePoint(1);
+    }
+    else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint2 -> FireMode[0]");
+        BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(1);
+    }
+    else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint2 -> FireMode[1]");
+        BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(1);
+    }
+    else
+        Log("BW NOTIFY TRACE: SwipePoint2 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint3()
 {
-	if (MeleeFireMode != none)
-		MeleeFireMode.ProcessSwipePoint(2);
+    Log("BW NOTIFY TRACE: Notify_SwipePoint3 State="$MeleeState);
+
+    if (MeleeState != MS_None && MeleeFireMode != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint3 -> MeleeFireMode");
+        MeleeFireMode.ProcessSwipePoint(2);
+    }
+    else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint3 -> FireMode[0]");
+        BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(2);
+    }
+    else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint3 -> FireMode[1]");
+        BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(2);
+    }
+    else
+        Log("BW NOTIFY TRACE: SwipePoint3 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint4()
 {
-	if (MeleeFireMode != none)
-		MeleeFireMode.ProcessSwipePoint(3);
+    Log("BW NOTIFY TRACE: Notify_SwipePoint4 State="$MeleeState);
+
+    if (MeleeState != MS_None && MeleeFireMode != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint4 -> MeleeFireMode");
+        MeleeFireMode.ProcessSwipePoint(3);
+    }
+    else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint4 -> FireMode[0]");
+        BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(3);
+    }
+    else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint4 -> FireMode[1]");
+        BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(3);
+    }
+    else
+        Log("BW NOTIFY TRACE: SwipePoint4 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint5()
 {
-	if (MeleeFireMode != none)
-		MeleeFireMode.ProcessSwipePoint(4);
+    Log("BW NOTIFY TRACE: Notify_SwipePoint5 State="$MeleeState);
+
+    if (MeleeState != MS_None && MeleeFireMode != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint5 -> MeleeFireMode");
+        MeleeFireMode.ProcessSwipePoint(4);
+    }
+    else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint5 -> FireMode[0]");
+        BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(4);
+    }
+    else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
+    {
+        Log("BW NOTIFY TRACE: SwipePoint5 -> FireMode[1]");
+        BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(4);
+    }
+    else
+        Log("BW NOTIFY TRACE: SwipePoint5 -> NO VALID MELEE FIRE MODE");
 }
+
 
 //=============================================================================
 // SHOVEL NOTIFIERS
@@ -1727,6 +1816,7 @@ defaultproperties
 	PlayerViewPivot=(Yaw=32768)
 	
 	MeleeFireAnimTP="Attack2_Knife"
+	ActiveMeleeFireMode=255
 	
 	//Dual Weapon Props
 	bDualWeapon=False

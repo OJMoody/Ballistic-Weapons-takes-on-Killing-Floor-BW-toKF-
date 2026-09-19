@@ -17,6 +17,9 @@ var() class<KFMeleeHitEffect> HitEffectClass;
 var bool bMeleeStrikeAnimationPlayed;
 
 var() name MeleeThirdPersonAnim;
+var() name MeleePrepAnim;
+var() name MeleeFireAnim;
+
 
 //=============================================================================
 // SWIPE DATA
@@ -49,6 +52,8 @@ var() Vector TraceExtent;
 //=============================================================================
 // CHARGE
 //=============================================================================
+
+var() bool bHasPrep;
 
 var float HoldStartTime;
 var bool bMeleeHolding;
@@ -391,6 +396,18 @@ function MeleeDoTrace(Vector InitialStart, Rotator Dir, bool bWallHitter, int We
 	Weapon.bTraceWater = false;
 }
 
+//=============================================================================
+// MELEE ANIMATION
+//=============================================================================
+
+function UpdateMeleeAnimation()
+{
+    if (ThisModeNum != 2)
+        return;
+
+    PreFireAnim = MeleePrepAnim;
+    FireAnim = MeleeFireAnim;
+}
 
 //=============================================================================
 // MELEE HOLD ANIMATION
@@ -398,19 +415,31 @@ function MeleeDoTrace(Vector InitialStart, Rotator Dir, bool bWallHitter, int We
 
 simulated function PlayMeleeHold()
 {
-	if (Weapon == none)
-		return;
+    if (Weapon == none)
+        return;
 
-	bMeleeHolding = true;
-	bMeleeStrikeAnimationPlayed = false;
+    UpdateMeleeAnimation();
 
-	if (Weapon.Mesh != none && PreFireAnim != '' && Weapon.HasAnim(PreFireAnim))
-	{
-		Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
-	}
-	
-	if (BallisticWeapon(Weapon) != none)
-		BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleePrepAnimTP);
+    bMeleeHolding = true;
+    bMeleeStrikeAnimationPlayed = false;
+
+    if (Weapon.Mesh != none && PreFireAnim != '' && Weapon.HasAnim(PreFireAnim))
+    {
+        Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
+    }
+    
+    if (BallisticWeapon(Weapon) != none)
+        BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleePrepAnimTP);
+}
+
+function PlayPreFire()
+{
+    UpdateMeleeAnimation();
+
+    if (Weapon.Mesh != none && PreFireAnim != '' && Weapon.HasAnim(PreFireAnim))
+    {
+        Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
+    }
 }
 
 
@@ -506,7 +535,7 @@ simulated event ModeDoFire()
 		Instigator.DeactivateSpawnProtection();
 	}
 
-	//-------------------------------------------------------------------------
+	//------------------------------------------------------------------------
 	// Play the strike animation.
 	//-------------------------------------------------------------------------
 
@@ -520,15 +549,13 @@ simulated event ModeDoFire()
 		ServerPlayFiring();
 	}
 
-	Weapon.IncrementFlashCount(ThisModeNum);
-
 	NextFireTime += FireRate;
 	NextFireTime = FMax(NextFireTime, Level.TimeSeconds);
 
 	Load = AmmoPerFire;
 	HoldTime = 0.0;
 
-	//-------------------------------------------------------------------------
+	//------------------------------------------------------------------------
 	// Return weapon to its normal length.
 	//-------------------------------------------------------------------------
 
@@ -554,6 +581,12 @@ simulated event ModeHoldFire()
 	if (!AllowFire())
 		return;
 
+	if (!bHasPrep)
+	{
+		ModeDoFire();
+		return;
+	}
+
 	if (HoldStartTime == 0.0)
 	{
 		HoldStartTime = Level.TimeSeconds;
@@ -573,21 +606,23 @@ simulated event ModeHoldFire()
 
 function PlayFiring()
 {
-	bMeleeHolding = false;
-	bMeleeStrikeAnimationPlayed = true;
+    UpdateMeleeAnimation();
 
-	if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
-		Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
-		
-	if (BallisticWeapon(Weapon) != none)
-		BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleeFireAnimTP);
+    bMeleeHolding = false;
+    bMeleeStrikeAnimationPlayed = true;
 
-	if (FireSound != none)
-		Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
+    if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
+        Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+        
+    if (BallisticWeapon(Weapon) != none)
+        BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleeFireAnimTP);
 
-	ClientPlayForceFeedback(FireForce);
+    if (FireSound != none)
+        Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
 
-	FireCount++;
+    ClientPlayForceFeedback(FireForce);
+
+    FireCount++;
 }
 
 
@@ -597,12 +632,13 @@ function PlayFiring()
 
 function ServerPlayFiring()
 {
-	if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
-	{
-		Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
-	}
-}
+    UpdateMeleeAnimation();
 
+    if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
+    {
+        Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+    }
+}
 
 //=============================================================================
 // BERSERKER
@@ -670,9 +706,13 @@ defaultproperties
 	//HitDamageClass=Class'KFMod.DamTypeMelee'
 	HitEffectClass=class'KFMeleeHitEffect'
 	
+	bHasPrep=True
 	bFireOnRelease=True
 	bWaitForRelease=True
 	bModeExclusive=True
+
+	MeleePrepAnim="MeleePrep"
+	MeleeFireAnim="MeleeFire"
 
 	AmmoPerFire=0
 }

@@ -1,8 +1,12 @@
-class Weapon_M909Blades_Attachment extends BallisticAttachment ;
+class Weapon_A909Blades_Attachment extends BallisticAttachment ;
+
+
 
 defaultproperties
 {
 	Mesh=SkeletalMesh'KF_Weapons3rd_Trip.Knife_3rd'
+
+	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Knife
     MovementAnims(1)=JogB_Knife

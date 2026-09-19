@@ -48,10 +48,10 @@ function UpdateMeleeAnimation()
 		PreFireAnim = 'MeleePrepOpen';
 		FireAnim = 'MeleeFireOpen';
 	}
-	else
+		else
 	{
-		PreFireAnim = 'MeleePrep';
-		FireAnim = 'MeleeFire';
+		PreFireAnim = MeleePrepAnim;
+		FireAnim = MeleeFireAnim;
 	}
 }
 

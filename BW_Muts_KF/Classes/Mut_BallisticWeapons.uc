@@ -18,6 +18,16 @@ function string GetInventoryClassOverride(string InventoryClassName)
 		return "BW_WD001_KF.Weapon_M806Pistol_Main";
 	}
 
+	if (InventoryClassName ~= "KFMod.Knife")
+	{
+		return "BW_WD001_KF.Weapon_A909Blades_Main";
+	}
+
+	if (InventoryClassName ~= "KFMod.SinglePickup")
+	{
+		return "BW_WD001_KF.Weapon_M806Pistol_Pickup";
+	}
+	
 	return Super.GetInventoryClassOverride(InventoryClassName);
 }
 

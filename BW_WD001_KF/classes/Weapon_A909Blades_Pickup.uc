@@ -1,7 +1,7 @@
 //=============================================================================
 // Knife Pickup.
 //=============================================================================
-class Weapon_M909Blades_Pickup extends BallisticWeaponPickup;
+class Weapon_A909Blades_Pickup extends BallisticWeaponPickup;
 
 defaultproperties
 {
@@ -13,7 +13,7 @@ defaultproperties
 	Description="Basic kitchen utensil. Sharp."
 	ItemName="Knife"
 	ItemShortName="Knife"
-	InventoryType=Class'BW_WD001_KF.Weapon_M909Blades_Main'
+	InventoryType=Class'BW_WD001_KF.Weapon_A909Blades_Main'
 	PickupMessage="You got the Kitchen Knife."
 	PickupSound=none // can't ever drop this weapon
 	PickupForce="AssaultRiflePickup"

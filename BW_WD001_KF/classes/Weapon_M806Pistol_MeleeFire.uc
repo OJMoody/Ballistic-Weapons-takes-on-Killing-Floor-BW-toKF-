@@ -12,25 +12,38 @@ simulated function bool HasAmmo()
 
 
 //=============================================================================
+// MELEE ANIMATION
+//=============================================================================
+
+function UpdateMeleeAnimation()
+{
+	local Weapon_M806Pistol_Main M806;
+
+	M806 = Weapon_M806Pistol_Main(Weapon);
+
+	if (M806 == none)
+		return;
+
+	if (M806.IsChamberOpen())
+	{
+		PreFireAnim = 'MeleePrepOpen';
+		FireAnim = 'MeleeFireOpen';
+	}
+	else
+	{
+		PreFireAnim = MeleePrepAnim;
+		FireAnim = MeleeFireAnim;
+	}
+}
+
+
+//=============================================================================
 // PRE-FIRE
 //=============================================================================
 
 function PlayPreFire()
 {
-	if (Weapon_M806Pistol_Main(Weapon) != none)
-	{
-		if (Weapon_M806Pistol_Main(Weapon).IsChamberOpen())
-		{
-			PreFireAnim = 'MeleePrepOpen';
-			FireAnim = 'MeleeFireOpen';
-		}
-		else
-		{
-			PreFireAnim = 'MeleePrep';
-			FireAnim = 'MeleeFire';
-		}
-	}
-
+	UpdateMeleeAnimation();
 	Super.PlayPreFire();
 }
 
@@ -41,20 +54,7 @@ function PlayPreFire()
 
 function PlayFiring()
 {
-	if (Weapon_M806Pistol_Main(Weapon) != none)
-	{
-		if (Weapon_M806Pistol_Main(Weapon).IsChamberOpen())
-		{
-			PreFireAnim = 'MeleePrepOpen';
-			FireAnim = 'MeleeFireOpen';
-		}
-		else
-		{
-			PreFireAnim = 'MeleePrep';
-			FireAnim = 'MeleeFire';
-		}
-	}
-
+	UpdateMeleeAnimation();
 	Super.PlayFiring();
 }
 
@@ -98,8 +98,9 @@ defaultproperties
 	FireRate=0.450000
 	AmmoPerFire=0
 
-	PreFireAnim="MeleePrep"
-	FireAnim="MeleeFire"
+	MeleePrepAnim="MeleePrep"
+	MeleeFireAnim="MeleeFire"
+
 	FireAnimRate=1.000000
 	TweenTime=0.100000
 }

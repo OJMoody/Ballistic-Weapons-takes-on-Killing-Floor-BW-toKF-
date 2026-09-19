@@ -1,4 +1,4 @@
-class Weapon_M909Blades_MeleeFire extends BallisticMeleeFire;
+class Weapon_A909Blades_MeleeFire extends BallisticMeleeFire;
 
 
 //=============================================================================

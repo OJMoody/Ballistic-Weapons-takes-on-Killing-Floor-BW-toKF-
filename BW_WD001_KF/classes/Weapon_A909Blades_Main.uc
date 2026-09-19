@@ -1,7 +1,7 @@
 //=============================================================================
 // Knife Inventory class
 //=============================================================================
-class Weapon_M909Blades_Main extends BallisticMeleeWeapon;
+class Weapon_A909Blades_Main extends BallisticMeleeWeapon;
 
 defaultproperties
 {
@@ -12,17 +12,17 @@ defaultproperties
     bSpeedMeUp=True
     Weight=0.000000
     bKFNeverThrow=True
-    FireModeClass(0)=Class'BW_WD001_KF.Weapon_M909Blades_PrimaryFire'
-    FireModeClass(1)=Class'BW_WD001_KF.Weapon_M909Blades_SecondaryFire'
-	MeleeFireClass=Class'BW_WD001_KF.Weapon_M909Blades_MeleeFire'
+    FireModeClass(0)=Class'BW_WD001_KF.Weapon_A909Blades_PrimaryFire'
+    FireModeClass(1)=Class'BW_WD001_KF.Weapon_A909Blades_SecondaryFire'
+	MeleeFireClass=Class'BW_WD001_KF.Weapon_A909Blades_MeleeFire'
     SelectSound=Sound'KF_KnifeSnd.Knife_Select'
-    Description="Military Combat Knife"
+    Description="A909 Skrith Blades"
     Priority=45
     SmallViewOffset=(X=0.000000,Y=0.000000,Z=0.000000)
     GroupOffset=1
-    PickupClass=Class'BW_WD001_KF.Weapon_M909Blades_Pickup'
+    PickupClass=Class'BW_WD001_KF.Weapon_A909Blades_Pickup'
     BobDamping=8.000000
-    AttachmentClass=Class'BW_WD001_KF.Weapon_M909Blades_Attachment'
+    AttachmentClass=Class'BW_WD001_KF.Weapon_A909Blades_Attachment'
     IconCoords=(X1=246,Y1=80,X2=332,Y2=106)
     ItemName="Knife"
     Mesh=SkeletalMesh'BWKF_M909_A.M909_FP_Mesh'

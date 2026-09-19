@@ -620,7 +620,7 @@ defaultproperties
     AttachmentClass=Class'BW_WD001_KF.Weapon_M806Pistol_Attachment'
 	
 	WeaponReloadAnim=Reload_Single9mm
-    ItemName="Dual M806A2 Pistols"
+    ItemName="M806A2 Pistol"
     Description=""
 
 	bKFNeverThrow=True
