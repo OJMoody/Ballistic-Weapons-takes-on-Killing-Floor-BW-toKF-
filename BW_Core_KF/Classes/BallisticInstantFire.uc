@@ -329,28 +329,38 @@ simulated event ModeDoFire()
 
 	LastFireTime = Level.TimeSeconds;
 
-	if (Weapon.Owner != None && AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
+	if (BallisticMeleeFire(self) == None)
 	{
-		if (FireRate > 0.25)
+		if (Weapon.Owner != None && AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
 		{
-			Weapon.Owner.Velocity.X *= 0.1;
-			Weapon.Owner.Velocity.Y *= 0.1;
-		}
-		else
-		{
-			Weapon.Owner.Velocity.X *= 0.5;
-			Weapon.Owner.Velocity.Y *= 0.5;
+			if (FireRate > 0.25)
+			{
+				Weapon.Owner.Velocity.X *= 0.1;
+				Weapon.Owner.Velocity.Y *= 0.1;
+			}
+			else
+			{
+				Weapon.Owner.Velocity.X *= 0.5;
+				Weapon.Owner.Velocity.Y *= 0.5;
+			}
 		}
 	}
 
-	Super.ModeDoFire();
+	if (BallisticMeleeFire(self) != None)
+	{
+		bFiringDoesntAffectMovement = true;
+		Super.ModeDoFire();
+		bFiringDoesntAffectMovement = default.bFiringDoesntAffectMovement;
+	}
+	else
+	{
+		Super.ModeDoFire();
+	}
 
 	if (Instigator.IsLocallyControlled())
 	{
 		if (bDoClientRagdollShotFX && Weapon.Level.NetMode == NM_Client)
 			DoClientOnlyFireEffect();
-
-		HandleRecoil(Rec);
 	}
 
 	if (bBurstMode)

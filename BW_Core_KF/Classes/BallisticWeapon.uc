@@ -1319,33 +1319,18 @@ simulated function AttachToPawn(Pawn P)
         P.AttachToBone(AltThirdPersonActor, BoneName);
 }
 
-simulated function PlayAltThirdPersonFire()
-{
-    local BallisticAttachment AltAttachment;
-
-    if (AltThirdPersonActor == None)
-        return;
-
-    AltAttachment = BallisticAttachment(AltThirdPersonActor);
-
-    if (AltAttachment == None)
-        return;
-
-    AltAttachment.PlayThirdPersonFire();
-}
-
 simulated function PlayThirdPersonMeleeAnim(name AnimName)
 {
-	local BallisticAttachment WeapAttach;
+    local BallisticAttachment WeapAttach;
 
-	if (ThirdPersonActor == None)
-		return;
+    if (ThirdPersonActor == None)
+        return;
 
-	WeapAttach = BallisticAttachment(ThirdPersonActor);
-	if (WeapAttach == None)
-		return;
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+    if (WeapAttach == None)
+        return;
 
-	WeapAttach.PlayThirdPersonAnim(AnimName);
+    WeapAttach.PlayThirdPersonAnim(AnimName);
 }
 
 simulated function PlayAltThirdPersonFlash()

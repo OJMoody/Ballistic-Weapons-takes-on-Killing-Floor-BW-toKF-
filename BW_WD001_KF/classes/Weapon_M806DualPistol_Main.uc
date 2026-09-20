@@ -16,7 +16,6 @@ var() BallisticLaserActor_FPStandard Laser;
 var() Emitter LaserDot;
 
 var() bool bLaserBatteryProxy;
-var() bool bLaserBatteryShutdown;
 
 var bool bLaserToggleInProgress;
 
@@ -578,24 +577,6 @@ simulated function Notify_LaserToggle()
     if (Level.NetMode == NM_DedicatedServer)
         return;
 
-    if (bLaserBatteryShutdown)
-    {
-        bLaserOn = false;
-        bLaserBatteryShutdown = false;
-
-        if (FlashLight != None)
-            FlashLight.bHasLight = false;
-
-        if (ThirdPersonActor != None)
-            Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = false;
-
-        ClientSwitchLaser();
-
-        PlaySound(Sound'BWKF_M806_SN.M806.M806LSight',, 0.7,, 32);
-
-        return;
-    }
-
     bLaserOn = !bLaserOn;
 
     EnsureLaserBatteryProxy();
@@ -681,14 +662,19 @@ simulated function CheckLaserBattery()
     if (KFPawn == None)
         return;
 
-    if (KFPawn.TorchBatteryLife <= 0 && !bLaserBatteryShutdown)
+    if (KFPawn.TorchBatteryLife <= 0)
     {
-        bLaserBatteryShutdown = true;
+        bLaserOn = false;
 
         if (FlashLight != None)
             FlashLight.bHasLight = false;
 
-        StartLaserToggleAnimation();
+        if (ThirdPersonActor != None)
+            Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = false;
+
+        ClientSwitchLaser();
+
+        PlaySound(LaserOffSound,, 0.7,, 32);
     }
 }
 

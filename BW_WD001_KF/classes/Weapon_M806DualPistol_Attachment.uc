@@ -48,15 +48,51 @@ function InitFor(Inventory I)
 
 simulated function ThirdPersonEffects()
 {
-    if (myWeap != None && myWeap.WasLastDualFireLeft())
+    local BallisticAttachment AltAttachment;
+
+    if (myWeap != None)
     {
-        myWeap.PlayAltThirdPersonFire();
-        myWeap.PlayAltThirdPersonFlash();
-        return;
+        if (myWeap.WasLastDualFireLeft())
+        {
+            if (FlashCount <= 0)
+                return;
+
+            if (KFPawn(Instigator) != None)
+                KFPawn(Instigator).StartFiringX(true, bRapidFire);
+
+            if (bDoFiringEffects)
+            {
+                if (myWeap.AltThirdPersonActor != None)
+                {
+                    AltAttachment = BallisticAttachment(myWeap.AltThirdPersonActor);
+
+                    if (AltAttachment != None)
+                    {
+                        AltAttachment.WeaponLight();
+                        AltAttachment.DoFlashEmitter();
+
+                        if ((AltAttachment.mShellCaseEmitter == None) && (Level.DetailMode != DM_Low) && !Level.bDropDetail)
+                        {
+                            AltAttachment.mShellCaseEmitter = AltAttachment.Spawn(AltAttachment.mShellCaseEmitterClass);
+
+                            if (AltAttachment.mShellCaseEmitter != None)
+                                AltAttachment.AttachToBone(AltAttachment.mShellCaseEmitter, AltAttachment.ShellEjectBoneName);
+                        }
+
+                        if (AltAttachment.mShellCaseEmitter != None)
+                            AltAttachment.mShellCaseEmitter.mStartParticles++;
+                    }
+                }
+            }
+
+            return;
+        }
+
+        if (bIsOffHand)
+            return;
     }
 
     Super.ThirdPersonEffects();
-    PlayThirdPersonFire();
 }
 
 simulated function SetDualMesh(bool bOffHand)

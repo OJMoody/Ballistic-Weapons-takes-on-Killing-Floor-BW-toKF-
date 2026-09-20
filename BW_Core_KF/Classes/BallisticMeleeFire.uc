@@ -427,19 +427,9 @@ simulated function PlayMeleeHold()
     {
         Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
     }
-    
-    if (BallisticWeapon(Weapon) != none)
+
+    if (BallisticWeapon(Weapon) != none && ThisModeNum == 2)
         BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleePrepAnimTP);
-}
-
-function PlayPreFire()
-{
-    UpdateMeleeAnimation();
-
-    if (Weapon.Mesh != none && PreFireAnim != '' && Weapon.HasAnim(PreFireAnim))
-    {
-        Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
-    }
 }
 
 
@@ -515,60 +505,48 @@ function ApplyMeleeDamage(Actor Victim,Vector HitLocation,Vector TraceStart,Vect
 
 simulated event ModeDoFire()
 {
-	if (!AllowFire())
-		return;
+    if (!AllowFire())
+        return;
 
-	if (MaxHoldTime > 0.0)
-		HoldTime = FMin(HoldTime, MaxHoldTime);
+    if (MaxHoldTime > 0.0)
+        HoldTime = FMin(HoldTime, MaxHoldTime);
 
-	//-------------------------------------------------------------------------
-	// Server performs the actual melee trace and damage.
-	//-------------------------------------------------------------------------
+    if (Weapon.Role == ROLE_Authority)
+    {
+        DoFireEffect();
 
-	if (Weapon.Role == ROLE_Authority)
-	{
-		DoFireEffect();
+        if (Instigator == none || Instigator.Controller == none)
+            return;
 
-		if (Instigator == none || Instigator.Controller == none)
-			return;
+        Instigator.DeactivateSpawnProtection();
+    }
 
-		Instigator.DeactivateSpawnProtection();
-	}
+    Super(BallisticInstantFire).ModeDoFire();
 
-	//------------------------------------------------------------------------
-	// Play the strike animation.
-	//-------------------------------------------------------------------------
+	if (Instigator.IsLocallyControlled() && ThisModeNum == 2)
+		ShakeView();
 
-	if (Instigator.IsLocallyControlled())
-	{
-		if (!bMeleeStrikeAnimationPlayed)
-			PlayFiring();
-	}
-	else
-	{
-		ServerPlayFiring();
-	}
+    if (Instigator.IsLocallyControlled())
+    {
+        if (!bMeleeStrikeAnimationPlayed)
+            PlayFiring();
+    }
+    else
+    {
+        ServerPlayFiring();
+    }
 
-	NextFireTime += FireRate;
-	NextFireTime = FMax(NextFireTime, Level.TimeSeconds);
+    Load = AmmoPerFire;
+    HoldTime = 0.0;
 
-	Load = AmmoPerFire;
-	HoldTime = 0.0;
+    if (BallisticWeapon(Weapon) != none)
+        BallisticWeapon(Weapon).SetDefaultGunLength();
 
-	//------------------------------------------------------------------------
-	// Return weapon to its normal length.
-	//-------------------------------------------------------------------------
-
-	if (BallisticWeapon(Weapon) != none)
-	{
-		BallisticWeapon(Weapon).SetDefaultGunLength();
-	}
-
-	if (Instigator.PendingWeapon != Weapon && Instigator.PendingWeapon != none)
-	{
-		bIsFiring = false;
-		Weapon.PutDown();
-	}
+    if (Instigator.PendingWeapon != Weapon && Instigator.PendingWeapon != none)
+    {
+        bIsFiring = false;
+        Weapon.PutDown();
+    }
 }
 
 
@@ -606,6 +584,8 @@ simulated event ModeHoldFire()
 
 function PlayFiring()
 {
+    local BallisticWeapon BW;
+
     UpdateMeleeAnimation();
 
     bMeleeHolding = false;
@@ -613,9 +593,11 @@ function PlayFiring()
 
     if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
         Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
-        
-    if (BallisticWeapon(Weapon) != none)
-        BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleeFireAnimTP);
+
+    BW = BallisticWeapon(Weapon);
+
+    if (BW != none && ThisModeNum == 2)
+        BW.PlayThirdPersonMeleeAnim(BW.MeleeFireAnimTP);
 
     if (FireSound != none)
         Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
@@ -624,7 +606,6 @@ function PlayFiring()
 
     FireCount++;
 }
-
 
 //=============================================================================
 // SERVER STRIKE ANIMATION
@@ -669,6 +650,16 @@ function StopBerserk()
 
 defaultproperties
 {
+	RecoilRate=0.000000
+	maxVerticalRecoilAngle=0
+	maxHorizontalRecoilAngle=0
+	ShakeOffsetMag=(X=0.0,Y=0.0,Z=0.0)
+	ShakeOffsetRate=(X=0.0,Y=0.0,Z=0.0)
+	ShakeOffsetTime=0.0
+	ShakeRotMag=(X=0.0,Y=0.0,Z=0.0)
+	ShakeRotRate=(X=0.0,Y=0.0,Z=0.0)
+	ShakeRotTime=0.0
+	bFiringDoesntAffectMovement=True
 	MeleeHitSounds(0)=Sound'KF_AxeSnd.Axe_HitFlesh'
     MeleeHitVolume=1.000000
 

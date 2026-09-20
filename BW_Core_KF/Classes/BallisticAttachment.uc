@@ -1,8 +1,34 @@
 class BallisticAttachment extends KFWeaponAttachment;
 
+#exec OBJ LOAD FILE="..\..\Animations\BWKF_Third_A.ukx" PACKAGE=BWKF_Third_A
+
 var() float mMuzFlashScale;
 
 var class<Actor> BallisticHitEffectClass;
+
+var Pawn LinkedAnimPawn;
+
+simulated event PostNetBeginPlay()
+{
+    Super.PostNetBeginPlay();
+
+    if (Instigator != None)
+    {
+        LinkedAnimPawn = Instigator;
+        Instigator.LinkSkelAnim(MeshAnimation'BWKF_Third_A.BWRig_TP_Anims');
+    }
+}
+
+simulated function PostNetReceive()
+{
+    Super.PostNetReceive();
+
+    if (Instigator != None && Instigator != LinkedAnimPawn)
+    {
+        LinkedAnimPawn = Instigator;
+        Instigator.LinkSkelAnim(MeshAnimation'BWKF_Third_A.BWRig_TP_Anims');
+    }
+}
 
 simulated function SetDualMesh(bool bOffHand)
 {
@@ -21,12 +47,6 @@ simulated function DoFlashEmitter()
 
     if (mMuzFlash3rd != None)
         mMuzFlash3rd.SpawnParticle(1);
-}
-
-simulated function PlayThirdPersonFire()
-{
-	if (Mesh != None && HasAnim('Fire'))
-		PlayAnim('Fire', 1.0, 0.0);
 }
 
 simulated function PlayThirdPersonAnim(name AnimName)

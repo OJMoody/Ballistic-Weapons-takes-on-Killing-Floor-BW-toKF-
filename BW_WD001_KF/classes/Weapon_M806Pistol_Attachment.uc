@@ -46,8 +46,6 @@ function InitFor(Inventory I)
 simulated function ThirdPersonEffects()
 {
 	Super.ThirdPersonEffects();
-
-	PlayThirdPersonFire();
 }
 
 //=============================================================================
