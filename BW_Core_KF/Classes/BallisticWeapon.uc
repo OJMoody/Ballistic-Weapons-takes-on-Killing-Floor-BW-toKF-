@@ -49,8 +49,10 @@ var float MeleeFatigue;
 
 var() name MeleeFireAnim;
 var() name MeleePrepAnim;
-var() name MeleePrepAnimTP;
-var() name MeleeFireAnimTP;
+
+var byte MeleeTPAnimState;
+var byte MeleeTPAnimCount;
+var byte LastMeleeTPAnimCount;
 
 var() class<BallisticMeleeFire> MeleeFireClass;
 
@@ -174,7 +176,7 @@ replication
 	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode, ServerClipIn;
 
 	reliable if (Role == ROLE_Authority)
-	ClientSwitchWeaponMode;
+    ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount;
 }
 
 simulated event PostBeginPlay()
@@ -213,6 +215,21 @@ simulated event PostBeginPlay()
 		MeleeFireMode.FireAnim = MeleeFireAnim;
 		MeleeFireMode.PreFireAnim = MeleePrepAnim;
 	}
+}
+
+simulated event PostNetReceive()
+{
+    Super.PostNetReceive();
+
+    if (MeleeTPAnimCount != LastMeleeTPAnimCount)
+    {
+        LastMeleeTPAnimCount = MeleeTPAnimCount;
+
+        if (MeleeTPAnimState == 1)
+            PlayThirdPersonMeleePrep();
+        else if (MeleeTPAnimState == 2)
+            PlayThirdPersonMeleeFire();
+    }
 }
 
 simulated function name GetDualFireAnim(bool bLeft)
@@ -507,9 +524,9 @@ simulated function MeleeHoldImpl()
 	MeleeFireMode.HoldTime = 0.0;
 	MeleeFireMode.HoldStartTime = Level.TimeSeconds;
 	MeleeFireMode.bIsFiring = true;
-
+	
+	PlayThirdPersonMeleePrep();
 	MeleeFireMode.PlayMeleeHold();
-
 	SetMeleeGunLength();
 
 	ServerMeleeHold();
@@ -522,20 +539,26 @@ simulated function MeleeHoldImpl()
 
 function ServerMeleeHold()
 {
-	if (MeleeFireMode == None)
-		return;
+    if (MeleeFireMode == None)
+        return;
 
-	MeleeState = MS_Held;
+    MeleeState = MS_Held;
 
-	MeleeHoldTime = 0.0;
-	MeleeFireMode.HoldTime = 0.0;
-	MeleeFireMode.HoldStartTime = Level.TimeSeconds;
-	MeleeFireMode.Instigator = Instigator;
-	MeleeFireMode.bIsFiring = true;
+    MeleeHoldTime = 0.0;
+    MeleeFireMode.HoldTime = 0.0;
+    MeleeFireMode.HoldStartTime = Level.TimeSeconds;
+    MeleeFireMode.Instigator = Instigator;
+    MeleeFireMode.bIsFiring = true;
 
-	MeleeFireMode.PlayPreFire();
+    MeleeTPAnimState = 1;
+    MeleeTPAnimCount++;
+    NetUpdateTime = Level.TimeSeconds - 1;
 
-	SetMeleeGunLength();
+    if (!Instigator.IsLocallyControlled())
+        PlayThirdPersonMeleePrep();
+
+    MeleeFireMode.PlayPreFire();
+    SetMeleeGunLength();
 }
 
 //-----------------------------------------------------------------------------
@@ -568,7 +591,10 @@ simulated function MeleeReleaseImpl()
 			MeleeState = MS_Strike;
 
 			if (Instigator.IsLocallyControlled())
+			{
+				PlayThirdPersonMeleeFire();
 				MeleeFireMode.PlayFiring();
+			}
 
 			ServerMeleeRelease();
 			SetDefaultGunLength();
@@ -587,18 +613,25 @@ simulated function MeleeReleaseImpl()
 
 final function ServerMeleeRelease()
 {
-	MeleeState = MS_Strike;
+    MeleeState = MS_Strike;
 
-	if (MeleeFireMode == none)
-		return;
+    if (MeleeFireMode == none)
+        return;
 
-	MeleeFireMode.Instigator = Instigator;
+    MeleeFireMode.Instigator = Instigator;
 
-	if (!Instigator.IsLocallyControlled())
-		MeleeFireMode.ServerPlayFiring();
+    MeleeTPAnimState = 2;
+    MeleeTPAnimCount++;
+    NetUpdateTime = Level.TimeSeconds - 1;
 
-	MeleeFireMode.DoFireEffect();
-	SetDefaultGunLength();
+    if (!Instigator.IsLocallyControlled())
+    {
+        PlayThirdPersonMeleeFire();
+        MeleeFireMode.ServerPlayFiring();
+    }
+
+    MeleeFireMode.DoFireEffect();
+    SetDefaultGunLength();
 }
 
 //-----------------------------------------------------------------------------
@@ -624,12 +657,12 @@ simulated function MeleeStrikeFinished()
 	if (MeleeState == MS_StrikePending)
 	{
 		MeleeState = MS_Held;
-
 		MeleeHoldTime = 0.0;
 		MeleeFireMode.HoldTime = 0.0;
 		MeleeFireMode.HoldStartTime = Level.TimeSeconds;
 		MeleeFireMode.bIsFiring = true;
 
+		PlayThirdPersonMeleePrep();
 		MeleeFireMode.PlayMeleeHold();
 
 		SetMeleeGunLength();
@@ -677,6 +710,7 @@ simulated function CheckPendingMelee()
 	MeleeFireMode.HoldTime = 0.0;
 	MeleeFireMode.HoldStartTime = Level.TimeSeconds;
 
+	PlayThirdPersonMeleePrep();
 	MeleeFireMode.PlayMeleeHold();
 
 	SetMeleeGunLength();
@@ -1113,117 +1147,82 @@ simulated function Notify_ClipIn2()
 
 simulated function Notify_SwipePoint1()
 {
-    Log("BW NOTIFY TRACE: Notify_SwipePoint1 State="$MeleeState);
-
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint1 -> MeleeFireMode");
         MeleeFireMode.ProcessSwipePoint(0);
     }
     else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint1 -> FireMode[0]");
         BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(0);
     }
     else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint1 -> FireMode[1]");
         BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(0);
     }
-    else
-        Log("BW NOTIFY TRACE: SwipePoint1 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint2()
 {
-    Log("BW NOTIFY TRACE: Notify_SwipePoint2 State="$MeleeState);
-
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint2 -> MeleeFireMode");
         MeleeFireMode.ProcessSwipePoint(1);
     }
     else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint2 -> FireMode[0]");
         BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(1);
     }
     else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint2 -> FireMode[1]");
         BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(1);
     }
-    else
-        Log("BW NOTIFY TRACE: SwipePoint2 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint3()
 {
-    Log("BW NOTIFY TRACE: Notify_SwipePoint3 State="$MeleeState);
-
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint3 -> MeleeFireMode");
         MeleeFireMode.ProcessSwipePoint(2);
     }
     else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint3 -> FireMode[0]");
         BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(2);
     }
     else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint3 -> FireMode[1]");
         BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(2);
     }
-    else
-        Log("BW NOTIFY TRACE: SwipePoint3 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint4()
 {
-    Log("BW NOTIFY TRACE: Notify_SwipePoint4 State="$MeleeState);
-
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint4 -> MeleeFireMode");
         MeleeFireMode.ProcessSwipePoint(3);
     }
     else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint4 -> FireMode[0]");
         BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(3);
     }
     else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint4 -> FireMode[1]");
         BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(3);
     }
-    else
-        Log("BW NOTIFY TRACE: SwipePoint4 -> NO VALID MELEE FIRE MODE");
 }
 
 simulated function Notify_SwipePoint5()
 {
-    Log("BW NOTIFY TRACE: Notify_SwipePoint5 State="$MeleeState);
-
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint5 -> MeleeFireMode");
         MeleeFireMode.ProcessSwipePoint(4);
     }
     else if (FireMode[0] != none && BallisticMeleeFire(FireMode[0]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint5 -> FireMode[0]");
         BallisticMeleeFire(FireMode[0]).ProcessSwipePoint(4);
     }
     else if (FireMode[1] != none && BallisticMeleeFire(FireMode[1]) != none)
     {
-        Log("BW NOTIFY TRACE: SwipePoint5 -> FireMode[1]");
         BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(4);
     }
-    else
-        Log("BW NOTIFY TRACE: SwipePoint5 -> NO VALID MELEE FIRE MODE");
 }
 
 
@@ -1319,20 +1318,6 @@ simulated function AttachToPawn(Pawn P)
         P.AttachToBone(AltThirdPersonActor, BoneName);
 }
 
-simulated function PlayThirdPersonMeleeAnim(name AnimName)
-{
-    local BallisticAttachment WeapAttach;
-
-    if (ThirdPersonActor == None)
-        return;
-
-    WeapAttach = BallisticAttachment(ThirdPersonActor);
-    if (WeapAttach == None)
-        return;
-
-    WeapAttach.PlayThirdPersonAnim(AnimName);
-}
-
 simulated function PlayAltThirdPersonFlash()
 {
     local BallisticAttachment AltAttachment;
@@ -1346,6 +1331,36 @@ simulated function PlayAltThirdPersonFlash()
         return;
 
     AltAttachment.DoFlashEmitter();
+}
+
+simulated function PlayThirdPersonMeleePrep()
+{
+    local BallisticAttachment WeapAttach;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+
+    if (WeapAttach == None)
+        return;
+
+    WeapAttach.PlayThirdPersonMeleePrep();
+}
+
+simulated function PlayThirdPersonMeleeFire()
+{
+    local BallisticAttachment WeapAttach;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+
+    if (WeapAttach == None)
+        return;
+
+    WeapAttach.PlayThirdPersonMeleeFire();
 }
 
 
@@ -1536,17 +1551,10 @@ simulated function bool StartFire(int Mode)
 {
 	local bool RetVal;
 
-	Log("BW FIRE TRACE: StartFire BEFORE - Mode="$Mode$" bIsReloading="$bIsReloading$" bBallisticReload="$bBallisticReload$" ClientState="$ClientState$" MagAmmoRemaining="$MagAmmoRemaining);
-
 	if (ClientState == WS_BringUp)
-	{
-		Log("BW FIRE TRACE: BLOCKED BY WS_BringUp");
 		return false;
-	}
 
 	RetVal = Super.StartFire(Mode);
-
-	Log("BW FIRE TRACE: Super.StartFire RESULT="$RetVal$" bIsReloading="$bIsReloading$" bBallisticReload="$bBallisticReload$" ClientState="$ClientState$" MagAmmoRemaining="$MagAmmoRemaining);
 
 	if (RetVal)
 	{
@@ -1588,6 +1596,12 @@ simulated function bool PutDown()
 	{
 		LeftSightFX.Destroy();
 		LeftSightFX = none;
+	}
+
+	if (AltThirdPersonActor != none)
+	{
+		AltThirdPersonActor.Destroy();
+		AltThirdPersonActor = none;
 	}
 
 	bResult = Super.PutDown();
@@ -1800,7 +1814,6 @@ defaultproperties
     ZoomedDisplayFOV=40
 	PlayerViewPivot=(Yaw=32768)
 	
-	MeleeFireAnimTP="Attack2_Knife"
 	ActiveMeleeFireMode=255
 	
 	//Dual Weapon Props

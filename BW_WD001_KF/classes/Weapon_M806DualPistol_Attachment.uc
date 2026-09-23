@@ -102,12 +102,10 @@ simulated function SetDualMesh(bool bOffHand)
     if (bIsOffHand)
     {
         LinkMesh(Mesh'BWKF_M806_A.M806Dual_TP_Mesh');
-        Log("M806 TP: LEFT attachment SetDualMesh called");
     }
     else
     {
         LinkMesh(Mesh'BWKF_M806_A.M806_TP_Mesh');
-        Log("M806 TP: RIGHT attachment SetDualMesh called");
     }
 }
 

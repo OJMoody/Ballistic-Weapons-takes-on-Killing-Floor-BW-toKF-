@@ -167,8 +167,6 @@ simulated function AnimEnd(int Channel)
     {
         GetAnimParams(0, AnimName, Frame, Rate);
 
-        Log("M806 SINGLE: AnimEnd - Anim="$AnimName$" Frame="$Frame$" Rate="$Rate$" bIsReloading="$bIsReloading$" bBallisticReload="$bBallisticReload$" MagAmmoRemaining="$MagAmmoRemaining);
-
         if (bIsReloading &&
             (AnimName == ReloadAnim ||
              AnimName == WeaponReloadResumeAnimation))

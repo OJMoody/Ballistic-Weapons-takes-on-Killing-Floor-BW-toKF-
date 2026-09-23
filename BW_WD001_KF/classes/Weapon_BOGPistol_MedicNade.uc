@@ -191,7 +191,6 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
 
             if( KFP == none )
             {
-    			//log(Level.TimeSeconds@"Hurting "$Victims$" for "$(damageScale * DamageAmount)$" damage");
 
     			if( Pawn(Victims) != none && Pawn(Victims).Health > 0 )
     			{
@@ -229,7 +228,6 @@ function HealOrHurt(float DamageAmount, float DamageRadius, class<DamageType> Da
             			}
             		}
 
-                    //log(Level.TimeSeconds@"Healing "$KFP$" for "$HealSum$" base healamount "$HealBoostAmount$" health");
                     KFP.GiveHealth(HealSum, KFP.HealthMax);
 
              		if ( PRI != None )

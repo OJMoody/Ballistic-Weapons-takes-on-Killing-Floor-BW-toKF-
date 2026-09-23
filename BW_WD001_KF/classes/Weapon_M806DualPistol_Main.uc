@@ -43,24 +43,12 @@ simulated function ZoomIn(bool bAnimateTransition)
 	if (bLaserToggleInProgress)
 		return;
 
-	Log("M806 TRACE: ZoomIn ENTER - bAnimateTransition=" $ bAnimateTransition $ " bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState $ " ZoomTime=" $ ZoomTime $ " PlayerIronSightFOV=" $ PlayerIronSightFOV);
-
-	if (Instigator != none)
-		Log("M806 TRACE: ZoomIn Instigator=" $ Instigator $ " Controller=" $ Instigator.Controller);
-
 	Super.ZoomIn(bAnimateTransition);
-
-	Log("M806 TRACE: ZoomIn AFTER SUPER - bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState);
 
 	UpdateM806AnimationSet();
 
 	if (SightIronsAnim != '' && HasAnim(SightIronsAnim))
-	{
-		Log("M806 TRACE: ZoomIn PlayAnim=" $ SightIronsAnim);
 		PlayAnim(SightIronsAnim, 1.0, 0.1);
-	}
-	else
-		Log("M806 TRACE: ZoomIn SightIronsAnim INVALID");
 }
 
 simulated function ZoomOut(bool bAnimateTransition)
@@ -71,14 +59,7 @@ simulated function ZoomOut(bool bAnimateTransition)
 	if (bLaserToggleInProgress)
 		return;
 
-	Log("M806 TRACE: ZoomOut ENTER - bAnimateTransition=" $ bAnimateTransition $ " bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState $ " ZoomTime=" $ ZoomTime $ " PlayerIronSightFOV=" $ PlayerIronSightFOV);
-
-	if (Instigator != none)
-		Log("M806 TRACE: ZoomOut Instigator=" $ Instigator $ " Controller=" $ Instigator.Controller);
-
 	Super.ZoomOut(false);
-
-	Log("M806 TRACE: ZoomOut AFTER SUPER - bAimingRifle=" $ bAimingRifle $ " ClientState=" $ ClientState);
 
 	UpdateM806AnimationSet();
 
@@ -90,12 +71,7 @@ simulated function ZoomOut(bool bAnimateTransition)
 		AnimSpeed = 1.0;
 
 	if (SightHipAnim != '' && HasAnim(SightHipAnim))
-	{
-		Log("M806 TRACE: ZoomOut PlayAnim=" $ SightHipAnim $ " AnimSpeed=" $ AnimSpeed);
 		PlayAnim(SightHipAnim, AnimSpeed, 0.1);
-	}
-	else
-		Log("M806 TRACE: ZoomOut SightHipAnim INVALID");
 }
 
 function DropFrom(vector StartLocation)

@@ -131,8 +131,6 @@ simulated function AddBWTraderWeapon(KFLevelRules KFLRules,class<KFWeaponPickup>
 	if (KFLRules == None || PickupClass == None)
 		return;
 
-	Log("BW TRADER: Adding " $ PickupClass $ " to trader list " $ TraderList);
-
 	switch (TraderList)
 	{
 		case 0:
@@ -157,9 +155,6 @@ simulated function AddBWTraderWeapon(KFLevelRules KFLRules,class<KFWeaponPickup>
 					return;
 
 			KFLRules.ShrpItemForSale[KFLRules.ShrpItemForSale.Length] = PickupClass;
-
-			Log("BW TRADER: Added " $ PickupClass $ " to ShrpItemForSale");
-			Log("BW TRADER: ShrpItemForSale Length = " $ KFLRules.ShrpItemForSale.Length);
 			break;
 
 		case 3:

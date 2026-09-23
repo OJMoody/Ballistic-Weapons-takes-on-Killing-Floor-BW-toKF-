@@ -427,9 +427,6 @@ simulated function PlayMeleeHold()
     {
         Weapon.PlayAnim(PreFireAnim, 1.0, 0.0);
     }
-
-    if (BallisticWeapon(Weapon) != none && ThisModeNum == 2)
-        BallisticWeapon(Weapon).PlayThirdPersonMeleeAnim(BallisticWeapon(Weapon).MeleePrepAnimTP);
 }
 
 
@@ -584,8 +581,6 @@ simulated event ModeHoldFire()
 
 function PlayFiring()
 {
-    local BallisticWeapon BW;
-
     UpdateMeleeAnimation();
 
     bMeleeHolding = false;
@@ -593,11 +588,6 @@ function PlayFiring()
 
     if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
         Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
-
-    BW = BallisticWeapon(Weapon);
-
-    if (BW != none && ThisModeNum == 2)
-        BW.PlayThirdPersonMeleeAnim(BW.MeleeFireAnimTP);
 
     if (FireSound != none)
         Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
