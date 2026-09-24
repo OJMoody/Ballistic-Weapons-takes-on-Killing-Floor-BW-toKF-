@@ -114,70 +114,160 @@ function PlayFiring()
 
 	BW = BallisticWeapon(Weapon);
 
+	Log("=== BIF TRACE: PlayFiring START ===");
+	Log("BIF TRACE: FireCount=" $ FireCount $
+		" bAimingRifle=" $ KFWeap.bAimingRifle $
+		" bDualWeapon=" $ (BW != None && BW.bDualWeapon) $
+		" bDualFireLeft=" $ bDualFireLeft $
+		" bLastDualFireLeft=" $ bLastDualFireLeft);
+
 	if (BW != None && BW.bDualWeapon)
 	{
 		bLastDualFireLeft = bDualFireLeft;
 		DualFireAnim = BW.GetDualFireAnim(bDualFireLeft);
+
+		Log("BIF TRACE: Dual weapon");
+		Log("BIF TRACE: bLastDualFireLeft=" $ bLastDualFireLeft);
+		Log("BIF TRACE: DualFireAnim=" $ DualFireAnim);
+		Log("BIF TRACE: DualSightFireAnim=" $ BW.GetDualSightFireAnim(bLastDualFireLeft));
 	}
 	else
 	{
 		DualFireAnim = FireAnim;
+
+		Log("BIF TRACE: Standard weapon");
+		Log("BIF TRACE: FireAnim=" $ FireAnim);
 	}
+
+	Log("BIF TRACE: FireLoopAnim=" $ FireLoopAnim $
+		" HasAnim=" $ Weapon.HasAnim(FireLoopAnim));
+
+	Log("BIF TRACE: FireLoopAimedAnim=" $ FireLoopAimedAnim $
+		" HasAnim=" $ Weapon.HasAnim(FireLoopAimedAnim));
+
+	Log("BIF TRACE: FireAimedAnim=" $ FireAimedAnim $
+		" HasAnim=" $ Weapon.HasAnim(FireAimedAnim));
+
+	Log("BIF TRACE: FireAnimRate=" $ FireAnimRate $
+		" FireLoopAnimRate=" $ FireLoopAnimRate $
+		" TweenTime=" $ TweenTime);
 
 	if (Weapon.Mesh != None)
 	{
 		if (FireCount > 0)
 		{
+			Log("BIF TRACE: FIRECOUNT > 0");
+
 			if (KFWeap.bAimingRifle)
 			{
+				Log("BIF TRACE: Aimed fire path");
+
 				if (BW != None && BW.bDualWeapon)
 				{
+					Log("BIF TRACE: PLAY DualSightFireAnim=" $ BW.GetDualSightFireAnim(bLastDualFireLeft));
 					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 				}
 				else if (Weapon.HasAnim(FireLoopAimedAnim))
 				{
+					Log("BIF TRACE: PLAY FireLoopAimedAnim=" $ FireLoopAimedAnim $
+						" Rate=" $ FireLoopAnimRate $
+						" Tween=" $ 0.0);
 					Weapon.PlayAnim(FireLoopAimedAnim, FireLoopAnimRate, 0.0);
 				}
 				else if (Weapon.HasAnim(FireAimedAnim))
 				{
+					Log("BIF TRACE: PLAY FireAimedAnim=" $ FireAimedAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
 				}
 				else
 				{
+					Log("BIF TRACE: PLAY FALLBACK FireAnim=" $ FireAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
 				}
 			}
 			else
 			{
+				Log("BIF TRACE: Hip fire path");
+
 				if (BW != None && BW.bDualWeapon)
+				{
+					Log("BIF TRACE: PLAY DualFireAnim=" $ DualFireAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+				}
 				else if (Weapon.HasAnim(FireLoopAnim))
+				{
+					Log("BIF TRACE: PLAY FireLoopAnim=" $ FireLoopAnim $
+						" Rate=" $ FireLoopAnimRate $
+						" Tween=" $ 0.0);
 					Weapon.PlayAnim(FireLoopAnim, FireLoopAnimRate, 0.0);
+				}
 				else
+				{
+					Log("BIF TRACE: PLAY FireAnim=" $ FireAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+				}
 			}
 		}
 		else
 		{
+			Log("BIF TRACE: FIRST SHOT / FireCount == 0");
+
 			if (KFWeap.bAimingRifle)
 			{
+				Log("BIF TRACE: First-shot aimed fire path");
+
 				if (BW != None && BW.bDualWeapon)
 				{
+					Log("BIF TRACE: PLAY DualSightFireAnim=" $ BW.GetDualSightFireAnim(bLastDualFireLeft));
 					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 				}
 				else if (Weapon.HasAnim(FireAimedAnim))
+				{
+					Log("BIF TRACE: PLAY FireAimedAnim=" $ FireAimedAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
+				}
 				else
+				{
+					Log("BIF TRACE: PLAY FALLBACK FireAnim=" $ FireAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+				}
 			}
 			else
 			{
+				Log("BIF TRACE: First-shot hip fire path");
+
 				if (BW != None && BW.bDualWeapon)
+				{
+					Log("BIF TRACE: PLAY DualFireAnim=" $ DualFireAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+				}
 				else
+				{
+					Log("BIF TRACE: PLAY FireAnim=" $ FireAnim $
+						" Rate=" $ FireAnimRate $
+						" Tween=" $ TweenTime);
 					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+				}
 			}
 		}
+	}
+	else
+	{
+		Log("BIF TRACE: Weapon.Mesh == None - NO ANIMATION PLAYED");
 	}
 
 	if (Weapon.Instigator != None && Weapon.Instigator.IsLocallyControlled() && Weapon.Instigator.IsFirstPerson() && StereoFireSound != None)
@@ -211,8 +301,15 @@ function PlayFiring()
 
 	FireCount++;
 
+	Log("BIF TRACE: FireCount AFTER increment=" $ FireCount);
+
 	if (BW != None && BW.bDualWeapon)
+	{
 		bDualFireLeft = !bDualFireLeft;
+		Log("BIF TRACE: bDualFireLeft AFTER toggle=" $ bDualFireLeft);
+	}
+
+	Log("=== BIF TRACE: PlayFiring END ===");
 }
 
 

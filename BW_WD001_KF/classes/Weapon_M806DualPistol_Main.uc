@@ -291,9 +291,9 @@ simulated function UpdateM806AnimationSet()
 	}
 
 
-	//=============================================================================
+	//=========================================================================
 	// SIGHT HIP
-	//=============================================================================
+	//=========================================================================
 
 	if (MagAmmoRemaining <= 0)
 		SightHipAnim = 'SightHipOpen';
@@ -303,9 +303,9 @@ simulated function UpdateM806AnimationSet()
 		SightHipAnim = 'SightHip';
 
 
-	//=============================================================================
+	//=========================================================================
 	// SIGHT IDLE
-	//=============================================================================
+	//=========================================================================
 
 	if (MagAmmoRemaining <= 0)
 		IdleAimAnim = 'SightIdleOpen';
@@ -315,9 +315,9 @@ simulated function UpdateM806AnimationSet()
 		IdleAimAnim = 'SightIdle';
 
 
-	//=============================================================================
+	//=========================================================================
 	// SIGHT IRONS
-	//=============================================================================
+	//=========================================================================
 
 	if (MagAmmoRemaining <= 0)
 		SightIronsAnim = 'SightIronsOpen';
@@ -373,8 +373,8 @@ simulated function UpdateM806AnimationSet()
 		else
 			LaserToggleAnim = 'LightOnOff';
 	}
-		
-		
+
+
 	//=========================================================================
 	// MELEE FIRE
 	//=========================================================================
@@ -429,6 +429,13 @@ simulated function UpdateM806AnimationSet()
 		WeaponReloadResumeAnimation = 'ReloadResumeOpen';
 		WeaponReloadResumeAnimation2 = 'ReloadResumeOpenLeft';
 	}
+
+	Log("M806 TRACE ANIMSET: Mag=" $ MagAmmoRemaining $
+		" Reload=" $ ReloadAnim $
+		" Resume1=" $ WeaponReloadResumeAnimation $
+		" Resume2=" $ WeaponReloadResumeAnimation2 $
+		" FireL=" $ FireAnimLeft $
+		" FireR=" $ FireAnimRight);
 }
 
 

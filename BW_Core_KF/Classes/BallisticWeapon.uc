@@ -785,6 +785,9 @@ exec function ReloadAlt()
 	if (IsActionLocked())
 		return;
 
+	if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
+		return;
+
 	if (!AllowAltReload())
 		return;
 
