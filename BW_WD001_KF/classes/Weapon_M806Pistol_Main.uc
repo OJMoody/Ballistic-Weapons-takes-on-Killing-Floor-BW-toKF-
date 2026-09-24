@@ -166,16 +166,6 @@ simulated function AnimEnd(int Channel)
     if (Channel == 0)
     {
         GetAnimParams(0, AnimName, Frame, Rate);
-
-        if (bIsReloading &&
-            (AnimName == ReloadAnim ||
-             AnimName == WeaponReloadResumeAnimation))
-        {
-            bIsReloading = false;
-            bReloadEffectDone = false;
-            bReloadResumePending = false;
-            BallisticReloadStage = 0;
-        }
     }
 
     if (Channel == 0 && bLaserToggleInProgress)

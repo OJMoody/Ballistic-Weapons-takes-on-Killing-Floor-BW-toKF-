@@ -192,6 +192,7 @@ simulated function bool IsChamberOpen()
 
 simulated function name GetDualFireAnim(bool bLeft)
 {
+	Log("M806 TRACE GET FIRE ANIM: Left=" $ bLeft $ " Mag=" $ MagAmmoRemaining);
 	if (MagAmmoRemaining <= 0)
 		return 'FireLeftOpen';
 

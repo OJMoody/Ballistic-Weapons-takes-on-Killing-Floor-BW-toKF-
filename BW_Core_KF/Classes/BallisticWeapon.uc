@@ -85,12 +85,17 @@ var bool bPuttingDown;
 var bool bReloadCancelRequested;
 var bool bReloadResumePending;
 var bool bBallisticClipOut;
+var bool bBallisticAltReload;
+var bool bAltReloadResumePending;
 
 var bool bReloadResumePlaying;
+
+var bool bBallisticReloadClipIn;
 
 var byte BallisticReloadStage;
 
 var int CurrentShovelLoadAmount;
+var int AltAmmoLoaded;
 
 //=============================================================================
 // Dual Weapons
@@ -114,6 +119,9 @@ var() name WeaponReloadFinishAnimation;
 var() name WeaponReloadResumeAnimation;
 var() name WeaponReloadResumeAnimation2;
 
+var() name WeaponReloadAltAnimation;
+var() name WeaponReloadAltResumeAnimation;
+
 
 //=============================================================================
 // RELOAD NOTIFIER SOUNDS
@@ -135,6 +143,9 @@ var() BUtil.FullSound ClipHitSound;
 var() BUtil.FullSound SlideInSound;
 var() BUtil.FullSound SlideOutSound;
 var() BUtil.FullSound CockSound;
+
+var() BUtil.FullSound ClipOutAltSound;
+var() BUtil.FullSound ClipInAltSound;
 
 var() BUtil.FullSound ShovelStartSound;
 var() BUtil.FullSound ShovelLoopSound;
@@ -176,7 +187,7 @@ replication
 	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode, ServerClipIn;
 
 	reliable if (Role == ROLE_Authority)
-    ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount;
+	ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
 }
 
 simulated event PostBeginPlay()
@@ -250,10 +261,11 @@ simulated function name GetDualSightFireAnim(bool bLeft)
 
 simulated function ZoomIn(bool bAnimateTransition)
 {
-    if (bReloadResumePlaying)
+    if (bReloadResumePlaying || bBallisticAltReload)
     {
         return;
     }
+
     Super.ZoomIn(bAnimateTransition);
 }
 
@@ -645,8 +657,9 @@ simulated final function bool IsHoldingMelee()
 
 simulated function bool IsActionLocked()
 {
-	return false;
+	return bBallisticAltReload;
 }
+
 
 //=============================================================================
 // MELEE STRIKE COMPLETE
@@ -731,19 +744,68 @@ exec function ReloadMeNow()
 	if (IsActionLocked())
 		return;
 
-	if (!AllowReload())
+	if (AllowReload())
+	{
+		bReloadCancelRequested = false;
+		bReloadResumePending = false;
+		bBallisticClipOut = false;
+		BallisticReloadStage = 0;
+		bBallisticReload = true;
+
+		Super.ReloadMeNow();
+
+		if (bShovelLoad)
+			BeginBallisticShovelReload();
+
+		return;
+	}
+
+	if (AllowAltReload())
+	{
+		bReloadCancelRequested = false;
+		bReloadResumePending = false;
+		bBallisticClipOut = false;
+		bBallisticAltReload = true;
+		BallisticReloadStage = 0;
+
+		PlayAltReloadAnimation();
+	}
+}
+
+simulated function bool AllowAltReload()
+{
+	return AltAmmoLoaded <= 0 && AmmoAmount(1) > 0;
+}
+
+exec function ReloadAlt()
+{
+	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+		return;
+
+	if (IsActionLocked())
+		return;
+
+	if (!AllowAltReload())
 		return;
 
 	bReloadCancelRequested = false;
 	bReloadResumePending = false;
 	bBallisticClipOut = false;
+	bBallisticAltReload = true;
 	BallisticReloadStage = 0;
-	bBallisticReload = true;
 
-	Super.ReloadMeNow();
+	PlayAltReloadAnimation();
+}
 
-	if (bShovelLoad)
-		BeginBallisticShovelReload();
+simulated function PlayAltReloadAnimation()
+{
+	if (bAimingRifle)
+		PerformZoom(false);
+
+	if (WeaponReloadAltAnimation != '' && HasAnim(WeaponReloadAltAnimation))
+		PlayAnim(WeaponReloadAltAnimation, ReloadAnimRate, 0.0);
+	else
+		PlayIdle();
 }
 
 simulated function WeaponTick(float dt)
@@ -820,6 +882,9 @@ simulated function WeaponTick(float dt)
 		if (bBallisticReload)
 			return;
 
+		if (bBallisticReloadClipIn)
+			return;
+
 		if ((Level.TimeSeconds - ReloadTimer) >= ReloadRate)
 		{
 			if (AmmoAmount(0) <= MagCapacity && !bHoldToReload)
@@ -888,10 +953,40 @@ function int GetShovelLoadAmount()
 
 simulated function bool InterruptReload()
 {
-	if (!bIsReloading && BallisticReloadStage == 0)
+	if (bBallisticAltReload && !bPuttingDown)
+		return false;
+
+	if (!bIsReloading && !bBallisticAltReload && BallisticReloadStage == 0)
 		return false;
 
 	bReloadCancelRequested = true;
+
+	if (bBallisticAltReload)
+	{
+		bReloadCancelRequested = true;
+		bBallisticReloadClipIn = false;
+		bIsReloading = false;
+
+		if (BallisticReloadStage == 0)
+		{
+			bReloadResumePending = true;
+			bAltReloadResumePending = true;
+			bReloadCancelRequested = false;
+
+			if (!bPuttingDown)
+				PlayAltReloadResumeAnimation();
+
+			return true;
+		}
+
+		bReloadResumePending = true;
+		bReloadCancelRequested = false;
+
+		if (!bPuttingDown)
+			PlayAltReloadResumeAnimation();
+
+		return true;
+	}
 
 	if (bShovelLoad && bIsReloading)
 		return true;
@@ -962,6 +1057,17 @@ simulated function PlayReloadResumeAnimation2()
     }
     else
         PlayIdle();
+}
+
+simulated function PlayAltReloadResumeAnimation()
+{
+	if (WeaponReloadAltResumeAnimation != '' && HasAnim(WeaponReloadAltResumeAnimation))
+	{
+		bReloadResumePlaying = true;
+		PlayAnim(WeaponReloadAltResumeAnimation, 1.0, 0.0);
+	}
+	else
+		PlayIdle();
 }
 
 function ServerClipIn()
@@ -1047,6 +1153,7 @@ simulated function Notify_ClipIn()
 {
 	bBallisticClipOut = false;
 	bReloadResumePending = false;
+	bBallisticReloadClipIn = true;
 	bBallisticReload = false;
 
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
@@ -1060,6 +1167,34 @@ simulated function Notify_ClipIn()
 
 	if (Role < ROLE_Authority)
 		ServerClipIn();
+
+	BallisticReloadStage = 0;
+}
+
+simulated function Notify_ClipOutAlt()
+{
+	bBallisticClipOut = true;
+
+	if (!bDualWeapon)
+		BallisticReloadStage = 1;
+
+	class'BUtil'.static.PlayFullSound(self, ClipOutAltSound, true);
+}
+
+simulated function Notify_ClipInAlt()
+{
+	bBallisticClipOut = false;
+	bReloadResumePending = false;
+	bAltReloadResumePending = false;
+	bBallisticReload = false;
+
+	if (Role == ROLE_Authority && AltAmmoLoaded <= 0 && AmmoAmount(1) > 0)
+	{
+		ConsumeAmmo(1, 1);
+		AltAmmoLoaded = 1;
+	}
+
+	class'BUtil'.static.PlayFullSound(self, ClipInAltSound, true);
 
 	BallisticReloadStage = 0;
 }
@@ -1381,7 +1516,7 @@ simulated exec function IronSightZoomIn()
             return;
         }
 
-		if( bIsReloading || bReloadResumePlaying || IsHoldingMelee() || !CanZoomNow() )
+		if( bIsReloading || bReloadResumePlaying || bBallisticAltReload || IsHoldingMelee() || !CanZoomNow() )
 			return;
 
 		PerformZoom(True);
@@ -1399,9 +1534,12 @@ simulated exec function ToggleIronSights()
             return;
 
         if( bAimingRifle )
-        {
-            PerformZoom(false);
-        }
+		{
+			if (bBallisticAltReload)
+				return;
+
+			PerformZoom(false);
+		}
         else
         {
             if( Owner != none && Owner.Physics == PHYS_Falling &&
@@ -1413,8 +1551,8 @@ simulated exec function ToggleIronSights()
             if (IsHoldingMelee())
                 return;
 
-            if( bIsReloading || !CanZoomNow() )
-                return;
+            if( bIsReloading || bBallisticAltReload || !CanZoomNow() )
+				return;
 
             PerformZoom(True);
         }
@@ -1455,7 +1593,14 @@ simulated function BringUp(optional Weapon PrevWeapon)
 		{
 			if ((Mesh != none) && bResumeReload && ClientGrenadeState != GN_BringUp && KFPawn(Instigator).bIsQuickHealing <= 0)
 			{
-				if (BallisticReloadStage == 2 && WeaponReloadResumeAnimation2 != '' && HasAnim(WeaponReloadResumeAnimation2))
+				if (bAltReloadResumePending && WeaponReloadAltResumeAnimation != '' && HasAnim(WeaponReloadAltResumeAnimation))
+				{
+					bReloadResumePlaying = true;
+					PlayAnim(WeaponReloadAltResumeAnimation, 1.0, 0.0);
+					bPlayingBringUpAnim = true;
+					bAltReloadResumePending = false;
+				}
+				else if (BallisticReloadStage == 2 && WeaponReloadResumeAnimation2 != '' && HasAnim(WeaponReloadResumeAnimation2))
 				{
 					bReloadResumePlaying = true;
 					PlayAnim(WeaponReloadResumeAnimation2, 1.0, 0.0);
@@ -1554,6 +1699,9 @@ simulated function bool StartFire(int Mode)
 	if (ClientState == WS_BringUp)
 		return false;
 
+	if (bBallisticAltReload)
+		return false;
+
 	RetVal = Super.StartFire(Mode);
 
 	if (RetVal)
@@ -1575,6 +1723,14 @@ simulated function bool PutDown()
 	local bool bResult;
 
 	bPuttingDown = true;
+
+	if (bBallisticAltReload)
+	{
+		bReloadResumePending = true;
+		bAltReloadResumePending = true;
+	}
+
+	bBallisticAltReload = false;
 
 	if (MeleeFireMode != none)
 	{
@@ -1694,12 +1850,33 @@ simulated function AnimEnd(int Channel)
 	if (Channel == 0)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
+		
+		if (bBallisticAltReload && AnimName == WeaponReloadAltAnimation)
+		{
+			bBallisticAltReload = false;
+			bBallisticReloadClipIn = false;
+			BallisticReloadStage = 0;
+		}
 
 		if (bReloadResumePlaying &&
 			(AnimName == WeaponReloadResumeAnimation ||
-				AnimName == WeaponReloadResumeAnimation2))
+				AnimName == WeaponReloadResumeAnimation2 ||
+				AnimName == WeaponReloadAltResumeAnimation))
 		{
 			bReloadResumePlaying = false;
+		}
+
+		if (bIsReloading &&
+			(AnimName == ReloadAnim ||
+				AnimName == WeaponReloadResumeAnimation ||
+				AnimName == WeaponReloadResumeAnimation2 ||
+				AnimName == WeaponReloadAltResumeAnimation))
+		{
+			bIsReloading = false;
+			bReloadEffectDone = false;
+			bReloadResumePending = false;
+			bBallisticReloadClipIn = false;
+			BallisticReloadStage = 0;
 		}
 
 		if (bIsReloading)
@@ -1712,9 +1889,10 @@ simulated function AnimEnd(int Channel)
 			return;
 
 		if (ClientState == WS_BringUp &&
-			(AnimName == SelectAnim ||
-				AnimName == WeaponReloadResumeAnimation ||
-				AnimName == WeaponReloadResumeAnimation2))
+	(AnimName == SelectAnim ||
+		AnimName == WeaponReloadResumeAnimation ||
+		AnimName == WeaponReloadResumeAnimation2 ||
+		AnimName == WeaponReloadAltResumeAnimation))
 		{
 			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
 				FireMode[Mode].InitEffects();
@@ -1732,6 +1910,7 @@ simulated function AnimEnd(int Channel)
 	Super.AnimEnd(Channel);
 	CheckPendingMelee();
 }
+
 
 //=============================================================================
 // CLEANUP
@@ -1775,11 +1954,14 @@ defaultproperties
 	ClipHitSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     ClipOutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     ClipInSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)
-	CockSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+	CockSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)
 	SlideInSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	SlideOutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	PulloutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+	
+	ClipOutAltSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+	ClipInAltSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	
 	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
     WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000)
@@ -1790,13 +1972,15 @@ defaultproperties
     BUseBWHands=False
     BWSleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
 	InvisibleSleeveTexture=Texture'BWKF_Core_T.Misc.Invisible'
-
+	
 	IdleAimAnim=SightIdle
 	ReloadRate=2.0
 	ReloadAnim="Reload"
 	ReloadAnimRate=1.000000
 	WeaponReloadResumeAnimation="ReloadResume"
 	WeaponReloadResumeAnimation2="ReloadResumeLeft"
+	WeaponReloadAltAnimation="ReloadAlt"
+	WeaponReloadAltResumeAnimation="ReloadAltResume"
 	SelectAnim="Pullout"
     SelectAnimRate=1.0
 	PutDownAnim="Putaway"
