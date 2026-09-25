@@ -25,7 +25,7 @@ defaultproperties
     AmmoClass=Class'BW_WD001_KF.Weapon_M806Pistol_Ammo'
     AmmoPerFire=1
     BotRefireRate=0.350000
-    FlashEmitterClass=Class'BW_WD001_KF.Weapon_M806Pistol_FlashEmitter'
+    FlashEmitterClass=Class'BW_WD001_KF.Weapon_Wilson41_FlashEmitter'
     aimerror=30.000000
     Spread=0.015000
     SpreadStyle=SS_Random

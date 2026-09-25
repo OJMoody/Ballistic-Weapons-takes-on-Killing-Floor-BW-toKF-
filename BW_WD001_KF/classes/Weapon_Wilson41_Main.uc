@@ -1,5 +1,10 @@
 class Weapon_Wilson41_Main extends BallisticWeapon;
 
+simulated function int GetAltAmmoChamber()
+{
+    return AltAmmoLoaded;
+}
+
 //=============================================================================
 // DEFAULT PROPERTIES
 //=============================================================================
@@ -41,10 +46,12 @@ defaultproperties
     ZoomTime=0.25
     FastZoomOutTime=0.2
     bHasAimingMode=True
-
+	bShowAltAmmoChamber=True
+	
 	//HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Unselected'
     //SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Selected'
 	//TraderInfoTexture=Texture'BWKF_M806_T.Icons.MedIcon_M806'
+	AltAmmoIcon=Texture'BWKF_Wilson_T.Icons.Hud_ShotgunShell'
 
     ClipOutSound=(Sound=Sound'BWKF_Wilson_SN.Wilson.LM-BulletsOut')
     ClipInSound=(Sound=Sound'BWKF_Wilson_SN.Wilson.LM-BulletsIn')

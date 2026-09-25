@@ -28,6 +28,12 @@ var() bool BUseBWHands;
 var() Material BWSleeveTexture;
 var() Material InvisibleSleeveTexture;
 
+var() bool bShowAltAmmoChamber;
+
+var() Texture AmmoIcon;
+var() Texture ReserveAmmoIcon;
+var() Texture AltAmmoIcon;
+
 //=============================================================================
 // MELEE
 //=============================================================================
@@ -103,6 +109,8 @@ var int AltAmmoLoaded;
 
 var() name FlashBoneLeft;
 var() name FlashBoneRight;
+var() name AltFlashBoneRight;
+var() name AltFlashBoneLeft;
 var() name FireAnimLeft;
 var() name FireAnimRight;
 var() name SightFireAnimLeft;
@@ -318,6 +326,10 @@ exec simulated function SwitchWeaponMode(optional byte ModeNum)
 		ServerSwitchWeaponMode(ModeNum - 1);
 }
 
+simulated function int GetAltAmmoChamber()
+{
+    return 0;
+}
 
 //-----------------------------------------------------------------------------
 // SERVER SWITCH WEAPON MODE
@@ -743,6 +755,9 @@ exec function ReloadMeNow()
 
 	if (IsActionLocked())
 		return;
+		
+	if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn)
+		return;
 
 	if (AllowReload())
 	{
@@ -958,7 +973,7 @@ simulated function bool InterruptReload()
 {
 	if (bBallisticAltReload && !bPuttingDown)
 		return false;
-
+		
 	if (!bIsReloading && !bBallisticAltReload && BallisticReloadStage == 0)
 		return false;
 
@@ -1705,6 +1720,9 @@ simulated function bool StartFire(int Mode)
 	if (bBallisticAltReload)
 		return false;
 
+	if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
+		return false;
+
 	RetVal = Super.StartFire(Mode);
 
 	if (RetVal)
@@ -1715,7 +1733,6 @@ simulated function bool StartFire(int Mode)
 			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnAltFireTime;
 
 		NumClicks = 0;
-		InterruptReload();
 	}
 
 	return RetVal;
@@ -1853,7 +1870,7 @@ simulated function AnimEnd(int Channel)
 	if (Channel == 0)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
-		
+
 		if (bBallisticAltReload && AnimName == WeaponReloadAltAnimation)
 		{
 			bBallisticAltReload = false;
@@ -1892,10 +1909,10 @@ simulated function AnimEnd(int Channel)
 			return;
 
 		if (ClientState == WS_BringUp &&
-	(AnimName == SelectAnim ||
-		AnimName == WeaponReloadResumeAnimation ||
-		AnimName == WeaponReloadResumeAnimation2 ||
-		AnimName == WeaponReloadAltResumeAnimation))
+			(AnimName == SelectAnim ||
+				AnimName == WeaponReloadResumeAnimation ||
+				AnimName == WeaponReloadResumeAnimation2 ||
+				AnimName == WeaponReloadAltResumeAnimation))
 		{
 			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
 				FireMode[Mode].InitEffects();
@@ -1976,6 +1993,10 @@ defaultproperties
     BWSleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
 	InvisibleSleeveTexture=Texture'BWKF_Core_T.Misc.Invisible'
 	
+	AmmoIcon=Texture'KillingFloorHUD.HUD.Hud_Bullets'
+    ReserveAmmoIcon=Texture'KillingFloorHUD.HUD.Hud_Ammo_Clip'
+    AltAmmoIcon=Texture'KillingFloor2HUD.HUD.Hud_M79'
+	
 	IdleAimAnim=SightIdle
 	ReloadRate=2.0
 	ReloadAnim="Reload"
@@ -2002,11 +2023,13 @@ defaultproperties
 	PlayerViewPivot=(Yaw=32768)
 	
 	ActiveMeleeFireMode=255
-	
+	bShowAltAmmoChamber=False
 	//Dual Weapon Props
 	bDualWeapon=False
 	FlashBoneRight="Tip"
 	FlashBoneLeft="Tip-2"
+	AltFlashBoneRight="Tip2"
+	AltFlashBoneLeft="Tip2-2"
 	FireAnimRight="FireRight"
 	FireAnimLeft="FireLeft"
 	SightFireAnimRight="SightFireRight"

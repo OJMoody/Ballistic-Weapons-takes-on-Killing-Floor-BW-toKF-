@@ -16,6 +16,8 @@ var float BurstFireRateFactor;
 
 var() class<Actor> HitEffectClass;
 
+var() bool bAltFire;
+
 //=============================================================================
 // BERSERK
 //=============================================================================
@@ -152,7 +154,7 @@ function PlayFiring()
 		" FireLoopAnimRate=" $ FireLoopAnimRate $
 		" TweenTime=" $ TweenTime);
 
-	if (Weapon.Mesh != None)
+	if (Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
 	{
 		if (FireCount > 0)
 		{
@@ -514,22 +516,40 @@ simulated function StopFiring()
 simulated function InitEffects()
 {
 	local BallisticWeapon BW;
+	local name FlashBoneRight;
+	local name FlashBoneLeft;
 
 	Super.InitEffects();
 
 	BW = BallisticWeapon(Weapon);
 
-	if (BW == None || !BW.bDualWeapon)
+	if (BW == None)
 		return;
 
-	if (FlashEmitterLeft == None && FlashEmitterClass != None)
+	FlashBoneRight = BW.FlashBoneRight;
+	FlashBoneLeft = BW.FlashBoneLeft;
+
+	if (bAltFire)
 	{
-		FlashEmitterLeft = Weapon.Spawn(FlashEmitterClass);
-		Weapon.AttachToBone(FlashEmitterLeft, BW.FlashBoneLeft);
+		FlashBoneRight = BW.AltFlashBoneRight;
+		FlashBoneLeft = BW.AltFlashBoneLeft;
 	}
 
-	if (FlashEmitter != None)
-		Weapon.AttachToBone(FlashEmitter, BW.FlashBoneRight);
+	if (BW.bDualWeapon)
+	{
+		if (FlashEmitterLeft == None && FlashEmitterClass != None)
+		{
+			FlashEmitterLeft = Weapon.Spawn(FlashEmitterClass);
+			Weapon.AttachToBone(FlashEmitterLeft, FlashBoneLeft);
+		}
+
+		if (FlashEmitter != None)
+			Weapon.AttachToBone(FlashEmitter, FlashBoneRight);
+	}
+	else if (FlashEmitter != None)
+	{
+		Weapon.AttachToBone(FlashEmitter, FlashBoneRight);
+	}
 }
 
 function FlashMuzzleFlash()

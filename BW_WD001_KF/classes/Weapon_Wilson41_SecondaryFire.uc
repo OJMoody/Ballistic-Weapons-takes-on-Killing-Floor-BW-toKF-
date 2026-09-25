@@ -133,7 +133,7 @@ defaultproperties
 {
     AmmoClass=Class'BW_WD001_KF.Weapon_Wilson41_SecondaryAmmo'
     ProjectileClass=Class'BW_Core_KF.BallisticShotgunProj'
-    //FlashEmitterClass=Class'BW_WD001_KF.Weapon_Wilson41_FlashEmitter'
+    FlashEmitterClass=Class'BW_WD001_KF.Weapon_Wilson41_FlashEmitterAlt'
 
     KickMomentum=(X=-45.000000,Z=10.000000)
     ProjPerFire=5
@@ -147,6 +147,7 @@ defaultproperties
     FireRate=0.65
     FireAnim='FireAlt'
     FireAnimRate=1.0
+	bAltFire=True
     BotRefireRate=0.200000
     aimerror=1.000000
     Spread=1125.0
