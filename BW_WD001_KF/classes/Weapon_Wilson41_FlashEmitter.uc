@@ -10,7 +10,7 @@ simulated event PostBeginPlay()
 defaultproperties
 {
      Begin Object Class=MeshEmitter Name=MeshEmitter0
-         StaticMesh=StaticMesh'BWKF_Wilson41_SM.MuzzleFlash.LeMatMuzzleFlash'
+         StaticMesh=StaticMesh'BWKF_Wilson_SM.MuzzleFlash.LeMatMuzzleFlash'
          UseMeshBlendMode=False
          RenderTwoSided=True
          UseParticleColor=True

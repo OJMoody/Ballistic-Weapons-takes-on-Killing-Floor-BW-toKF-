@@ -201,7 +201,7 @@ var Shader ScopeScriptedShader;
 replication
 {
 	reliable if (Role < ROLE_Authority)
-	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode;
+	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode, ServerClipIn;
 
 	reliable if (Role == ROLE_Authority)
 	ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
@@ -1166,6 +1166,21 @@ simulated function PlayAltReloadResumeAnimation()
 		PlayIdle();
 }
 
+function ServerClipIn()
+{
+    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+    if (AmmoAmount(0) >= MagCapacity)
+        MagAmmoRemaining = MagCapacity;
+    else
+        MagAmmoRemaining = AmmoAmount(0);
+
+    bBallisticReload = false;
+    bReloadEffectDone = false;
+    bReloadResumePending = false;
+    BallisticReloadStage = 0;
+}
+
 //=============================================================================
 // RELOAD FINISH
 //=============================================================================
@@ -1305,10 +1320,15 @@ simulated function Notify_ClipIn3()
 
     UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
+    if (AmmoAmount(0) >= MagCapacity)
+        MagAmmoRemaining = MagCapacity;
+    else
+        MagAmmoRemaining = AmmoAmount(0);
+
     class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-    bIsReloading = false;
-    bReloadEffectDone = false;
+    if (Role < ROLE_Authority)
+        ServerClipIn();
 
     if (FireMode[0] != None)
         BallisticInstantFire(FireMode[0]).ResetDualFire();
@@ -1316,27 +1336,33 @@ simulated function Notify_ClipIn3()
 
 simulated function Notify_ClipIn1()
 {
-    BallisticReloadStage = 2;
-    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+	BallisticReloadStage = 2;
+	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-    if (BallisticInstantFire(FireMode[0]) != None)
-        BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
+	if (BallisticInstantFire(FireMode[0]) != None)
+		BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
 }
 
 simulated function Notify_ClipIn2()
 {
     BallisticReloadStage = 3;
     bBallisticReload = false;
+    bBallisticReloadClipIn = true;
 
     UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
+    if (AmmoAmount(0) >= MagCapacity)
+        MagAmmoRemaining = MagCapacity;
+    else
+        MagAmmoRemaining = AmmoAmount(0);
+
     class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+
+    if (Role < ROLE_Authority)
+        ServerClipIn();
 
     if (BallisticInstantFire(FireMode[0]) != None)
         BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
-
-    bIsReloading = false;
-    bReloadEffectDone = false;
 }
 
 simulated function Notify_SwipePoint1()

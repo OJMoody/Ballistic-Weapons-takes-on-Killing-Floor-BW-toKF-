@@ -214,9 +214,9 @@ defaultproperties
 	bHasSecondaryAmmo=True
 	AltAmmoLoaded=2
 	bReduceMagAmmoOnSecondaryFire=False
-	WeaponReloadAnim=Reload_SingleFlare
-    ItemName="Dual Wilson-41 Revolvers"
-    Description=""
+	WeaponReloadAnim=Reload_DualFlare
+    ItemName="Dual Wilson 41-DB LeMat Revolvers"
+    Description="An expensive remake of an exceptionally old weapon, the Wilson 41-DB was designed for collectors and procurers of rare items from the early days of human firearms. Manufactured by the Edwinson & Sons arms co, this firearm is of high quality, sparse quantity and very high price. Never used in any military or law enforcement organisation, the Wilson 'DiamondBack', is still capable of causing damage. With a 9 cylinder revolver and single 16 gauge shotgun chamber for desperate moments, this weapon can still stop many opponents.""
 
     bShovelLoad=False
     MagCapacity=18
@@ -243,9 +243,9 @@ defaultproperties
 	
 	bDualWeapon=True
 	
-	//HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Unselected'
-    //SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806_Selected'
-	//TraderInfoTexture=Texture'BWKF_M806_T.Icons.MedIcon_M806'
+	HudImage=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DBDual_Unselected'
+    SelectedHudImage=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DBDual_Selected'
+	TraderInfoTexture=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DBDual'
 	AltAmmoIcon=Texture'BWKF_Wilson_T.Icons.Hud_ShotgunShell'
 
     ClipOutSound=(Sound=Sound'BWKF_Wilson_SN.Wilson.LM-BulletsOut')
@@ -262,8 +262,10 @@ defaultproperties
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
     PulloutSound=(Sound=Sound'BWKF_M806_SN.M806Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    //SightFXClass=Class'BW_WD001_KF.Weapon_M806Pistol_SightLEDs'
+    SightFXClass=Class'BW_WD001_KF.Weapon_Wilson41_SightLEDs'
     SightFXBone="Front"
+	LeftSightFXClass=Class'BW_WD001_KF.Weapon_Wilson41_SightLEDs'
+    LeftSightFXBone="Front-2"
     SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
     SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
     SkinRefs(2)=Shader'BWKF_Wilson_T.Weapon.leMat_Shine'

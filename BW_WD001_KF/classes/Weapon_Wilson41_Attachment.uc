@@ -6,13 +6,13 @@ class Weapon_Wilson41_Attachment extends BallisticAttachment;
 
 defaultproperties
 {
-    Mesh=SkeletalMesh'BWKF_M806_A.M806_TP_Mesh'
+    Mesh=SkeletalMesh'BWKF_Wilson_A.Wilson_TP_Mesh'
 
-    mMuzFlashClass=Class'BW_WD001_KF.Weapon_M806Pistol_FlashEmitter'
+    mMuzFlashClass=Class'BW_WD001_KF.Weapon_Wilson41_FlashEmitter'
     mMuzFlashScale=0.500000
 
     mTracerClass=Class'KFMod.KFNewTracer'
-    mShellCaseEmitterClass=Class'KFMod.KFShellSpewer'
+    mShellCaseEmitterClass=none
     SplashEffect=Class'BulletSplashEmitter'
 
     LightType=LT_Pulse
