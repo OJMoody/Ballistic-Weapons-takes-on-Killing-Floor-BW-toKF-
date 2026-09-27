@@ -1,7 +1,4 @@
-//=============================================================================
-// M806A2 Primary Fire
-//=============================================================================
-class Weapon_Wilson41_PrimaryFire extends BallisticInstantFire;
+class Weapon_Wilson41Dual_PrimaryFire extends BallisticInstantFire;
 
 
 defaultproperties
@@ -22,9 +19,9 @@ defaultproperties
     maxVerticalRecoilAngle=300
     maxHorizontalRecoilAngle=50
     TweenTime=0.025
-    AmmoClass=Class'BW_WD001_KF.Weapon_Wilson41_Ammo'
+    AmmoClass=Class'BW_WD001_KF.Weapon_M806Pistol_Ammo'
     AmmoPerFire=1
-    BotRefireRate=0.250000
+    BotRefireRate=0.350000
     FlashEmitterClass=Class'BW_WD001_KF.Weapon_Wilson41_FlashEmitter'
     aimerror=30.000000
     Spread=0.015000

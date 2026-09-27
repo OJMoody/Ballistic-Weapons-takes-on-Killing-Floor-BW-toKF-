@@ -103,6 +103,10 @@ var byte BallisticReloadStage;
 var int CurrentShovelLoadAmount;
 var int AltAmmoLoaded;
 
+var bool bSuppressStartFireReloadInterrupt;
+
+var bool bReloadPending;
+
 //=============================================================================
 // Dual Weapons
 //=============================================================================
@@ -115,6 +119,11 @@ var() name FireAnimLeft;
 var() name FireAnimRight;
 var() name SightFireAnimLeft;
 var() name SightFireAnimRight;
+
+var() name AltFireAnimLeft;
+var() name AltFireAnimRight;
+var() name AltSightFireAnimLeft;
+var() name AltSightFireAnimRight;
 
 var Actor AltThirdPersonActor;
 
@@ -192,7 +201,7 @@ var Shader ScopeScriptedShader;
 replication
 {
 	reliable if (Role < ROLE_Authority)
-	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode, ServerClipIn;
+	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode;
 
 	reliable if (Role == ROLE_Authority)
 	ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
@@ -265,6 +274,22 @@ simulated function name GetDualSightFireAnim(bool bLeft)
 		return SightFireAnimLeft;
 
 	return SightFireAnimRight;
+}
+
+simulated function name GetDualAltFireAnim(bool bLeft)
+{
+    if (bLeft)
+        return AltFireAnimLeft;
+
+    return AltFireAnimRight;
+}
+
+simulated function name GetDualAltSightFireAnim(bool bLeft)
+{
+    if (bLeft)
+        return AltSightFireAnimLeft;
+
+    return AltSightFireAnimRight;
 }
 
 simulated function ZoomIn(bool bAnimateTransition)
@@ -755,12 +780,34 @@ exec function ReloadMeNow()
 
 	if (IsActionLocked())
 		return;
-		
+
 	if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn)
 		return;
 
+	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+	if (MagAmmoRemaining >= MagCapacity)
+		return;
+
+	if ((AmmoAmount(0) - MagAmmoRemaining) <= 0)
+	{
+		bReloadPending = false;
+		return;
+	}
+
+	if (FireMode[0].bIsFiring || FireMode[1].bIsFiring ||
+		(FireMode[0].NextFireTime - Level.TimeSeconds) > 0.1)
+	{
+		bReloadPending = true;
+		return;
+	}
+
+	bReloadPending = false;
+
 	if (AllowReload())
 	{
+		UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
 		bReloadCancelRequested = false;
 		bReloadResumePending = false;
 		bBallisticClipOut = false;
@@ -784,6 +831,8 @@ exec function ReloadMeNow()
 		BallisticReloadStage = 0;
 
 		PlayAltReloadAnimation();
+
+		return;
 	}
 }
 
@@ -885,6 +934,27 @@ simulated function WeaponTick(float dt)
 
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
+	//=========================================================================
+	// PENDING RELOAD
+	//=========================================================================
+	// A shot can finish its firing state before KFWeapon's NextFireTime
+	// cooldown has expired. Queue the reload and start it once the normal
+	// reload lockout has cleared.
+
+	if (bReloadPending &&
+		!bIsReloading &&
+		!bBallisticReload &&
+		!bBallisticAltReload &&
+		!bBallisticReloadClipIn &&
+		!FireMode[0].bIsFiring &&
+		!FireMode[1].bIsFiring &&
+		(FireMode[0].NextFireTime - Level.TimeSeconds) <= 0.1)
+	{
+		bReloadPending = false;
+		ReloadMeNow();
+		return;
+	}
+
 	if (!bIsReloading)
 	{
 		if (!Instigator.IsHumanControlled())
@@ -971,13 +1041,20 @@ function int GetShovelLoadAmount()
 
 simulated function bool InterruptReload()
 {
+	if (bSuppressStartFireReloadInterrupt)
+        return false;
+
 	if (bBallisticAltReload && !bPuttingDown)
+		return false;
+
+	if (bBallisticReload || bBallisticReloadClipIn)
 		return false;
 		
 	if (!bIsReloading && !bBallisticAltReload && BallisticReloadStage == 0)
 		return false;
 
 	bReloadCancelRequested = true;
+	bBallisticReloadClipIn = false;
 
 	if (bBallisticAltReload)
 	{
@@ -1010,6 +1087,7 @@ simulated function bool InterruptReload()
 		return true;
 
 	bIsReloading = false;
+	bBallisticReload = false;
 
 	switch (BallisticReloadStage)
 	{
@@ -1088,22 +1166,6 @@ simulated function PlayAltReloadResumeAnimation()
 		PlayIdle();
 }
 
-function ServerClipIn()
-{
-    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
-
-    if (AmmoAmount(0) >= MagCapacity)
-        MagAmmoRemaining = MagCapacity;
-    else
-        MagAmmoRemaining = AmmoAmount(0);
-
-    bBallisticReload = false;
-    bIsReloading = false;
-    bReloadEffectDone = false;
-    bReloadResumePending = false;
-    BallisticReloadStage = 0;
-}
-
 //=============================================================================
 // RELOAD FINISH
 //=============================================================================
@@ -1169,24 +1231,19 @@ simulated function Notify_ClipOut()
 
 simulated function Notify_ClipIn()
 {
-	bBallisticClipOut = false;
-	bReloadResumePending = false;
-	bBallisticReloadClipIn = true;
-	bBallisticReload = false;
+    bBallisticClipOut = false;
+    bReloadResumePending = false;
+    bBallisticReloadClipIn = true;
+    bBallisticReload = false;
 
-	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (AmmoAmount(0) >= MagCapacity)
-		MagAmmoRemaining = MagCapacity;
-	else
-		MagAmmoRemaining = AmmoAmount(0);
+    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+    if (Role == ROLE_Authority)
+        AddReloadedAmmo();
 
-	if (Role < ROLE_Authority)
-		ServerClipIn();
-
-	BallisticReloadStage = 0;
+    BallisticReloadStage = 0;
 }
 
 simulated function Notify_ClipOutAlt()
@@ -1242,60 +1299,44 @@ simulated function Notify_ClipOut3()
 
 simulated function Notify_ClipIn3()
 {
-	BallisticReloadStage = 0;
-	bBallisticReload = false;
-	bReloadResumePending = false;
+    BallisticReloadStage = 0;
+    bBallisticReload = false;
+    bReloadResumePending = false;
 
-	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (AmmoAmount(0) >= MagCapacity)
-		MagAmmoRemaining = MagCapacity;
-	else
-		MagAmmoRemaining = AmmoAmount(0);
+    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+    bIsReloading = false;
+    bReloadEffectDone = false;
 
-	if (Role < ROLE_Authority)
-		ServerClipIn();
-
-	bIsReloading = false;
-	bReloadEffectDone = false;
-
-	if (FireMode[0] != None)
-		BallisticInstantFire(FireMode[0]).ResetDualFire();
+    if (FireMode[0] != None)
+        BallisticInstantFire(FireMode[0]).ResetDualFire();
 }
 
 simulated function Notify_ClipIn1()
 {
-	BallisticReloadStage = 2;
-	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+    BallisticReloadStage = 2;
+    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-	if (BallisticInstantFire(FireMode[0]) != None)
-		BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
+    if (BallisticInstantFire(FireMode[0]) != None)
+        BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
 }
 
 simulated function Notify_ClipIn2()
 {
-	BallisticReloadStage = 3;
-	bBallisticReload = false;
+    BallisticReloadStage = 3;
+    bBallisticReload = false;
 
-	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (AmmoAmount(0) >= MagCapacity)
-		MagAmmoRemaining = MagCapacity;
-	else
-		MagAmmoRemaining = AmmoAmount(0);
+    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
 
-	class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+    if (BallisticInstantFire(FireMode[0]) != None)
+        BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
 
-	if (Role < ROLE_Authority)
-		ServerClipIn();
-
-	if (BallisticInstantFire(FireMode[0]) != None)
-		BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
-
-	bIsReloading = false;
-	bReloadEffectDone = false;
+    bIsReloading = false;
+    bReloadEffectDone = false;
 }
 
 simulated function Notify_SwipePoint1()
@@ -1376,6 +1417,71 @@ simulated function Notify_SwipePoint5()
     {
         BallisticMeleeFire(FireMode[1]).ProcessSwipePoint(4);
     }
+}
+
+
+//=============================================================================
+// ALT RELOAD NOTIFIERS
+//=============================================================================
+
+simulated function Notify_ClipOutAlt1()
+{
+    BallisticReloadStage = 1;
+
+    class'BUtil'.static.PlayFullSound(self, ClipOutAltSound, true);
+}
+
+simulated function Notify_ClipOutAlt2()
+{
+    BallisticReloadStage = 2;
+
+    class'BUtil'.static.PlayFullSound(self, ClipOutAltSound, true);
+}
+
+simulated function Notify_ClipOutAlt3()
+{
+    BallisticReloadStage = 3;
+
+    class'BUtil'.static.PlayFullSound(self, ClipOutAltSound, true);
+}
+
+simulated function Notify_ClipInAlt1()
+{
+    if (Role == ROLE_Authority && AltAmmoLoaded < 2 && AmmoAmount(1) > 0)
+    {
+        ConsumeAmmo(1, 1);
+        AltAmmoLoaded++;
+    }
+
+    BallisticReloadStage = 2;
+
+    class'BUtil'.static.PlayFullSound(self, ClipInAltSound, true);
+}
+
+simulated function Notify_ClipInAlt2()
+{
+    if (Role == ROLE_Authority && AltAmmoLoaded < 2 && AmmoAmount(1) > 0)
+    {
+        ConsumeAmmo(1, 1);
+        AltAmmoLoaded++;
+    }
+
+    BallisticReloadStage = 3;
+
+    class'BUtil'.static.PlayFullSound(self, ClipInAltSound, true);
+}
+
+simulated function Notify_ClipInAlt3()
+{
+    if (Role == ROLE_Authority && AltAmmoLoaded < 2 && AmmoAmount(1) > 0)
+    {
+        ConsumeAmmo(1, 1);
+        AltAmmoLoaded++;
+    }
+
+    BallisticReloadStage = 0;
+
+    class'BUtil'.static.PlayFullSound(self, ClipInAltSound, true);
 }
 
 
@@ -1712,30 +1818,33 @@ simulated function Timer()
 
 simulated function bool StartFire(int Mode)
 {
-	local bool RetVal;
+    local bool RetVal;
 
-	if (ClientState == WS_BringUp)
-		return false;
+    if (ClientState == WS_BringUp)
+        return false;
 
-	if (bBallisticAltReload)
-		return false;
+    if (bBallisticAltReload)
+        return false;
 
-	if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
-		return false;
+    if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
+        return false;
 
-	RetVal = Super.StartFire(Mode);
+    if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
+        return false;
 
-	if (RetVal)
-	{
-		if (Mode == 0 && ForceZoomOutOnFireTime > 0)
-			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnFireTime;
-		else if (Mode == 1 && ForceZoomOutOnAltFireTime > 0)
-			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnAltFireTime;
+    RetVal = Super.StartFire(Mode);
 
-		NumClicks = 0;
-	}
+    if (RetVal)
+    {
+        if (Mode == 0 && ForceZoomOutOnFireTime > 0)
+            ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnFireTime;
+        else if (Mode == 1 && ForceZoomOutOnAltFireTime > 0)
+            ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnAltFireTime;
 
-	return RetVal;
+        NumClicks = 0;
+    }
+
+    return RetVal;
 }
 
 simulated function bool PutDown()
@@ -1884,6 +1993,7 @@ simulated function AnimEnd(int Channel)
 				AnimName == WeaponReloadAltResumeAnimation))
 		{
 			bReloadResumePlaying = false;
+			bBallisticReloadClipIn = false;
 		}
 
 		if (bIsReloading &&
@@ -1959,6 +2069,18 @@ simulated function Destroyed()
         Level.ObjectPool.FreeObject(ScopeScriptedShader);
         ScopeScriptedShader = none;
     }
+
+	if (SightFX != None)
+	{
+		SightFX.Destroy();
+		SightFX = None;
+	}
+
+	if (LeftSightFX != None)
+	{
+		LeftSightFX.Destroy();
+		LeftSightFX = None;
+	}
 	
 	if (AltThirdPersonActor != None)
 	{
@@ -2005,6 +2127,10 @@ defaultproperties
 	WeaponReloadResumeAnimation2="ReloadResumeLeft"
 	WeaponReloadAltAnimation="ReloadAlt"
 	WeaponReloadAltResumeAnimation="ReloadAltResume"
+	AltFireAnimLeft='FireLeftAlt'
+	AltFireAnimRight='FireRightAlt'
+	AltSightFireAnimLeft='SightFireLeftAlt'
+	AltSightFireAnimRight='SightFireRightAlt'
 	SelectAnim="Pullout"
     SelectAnimRate=1.0
 	PutDownAnim="Putaway"

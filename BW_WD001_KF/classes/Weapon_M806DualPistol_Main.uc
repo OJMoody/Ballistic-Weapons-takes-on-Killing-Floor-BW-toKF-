@@ -74,6 +74,26 @@ simulated function ZoomOut(bool bAnimateTransition)
 		PlayAnim(SightHipAnim, AnimSpeed, 0.1);
 }
 
+function Weapon_M806Pistol_Main ConvertToSingle()
+{
+    local Weapon_M806Pistol_Main SingleWeapon;
+
+    if (Instigator == None)
+        return None;
+
+    SingleWeapon = Spawn(Class'Weapon_M806Pistol_Main');
+
+    if (SingleWeapon == None)
+        return None;
+
+    SingleWeapon.GiveTo(Instigator);
+
+    SingleWeapon.Ammo[0].AmmoAmount = AmmoAmount(0) / 2;
+    SingleWeapon.MagAmmoRemaining = MagAmmoRemaining / 2;
+
+    return SingleWeapon;
+}
+
 function DropFrom(vector StartLocation)
 {
     local int m;
@@ -102,12 +122,19 @@ function DropFrom(vector StartLocation)
         AmmoThrown -= OtherAmmo;
 
         I = Spawn(Class'Weapon_M806Pistol_Main');
-        I.GiveTo(Instigator);
 
-        Weapon(I).Ammo[0].AmmoAmount = OtherAmmo;
-        Weapon_M806Pistol_Main(I).MagAmmoRemaining = MagAmmoRemaining / 2;
+        if (I != None)
+        {
+            I.GiveTo(Instigator);
 
-        MagAmmoRemaining = Max(MagAmmoRemaining - Weapon_M806Pistol_Main(I).MagAmmoRemaining, 0);
+            Weapon(I).Ammo[0].AmmoAmount = OtherAmmo;
+            Weapon_M806Pistol_Main(I).MagAmmoRemaining = MagAmmoRemaining / 2;
+
+            MagAmmoRemaining = Max(
+                MagAmmoRemaining - Weapon_M806Pistol_Main(I).MagAmmoRemaining,
+                0
+            );
+        }
     }
 
     Pickup = Spawn(PickupClass,,, StartLocation);

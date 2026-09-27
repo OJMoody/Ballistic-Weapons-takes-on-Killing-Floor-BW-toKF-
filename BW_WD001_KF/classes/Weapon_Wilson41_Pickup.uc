@@ -1,13 +1,25 @@
-//=============================================================================
-// BenelliPickup
-//=============================================================================
-// Benellie shotgun pickup class
-//=============================================================================
-// Killing Floor Source
-// Copyright (C) 2011 Tripwire Interactive LLC
-// - John "Ramm-Jaeger" Gibson
-//=============================================================================
 class Weapon_Wilson41_Pickup extends BallisticPickup;
+
+function inventory SpawnCopy( pawn Other )
+{
+	local Inventory I;
+
+	For( I=Other.Inventory; I!=None; I=I.Inventory )
+	{
+		if( Weapon_Wilson41_Main(I)!=None )
+		{
+			if( Inventory!=None )
+				Inventory.Destroy();
+
+			InventoryType = Class'Weapon_Wilson41Dual_Main';
+			I.Destroy();
+			return Super.SpawnCopy(Other);
+		}
+	}
+
+	InventoryType = Default.InventoryType;
+	Return Super.SpawnCopy(Other);
+}
 
 defaultproperties
 {

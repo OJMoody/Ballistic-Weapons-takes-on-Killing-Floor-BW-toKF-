@@ -1,12 +1,3 @@
-//=============================================================================
-// BenelliPickup
-//=============================================================================
-// Benellie shotgun pickup class
-//=============================================================================
-// Killing Floor Source
-// Copyright (C) 2011 Tripwire Interactive LLC
-// - John "Ramm-Jaeger" Gibson
-//=============================================================================
 class Weapon_M806Pistol_Pickup extends BallisticPickup;
 
 function inventory SpawnCopy( pawn Other )

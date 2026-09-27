@@ -183,11 +183,15 @@ function PlayFiring()
 	local name DualFireAnim;
 
 	BW = BallisticWeapon(Weapon);
+	
+	log("ALT ANIM TRACE: AltFire="$bAltFire$" LastLeft="$bLastDualFireLeft$" AltAmmo="$BW.AltAmmoLoaded$" Anim="$BW.GetDualAltFireAnim(bLastDualFireLeft)$" SightAnim="$BW.GetDualAltSightFireAnim(bLastDualFireLeft));
 
 	if (BW != None && BW.bDualWeapon)
 	{
-		bLastDualFireLeft = bDualFireLeft;
-		DualFireAnim = BW.GetDualFireAnim(bDualFireLeft);
+		if (bAltFire)
+			DualFireAnim = BW.GetDualAltFireAnim(bLastDualFireLeft);
+		else
+			DualFireAnim = BW.GetDualFireAnim(bLastDualFireLeft);
 	}
 	else
 	{
@@ -202,7 +206,10 @@ function PlayFiring()
 			{
 				if (BW != None && BW.bDualWeapon)
 				{
-					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+					if (bAltFire)
+						Weapon.PlayAnim(BW.GetDualAltSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+					else
+						Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 				}
 				else if (Weapon.HasAnim(FireLoopAimedAnim))
 				{
@@ -233,7 +240,10 @@ function PlayFiring()
 			{
 				if (BW != None && BW.bDualWeapon)
 				{
-					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+					if (bAltFire)
+						Weapon.PlayAnim(BW.GetDualAltSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+					else
+						Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 				}
 				else if (Weapon.HasAnim(FireAimedAnim))
 					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
@@ -279,7 +289,7 @@ function PlayFiring()
 
 	FireCount++;
 
-	if (BW != None && BW.bDualWeapon)
+	if (BW != None && BW.bDualWeapon && !bAltFire)
 		bDualFireLeft = !bDualFireLeft;
 }
 

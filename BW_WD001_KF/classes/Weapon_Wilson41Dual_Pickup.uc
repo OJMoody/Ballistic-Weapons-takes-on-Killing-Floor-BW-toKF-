@@ -1,21 +1,21 @@
-class Weapon_M806DualPistol_Pickup extends BallisticPickup;
+class Weapon_Wilson41Dual_Pickup extends BallisticPickup;
 
 defaultproperties
 {
 	Weight=4.000000
-	cost=300
+	cost=800
 	AmmoCost=20
-	BuyClipSize=8
+	BuyClipSize=9
 	PowerValue=30
 	SpeedValue=40
 	RangeValue=40
-	Description="A Pair of M806A2 Pistols"
-	ItemName="Dual M806A2 Pistols"
-	ItemShortName="Dual M806A2 Pistols"
-	AmmoItemName=".45 high velocity M806 bullets"
+	Description="A Pair of Wilson-41 Revolver"
+	ItemName="Dual Wilson-41 Revolver"
+	ItemShortName="Dual Wilson-41 Revolver"
+	AmmoItemName=""
 	AmmoMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'
-	InventoryType=Class'BW_WD001_KF.Weapon_M806DualPistol_Main'
-	PickupMessage="You got two M806A2 Pistols"
+	InventoryType=Class'BW_WD001_KF.Weapon_Wilson41Dual_Main'
+	PickupMessage="You got the Wilson-41 Revolver"
 	PickupForce="AssaultRiflePickup"
 	StaticMesh=StaticMesh'BWKF_M806_SM.M806_MainPickup_SM'
 	CollisionRadius=35.000000

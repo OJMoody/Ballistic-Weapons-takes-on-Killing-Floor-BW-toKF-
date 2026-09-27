@@ -11,6 +11,18 @@ struct BWTraderWeapon
 
 var array<BWTraderWeapon> BWTraderWeapons;
 
+function ModifyPlayer(Pawn Other)
+{
+    Log("BW TRACE ModifyPlayer Pawn="$Other);
+    Log("BW TRACE ModifyPlayer PawnClass="$Other.Class);
+    Log("BW TRACE ModifyPlayer Controller="$Other.Controller);
+
+    if (Other.Controller != None)
+        Log("BW TRACE ModifyPlayer ControllerClass="$Other.Controller.Class);
+
+    Super.ModifyPlayer(Other);
+}
+
 function string GetInventoryClassOverride(string InventoryClassName)
 {
 	if (InventoryClassName ~= "KFMod.Single")
@@ -40,26 +52,26 @@ function PreBeginPlay()
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 {
-    local BallisticWeapon BW;
+	local BallisticWeapon BW;
 
-    BW = BallisticWeapon(Other);
+	BW = BallisticWeapon(Other);
 
-    if (BW != None)
-        BW.BUseBWHands = bUseBWHands;
+	if (BW != None)
+		BW.BUseBWHands = bUseBWHands;
 
-    if (Other.Class == class'Vest')
-    {
-        ReplaceWith(Other, "BW_Core_KF.BWArmorPickup");
-        return false;
-    }
+	if (Other.Class == class'Vest')
+	{
+		ReplaceWith(Other, "BW_Core_KF.BWArmorPickup");
+		return false;
+	}
 
-    if (Other.Class == class'KFAmmoPickup')
-    {
-        ReplaceWith(Other, "BW_Core_KF.BWAmmoPickup");
-        return false;
-    }
+	if (Other.Class == class'KFAmmoPickup')
+	{
+		ReplaceWith(Other, "BW_Core_KF.BWAmmoPickup");
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 static function FillPlayInfo(PlayInfo PlayInfo)
@@ -87,9 +99,13 @@ static function string GetDescriptionText(string SettingName)
     return Super.GetDescriptionText(SettingName);
 }
 
-simulated function PostBeginPlay()
+function PostBeginPlay()
 {
     Super.PostBeginPlay();
+
+    KFGameType(Level.Game).PlayerControllerClass = class'BW_KFPlayerController';
+
+    Log("BW TRACE PostBeginPlay: PlayerControllerClass set to "$KFGameType(Level.Game).PlayerControllerClass);
 
     SetTimer(0.25, true);
 
@@ -98,17 +114,28 @@ simulated function PostBeginPlay()
 
 simulated function Timer()
 {
-	local KFLevelRules KFLRules;
+    local KFLevelRules KFLRules;
+    local Controller C;
 
-	foreach DynamicActors(class'KFLevelRules', KFLRules)
-	{
-		if (KFLRules != None)
-		{
-			SetupBWTrader(KFLRules);
-			SetTimer(0.0, false);
-			return;
-		}
-	}
+    foreach DynamicActors(class'KFLevelRules', KFLRules)
+    {
+        if (KFLRules != None)
+        {
+            SetupBWTrader(KFLRules);
+
+            for (C = Level.ControllerList; C != None; C = C.NextController)
+            {
+                if (C.IsA('PlayerController'))
+                {
+                    C.PawnClass = class'BW_KFPawn';
+                    Log("BW TRACE Timer: PawnClass set to "$C.PawnClass);
+                }
+            }
+
+            SetTimer(0.0, false);
+            return;
+        }
+    }
 }
 
 simulated function SetupBWTrader(KFLevelRules KFLRules)
@@ -267,4 +294,5 @@ defaultproperties
 	BWTraderWeapons(3)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=6)
 	BWTraderWeapons(4)=(PickupClass=Class'BW_WD001_KF.Weapon_MRT6Shotgun_Pickup',TraderList=1)
 	BWTraderWeapons(5)=(PickupClass=Class'Weapon_Wilson41_Pickup',TraderList=2)
+	BWTraderWeapons(6)=(PickupClass=Class'Weapon_Wilson41Dual_Pickup',TraderList=2)
 }
