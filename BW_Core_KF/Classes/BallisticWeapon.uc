@@ -1879,13 +1879,31 @@ simulated function bool PutDown()
 
 	bPuttingDown = true;
 
+	//=========================================================================
+	// RELOAD
+	//=========================================================================
+	// Allow the weapon to be lowered at any point during a reload.
+	// Preserve the reload stage so BringUp() can resume it later.
+	
 	if (bBallisticAltReload)
 	{
 		bReloadResumePending = true;
 		bAltReloadResumePending = true;
+		bBallisticAltReload = false;
+		bIsReloading = false;
+		bBallisticReloadClipIn = false;
+	}
+	else if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
+	{
+		bReloadResumePending = true;
+		bBallisticReload = false;
+		bBallisticReloadClipIn = false;
+		bIsReloading = false;
 	}
 
-	bBallisticAltReload = false;
+	//=========================================================================
+	// MELEE
+	//=========================================================================
 
 	if (MeleeFireMode != none)
 	{
@@ -1896,6 +1914,10 @@ simulated function bool PutDown()
 
 	MeleeState = MS_None;
 	MeleeHoldTime = 0.0;
+
+	//=========================================================================
+	// EFFECTS
+	//=========================================================================
 
 	if (SightFX != none)
 	{

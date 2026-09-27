@@ -9,10 +9,12 @@ defaultproperties
 	PowerValue=30
 	SpeedValue=40
 	RangeValue=40
+	SecondaryAmmoCost=10
 	Description="A Pair of Wilson 41-DB LeMat Revolvers"
 	ItemName="Dual Wilson 41-DB LeMat Revolvers"
-	ItemShortName="Dual Wilson 41-DB LeMat Revolvers"
+	ItemShortName="Dual Wilson 41 Revolvers"
 	AmmoItemName=".41 Wilson DB Bullets"
+	SecondaryAmmoShortName="16 Gauge Shells"
 	AmmoMesh=StaticMesh'BWKF_Wilson_SM.Wilson41_ClipPickup_SM'
 	InventoryType=Class'BW_WD001_KF.Weapon_Wilson41Dual_Main'
 	PickupMessage="You got the Wilson 41-DB LeMat Revolver"
