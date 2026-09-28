@@ -786,7 +786,7 @@ exec function ReloadMeNow()
 
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (MagAmmoRemaining >= MagCapacity)
+	if (MagAmmoRemaining >= MagCapacity && !AllowAltReload())
 		return;
 
 	if ((AmmoAmount(0) - MagAmmoRemaining) <= 0)
