@@ -201,7 +201,7 @@ var Shader ScopeScriptedShader;
 replication
 {
 	reliable if (Role < ROLE_Authority)
-	ServerMeleeHold, ServerMeleeRelease, ServerSwitchWeaponMode, ServerClipIn;
+	ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn;
 
 	reliable if (Role == ROLE_Authority)
 	ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
@@ -532,16 +532,18 @@ simulated function MeleeHoldImpl()
 {
 	if (MeleeFireMode == None)
 		return;
-		
+
 	if (IsActionLocked())
 		return;
 
 	if (ClientState != WS_ReadyToFire)
 		return;
 
+	// Queue another melee prep while the current strike is still active.
 	if (MeleeState == MS_Strike)
 	{
 		MeleeState = MS_StrikePending;
+		ServerMeleeQueue();
 		return;
 	}
 
@@ -568,12 +570,11 @@ simulated function MeleeHoldImpl()
 		return;
 
 	MeleeState = MS_Held;
-
 	MeleeHoldTime = 0.0;
 	MeleeFireMode.HoldTime = 0.0;
 	MeleeFireMode.HoldStartTime = Level.TimeSeconds;
 	MeleeFireMode.bIsFiring = true;
-	
+
 	PlayThirdPersonMeleePrep();
 	MeleeFireMode.PlayMeleeHold();
 	SetMeleeGunLength();
@@ -650,8 +651,10 @@ simulated function MeleeReleaseImpl()
 			break;
 
 		case MS_StrikePending:
-			MeleeState = MS_StrikePending;
+			MeleeState = MS_Strike;
+			ServerMeleeQueueCancel();
 			break;
+
 	}
 }
 
@@ -681,6 +684,27 @@ final function ServerMeleeRelease()
 
     MeleeFireMode.DoFireEffect();
     SetDefaultGunLength();
+}
+
+//=============================================================================
+// SERVER MELEE QUEUE
+//=============================================================================
+
+final function ServerMeleeQueue()
+{
+    if (MeleeState == MS_Strike)
+        MeleeState = MS_StrikePending;
+}
+
+
+//-----------------------------------------------------------------------------
+// SERVER MELEE QUEUE CANCEL
+//-----------------------------------------------------------------------------
+
+final function ServerMeleeQueueCancel()
+{
+    if (MeleeState == MS_StrikePending)
+        MeleeState = MS_Strike;
 }
 
 //-----------------------------------------------------------------------------
@@ -775,6 +799,14 @@ simulated function CheckPendingMelee()
 
 exec function ReloadMeNow()
 {
+	log("BW DEBUG ReloadMeNow");
+	log("BW DEBUG Mag="$MagAmmoRemaining$"/"$MagCapacity$" Ammo="$AmmoAmount(0));
+	log("BW DEBUG States: IsReloading="$bIsReloading$" BallisticReload="$bBallisticReload$" BallisticAltReload="$bBallisticAltReload$" ReloadClipIn="$bBallisticReloadClipIn);
+	log("BW DEBUG Pending: Reload="$bReloadPending$" Resume="$bReloadResumePending);
+	
+	if (ClientState == WS_BringUp)
+		return;
+
 	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
 		return;
 
@@ -786,15 +818,33 @@ exec function ReloadMeNow()
 
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (MagAmmoRemaining >= MagCapacity && !AllowAltReload())
-		return;
-
-	if ((AmmoAmount(0) - MagAmmoRemaining) <= 0)
+	//=========================================================================
+	// FULL PRIMARY MAGAZINE
+	//=========================================================================
+	// A full primary magazine must never enter the normal reload queue.
+	// If an alternate reload is available, allow Reload to perform it instead.
+	if (MagAmmoRemaining >= MagCapacity)
 	{
 		bReloadPending = false;
-		return;
+
+		if (!AllowAltReload())
+			return;
 	}
 
+	//=========================================================================
+	// PRIMARY AMMO CHECK
+	//=========================================================================
+	if (MagAmmoRemaining < MagCapacity && (AmmoAmount(0) - MagAmmoRemaining) <= 0)
+	{
+		bReloadPending = false;
+
+		if (!AllowAltReload())
+			return;
+	}
+
+	//=========================================================================
+	// WAIT FOR FIRING COOLDOWN
+	//=========================================================================
 	if (FireMode[0].bIsFiring || FireMode[1].bIsFiring ||
 		(FireMode[0].NextFireTime - Level.TimeSeconds) > 0.1)
 	{
@@ -804,7 +854,10 @@ exec function ReloadMeNow()
 
 	bReloadPending = false;
 
-	if (AllowReload())
+	//=========================================================================
+	// PRIMARY RELOAD
+	//=========================================================================
+	if (MagAmmoRemaining < MagCapacity && AllowReload())
 	{
 		UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
@@ -822,6 +875,9 @@ exec function ReloadMeNow()
 		return;
 	}
 
+	//=========================================================================
+	// ALTERNATE RELOAD
+	//=========================================================================
 	if (AllowAltReload())
 	{
 		bReloadCancelRequested = false;
@@ -843,6 +899,9 @@ simulated function bool AllowAltReload()
 
 exec function ReloadAlt()
 {
+	if (ClientState == WS_BringUp)
+        return;
+	
 	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
 		return;
 
@@ -872,7 +931,12 @@ simulated function PlayAltReloadAnimation()
 	if (WeaponReloadAltAnimation != '' && HasAnim(WeaponReloadAltAnimation))
 		PlayAnim(WeaponReloadAltAnimation, ReloadAnimRate, 0.0);
 	else
+	{
+		bBallisticAltReload = false;
+		bBallisticReloadClipIn = false;
+		BallisticReloadStage = 0;
 		PlayIdle();
+	}
 }
 
 simulated function WeaponTick(float dt)
@@ -942,16 +1006,24 @@ simulated function WeaponTick(float dt)
 	// reload lockout has cleared.
 
 	if (bReloadPending &&
-		!bIsReloading &&
-		!bBallisticReload &&
-		!bBallisticAltReload &&
-		!bBallisticReloadClipIn &&
-		!FireMode[0].bIsFiring &&
-		!FireMode[1].bIsFiring &&
-		(FireMode[0].NextFireTime - Level.TimeSeconds) <= 0.1)
+	ClientState != WS_BringUp &&
+	!bIsReloading &&
+	!bBallisticReload &&
+	!bBallisticAltReload &&
+	!bBallisticReloadClipIn &&
+	!FireMode[0].bIsFiring &&
+	!FireMode[1].bIsFiring &&
+	(FireMode[0].NextFireTime - Level.TimeSeconds) <= 0.1)
 	{
 		bReloadPending = false;
-		ReloadMeNow();
+
+		UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+		if (MagAmmoRemaining < MagCapacity || AllowAltReload())
+		{
+			ReloadMeNow();
+		}
+
 		return;
 	}
 
@@ -1041,6 +1113,11 @@ function int GetShovelLoadAmount()
 
 simulated function bool InterruptReload()
 {
+	log("BW DEBUG InterruptReload");
+	log("BW DEBUG Mag="$MagAmmoRemaining$"/"$MagCapacity$" Ammo="$AmmoAmount(0));
+	log("BW DEBUG States: IsReloading="$bIsReloading$" BallisticReload="$bBallisticReload$" BallisticAltReload="$bBallisticAltReload$" ReloadClipIn="$bBallisticReloadClipIn);
+	log("BW DEBUG Pending: Reload="$bReloadPending$" Resume="$bReloadResumePending);
+
 	if (bSuppressStartFireReloadInterrupt)
         return false;
 
@@ -1064,6 +1141,7 @@ simulated function bool InterruptReload()
 
 		if (BallisticReloadStage == 0)
 		{
+			log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 			bReloadResumePending = true;
 			bAltReloadResumePending = true;
 			bReloadCancelRequested = false;
@@ -1074,6 +1152,7 @@ simulated function bool InterruptReload()
 			return true;
 		}
 
+		log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 		bReloadResumePending = true;
 		bReloadCancelRequested = false;
 
@@ -1100,6 +1179,7 @@ simulated function bool InterruptReload()
 			break;
 
 		case 1:
+			log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 			bReloadResumePending = true;
 			bReloadCancelRequested = false;
 
@@ -1108,6 +1188,7 @@ simulated function bool InterruptReload()
 			break;
 
 		case 2:
+			log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 			bReloadResumePending = true;
 			bReloadCancelRequested = false;
 

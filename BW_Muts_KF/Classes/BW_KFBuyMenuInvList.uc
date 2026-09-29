@@ -90,12 +90,12 @@ function UpdateMyBuyables()
             continue;
         }
 
-        // No need for Syringe and Welder
-        if ( CurInv.IsA('Welder') || CurInv.IsA('Syringe') )
-        {
+        // No need for Syringe, Welder or WD200 Combat Welder
+		if ( CurInv.IsA('Welder') || CurInv.IsA('Syringe') || CurInv.IsA('Tool_WD200_Main') )
+		{
 			continue;
 		}
-
+		
 		if ( CurInv.IsA('DualDeagle') || CurInv.IsA('Dual44Magnum') || CurInv.IsA('DualMK23Pistol')
             || CurInv.IsA('DualFlareRevolver') )
 		{
@@ -275,7 +275,7 @@ function UpdateMyBuyables()
 				MyBuyable.bSellable	= false;
 				SecondaryAmmoBuyable = MyBuyable;
 			}
-			else if ( CurInv.IsA('Knife') )
+			else if ( CurInv.IsA('Knife') || CurInv.IsA('Weapon_A909Blades_Main') )
 			{
 				MyBuyable.bSellable	= false;
 				KnifeBuyable = MyBuyable;

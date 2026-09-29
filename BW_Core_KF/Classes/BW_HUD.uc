@@ -76,108 +76,185 @@ simulated function DrawWeaponName(Canvas C)
 
 simulated function DrawHudPassA(Canvas C)
 {
-    local BallisticWeapon BW;
+	local BallisticWeapon BW;
 	local NumericWidget AltAmmoReserveDigits;
 	local Material OldAmmoIcon;
 	local Material OldReserveAmmoIcon;
 	local Material OldAltAmmoIcon;
 	local byte OldAlpha0;
 	local byte OldAlpha1;
+	local byte OldClipsBGAlpha0;
+	local byte OldClipsBGAlpha1;
+	local byte OldClipsIconAlpha0;
+	local byte OldClipsIconAlpha1;
+	local byte OldClipsDigitsAlpha0;
+	local byte OldClipsDigitsAlpha1;
+	local byte OldBulletsBGAlpha0;
+	local byte OldBulletsBGAlpha1;
+	local byte OldBulletsIconAlpha0;
+	local byte OldBulletsIconAlpha1;
+	local byte OldBulletsDigitsAlpha0;
+	local byte OldBulletsDigitsAlpha1;
+	local byte OldSecondaryBGAlpha0;
+	local byte OldSecondaryBGAlpha1;
+	local byte OldSecondaryIconAlpha0;
+	local byte OldSecondaryIconAlpha1;
+	local byte OldSecondaryDigitsAlpha0;
+	local byte OldSecondaryDigitsAlpha1;
 
-    if (PawnOwner != None && PawnOwner.Weapon != None)
-        BW = BallisticWeapon(PawnOwner.Weapon);
+	if (PawnOwner != None && PawnOwner.Weapon != None)
+		BW = BallisticWeapon(PawnOwner.Weapon);
 
-    if (BW == None)
-    {
-        Super.DrawHudPassA(C);
-        return;
-    }
+	if (BW == None)
+	{
+		Super.DrawHudPassA(C);
+		return;
+	}
 
-    // Store the original ammo icons.
-    OldAmmoIcon = BulletsInClipIcon.WidgetTexture;
-    OldReserveAmmoIcon = ClipsIcon.WidgetTexture;
-    OldAltAmmoIcon = SecondaryClipsIcon.WidgetTexture;
+	OldAmmoIcon = BulletsInClipIcon.WidgetTexture;
+	OldReserveAmmoIcon = ClipsIcon.WidgetTexture;
+	OldAltAmmoIcon = SecondaryClipsIcon.WidgetTexture;
 
-    // Apply weapon-specific ammo icons.
-    if (BW.AmmoIcon != None)
-        BulletsInClipIcon.WidgetTexture = BW.AmmoIcon;
+	if (BW.AmmoIcon != None)
+		BulletsInClipIcon.WidgetTexture = BW.AmmoIcon;
 
-    if (BW.ReserveAmmoIcon != None)
-        ClipsIcon.WidgetTexture = BW.ReserveAmmoIcon;
+	if (BW.ReserveAmmoIcon != None)
+		ClipsIcon.WidgetTexture = BW.ReserveAmmoIcon;
 
-    if (BW.AltAmmoIcon != None)
-        SecondaryClipsIcon.WidgetTexture = BW.AltAmmoIcon;
+	if (BW.AltAmmoIcon != None)
+		SecondaryClipsIcon.WidgetTexture = BW.AltAmmoIcon;
 
-    // Normal HUD drawing.
-    if (!BW.bShowAltAmmoChamber)
-    {
-        Super.DrawHudPassA(C);
+	if (BW.bAmmoHUDAsBar)
+	{
+		OldClipsBGAlpha0 = ClipsBG.Tints[0].A;
+		OldClipsBGAlpha1 = ClipsBG.Tints[1].A;
+		OldClipsIconAlpha0 = ClipsIcon.Tints[0].A;
+		OldClipsIconAlpha1 = ClipsIcon.Tints[1].A;
+		OldClipsDigitsAlpha0 = ClipsDigits.Tints[0].A;
+		OldClipsDigitsAlpha1 = ClipsDigits.Tints[1].A;
 
-        // Restore the original ammo icons.
-        BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
-        ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
-        SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+		OldBulletsBGAlpha0 = BulletsInClipBG.Tints[0].A;
+		OldBulletsBGAlpha1 = BulletsInClipBG.Tints[1].A;
+		OldBulletsIconAlpha0 = BulletsInClipIcon.Tints[0].A;
+		OldBulletsIconAlpha1 = BulletsInClipIcon.Tints[1].A;
+		OldBulletsDigitsAlpha0 = BulletsInClipDigits.Tints[0].A;
+		OldBulletsDigitsAlpha1 = BulletsInClipDigits.Tints[1].A;
 
-        return;
-    }
+		OldSecondaryBGAlpha0 = SecondaryClipsBG.Tints[0].A;
+		OldSecondaryBGAlpha1 = SecondaryClipsBG.Tints[1].A;
+		OldSecondaryIconAlpha0 = SecondaryClipsIcon.Tints[0].A;
+		OldSecondaryIconAlpha1 = SecondaryClipsIcon.Tints[1].A;
+		OldSecondaryDigitsAlpha0 = SecondaryClipsDigits.Tints[0].A;
+		OldSecondaryDigitsAlpha1 = SecondaryClipsDigits.Tints[1].A;
 
-    // Hide the normal secondary reserve number.
-    OldAlpha0 = SecondaryClipsDigits.Tints[0].A;
-    OldAlpha1 = SecondaryClipsDigits.Tints[1].A;
+		ClipsBG.Tints[0].A = 0;
+		ClipsBG.Tints[1].A = 0;
+		ClipsIcon.Tints[0].A = 0;
+		ClipsIcon.Tints[1].A = 0;
+		ClipsDigits.Tints[0].A = 0;
+		ClipsDigits.Tints[1].A = 0;
 
-    SecondaryClipsDigits.Tints[0].A = 0;
-    SecondaryClipsDigits.Tints[1].A = 0;
+		BulletsInClipBG.Tints[0].A = 0;
+		BulletsInClipBG.Tints[1].A = 0;
+		BulletsInClipIcon.Tints[0].A = 0;
+		BulletsInClipIcon.Tints[1].A = 0;
+		BulletsInClipDigits.Tints[0].A = 0;
+		BulletsInClipDigits.Tints[1].A = 0;
 
-    Super.DrawHudPassA(C);
+		SecondaryClipsBG.Tints[0].A = 0;
+		SecondaryClipsBG.Tints[1].A = 0;
+		SecondaryClipsIcon.Tints[0].A = 0;
+		SecondaryClipsIcon.Tints[1].A = 0;
+		SecondaryClipsDigits.Tints[0].A = 0;
+		SecondaryClipsDigits.Tints[1].A = 0;
 
-    // Restore the original widget.
-    SecondaryClipsDigits.Tints[0].A = OldAlpha0;
-    SecondaryClipsDigits.Tints[1].A = OldAlpha1;
+		Super.DrawHudPassA(C);
 
-    // Restore the original ammo icons.
-    BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
-    ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
-    SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+		ClipsBG.Tints[0].A = OldClipsBGAlpha0;
+		ClipsBG.Tints[1].A = OldClipsBGAlpha1;
+		ClipsIcon.Tints[0].A = OldClipsIconAlpha0;
+		ClipsIcon.Tints[1].A = OldClipsIconAlpha1;
+		ClipsDigits.Tints[0].A = OldClipsDigitsAlpha0;
+		ClipsDigits.Tints[1].A = OldClipsDigitsAlpha1;
 
-    // Copy the stock secondary ammo widget.
-    AltAmmoChamberDigits = SecondaryClipsDigits;
+		BulletsInClipBG.Tints[0].A = OldBulletsBGAlpha0;
+		BulletsInClipBG.Tints[1].A = OldBulletsBGAlpha1;
+		BulletsInClipIcon.Tints[0].A = OldBulletsIconAlpha0;
+		BulletsInClipIcon.Tints[1].A = OldBulletsIconAlpha1;
+		BulletsInClipDigits.Tints[0].A = OldBulletsDigitsAlpha0;
+		BulletsInClipDigits.Tints[1].A = OldBulletsDigitsAlpha1;
 
-    // Set the chamber value.
-    AltAmmoChamberDigits.Value = BW.GetAltAmmoChamber();
+		SecondaryClipsBG.Tints[0].A = OldSecondaryBGAlpha0;
+		SecondaryClipsBG.Tints[1].A = OldSecondaryBGAlpha1;
+		SecondaryClipsIcon.Tints[0].A = OldSecondaryIconAlpha0;
+		SecondaryClipsIcon.Tints[1].A = OldSecondaryIconAlpha1;
+		SecondaryClipsDigits.Tints[0].A = OldSecondaryDigitsAlpha0;
+		SecondaryClipsDigits.Tints[1].A = OldSecondaryDigitsAlpha1;
 
-    // Move the chamber digit.
-    AltAmmoChamberDigits.OffsetX += AltAmmoChamberOffsetX;
+		if (!bLightHud)
+			DrawSpriteWidget(C, WelderBG);
 
-    // Draw chamber.
-    DrawNumericWidget(C, AltAmmoChamberDigits, DigitsSmall);
+		DrawSpriteWidget(C, WelderIcon);
+		DrawNumericWidget(C, WelderDigits, DigitsSmall);
 
-    // Copy the stock secondary ammo widget.
+		BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
+		ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
+		SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+
+		return;
+	}
+
+	if (!BW.bShowAltAmmoChamber)
+	{
+		Super.DrawHudPassA(C);
+
+		BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
+		ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
+		SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+
+		return;
+	}
+
+	OldAlpha0 = SecondaryClipsDigits.Tints[0].A;
+	OldAlpha1 = SecondaryClipsDigits.Tints[1].A;
+
+	SecondaryClipsDigits.Tints[0].A = 0;
+	SecondaryClipsDigits.Tints[1].A = 0;
+
+	Super.DrawHudPassA(C);
+
+	SecondaryClipsDigits.Tints[0].A = OldAlpha0;
+	SecondaryClipsDigits.Tints[1].A = OldAlpha1;
+
+	BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
+	ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
+	SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+
+	AltAmmoChamberDigits = SecondaryClipsDigits;
+	AltAmmoChamberDigits.Value = BW.GetAltAmmoChamber();
+	AltAmmoChamberDigits.OffsetX += AltAmmoChamberOffsetX;
+	DrawNumericWidget(C, AltAmmoChamberDigits, DigitsSmall);
+
 	AltAmmoReserveDigits = SecondaryClipsDigits;
-
-	// Move the reserve digit.
 	AltAmmoReserveDigits.OffsetX += AltAmmoReserveOffsetX;
-
-	// Draw reserve.
 	DrawNumericWidget(C, AltAmmoReserveDigits, DigitsSmall);
 
-    // Set up the slash.
-    AltAmmoDivider.WidgetTexture = Texture'BWKF_Core_T.Icons.HUDBW';
-    AltAmmoDivider.RenderStyle = SecondaryClipsDigits.RenderStyle;
-    AltAmmoDivider.TextureScale = SecondaryClipsDigits.TextureScale;
-    AltAmmoDivider.DrawPivot = DP_MiddleMiddle;
-    AltAmmoDivider.PosX = SecondaryClipsDigits.PosX;
-    AltAmmoDivider.PosY = SecondaryClipsDigits.PosY;
-    AltAmmoDivider.OffsetX = SecondaryClipsDigits.OffsetX + AltAmmoDividerOffsetX;
-    AltAmmoDivider.OffsetY = SecondaryClipsDigits.OffsetY + AltAmmoDividerOffsetY;
-    AltAmmoDivider.TextureCoords.X1 = 0;
-    AltAmmoDivider.TextureCoords.Y1 = 0;
-    AltAmmoDivider.TextureCoords.X2 = 64;
-    AltAmmoDivider.TextureCoords.Y2 = 64;
-    AltAmmoDivider.Tints[0] = SecondaryClipsDigits.Tints[0];
-    AltAmmoDivider.Tints[1] = SecondaryClipsDigits.Tints[1];
+	AltAmmoDivider.WidgetTexture = Texture'BWKF_Core_T.Icons.HUDBW';
+	AltAmmoDivider.RenderStyle = SecondaryClipsDigits.RenderStyle;
+	AltAmmoDivider.TextureScale = SecondaryClipsDigits.TextureScale;
+	AltAmmoDivider.DrawPivot = DP_MiddleMiddle;
+	AltAmmoDivider.PosX = SecondaryClipsDigits.PosX;
+	AltAmmoDivider.PosY = SecondaryClipsDigits.PosY;
+	AltAmmoDivider.OffsetX = SecondaryClipsDigits.OffsetX + AltAmmoDividerOffsetX;
+	AltAmmoDivider.OffsetY = SecondaryClipsDigits.OffsetY + AltAmmoDividerOffsetY;
+	AltAmmoDivider.TextureCoords.X1 = 0;
+	AltAmmoDivider.TextureCoords.Y1 = 0;
+	AltAmmoDivider.TextureCoords.X2 = 64;
+	AltAmmoDivider.TextureCoords.Y2 = 64;
+	AltAmmoDivider.Tints[0] = SecondaryClipsDigits.Tints[0];
+	AltAmmoDivider.Tints[1] = SecondaryClipsDigits.Tints[1];
 
-    // Draw slash.
-    DrawSpriteWidget(C, AltAmmoDivider);
+	DrawSpriteWidget(C, AltAmmoDivider);
 }
 
 defaultproperties

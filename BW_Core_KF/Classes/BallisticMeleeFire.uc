@@ -20,7 +20,6 @@ var() name MeleeThirdPersonAnim;
 var() name MeleePrepAnim;
 var() name MeleeFireAnim;
 
-
 //=============================================================================
 // SWIPE DATA
 //=============================================================================
@@ -502,48 +501,48 @@ function ApplyMeleeDamage(Actor Victim,Vector HitLocation,Vector TraceStart,Vect
 
 simulated event ModeDoFire()
 {
-    if (!AllowFire())
-        return;
+	if (!AllowFire())
+		return;
 
-    if (MaxHoldTime > 0.0)
-        HoldTime = FMin(HoldTime, MaxHoldTime);
+	if (MaxHoldTime > 0.0)
+		HoldTime = FMin(HoldTime, MaxHoldTime);
 
-    if (Weapon.Role == ROLE_Authority)
-    {
-        DoFireEffect();
+	if (Weapon.Role == ROLE_Authority)
+	{
+		DoFireEffect();
 
-        if (Instigator == none || Instigator.Controller == none)
-            return;
+		if (Instigator == none || Instigator.Controller == none)
+			return;
 
-        Instigator.DeactivateSpawnProtection();
-    }
+		Instigator.DeactivateSpawnProtection();
+	}
 
-    Super(BallisticInstantFire).ModeDoFire();
+	Super(BallisticInstantFire).ModeDoFire();
 
 	if (Instigator.IsLocallyControlled() && ThisModeNum == 2)
 		ShakeView();
 
-    if (Instigator.IsLocallyControlled())
-    {
-        if (!bMeleeStrikeAnimationPlayed)
-            PlayFiring();
-    }
-    else
-    {
-        ServerPlayFiring();
-    }
+	if (Instigator.IsLocallyControlled())
+	{
+		if (!bMeleeStrikeAnimationPlayed)
+			PlayFiring();
+	}
+	else
+	{
+		ServerPlayFiring();
+	}
 
-    Load = AmmoPerFire;
-    HoldTime = 0.0;
+	Load = AmmoPerFire;
+	HoldTime = 0.0;
 
-    if (BallisticWeapon(Weapon) != none)
-        BallisticWeapon(Weapon).SetDefaultGunLength();
+	if (BallisticWeapon(Weapon) != none)
+		BallisticWeapon(Weapon).SetDefaultGunLength();
 
-    if (Instigator.PendingWeapon != Weapon && Instigator.PendingWeapon != none)
-    {
-        bIsFiring = false;
-        Weapon.PutDown();
-    }
+	if (Instigator.PendingWeapon != Weapon && Instigator.PendingWeapon != none)
+	{
+		bIsFiring = false;
+		Weapon.PutDown();
+	}
 }
 
 
@@ -581,20 +580,20 @@ simulated event ModeHoldFire()
 
 function PlayFiring()
 {
-    UpdateMeleeAnimation();
+	UpdateMeleeAnimation();
 
-    bMeleeHolding = false;
-    bMeleeStrikeAnimationPlayed = true;
+	bMeleeHolding = false;
+	bMeleeStrikeAnimationPlayed = true;
 
-    if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
-        Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+	if (Weapon.Mesh != none && FireAnim != '' && Weapon.HasAnim(FireAnim))
+		Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
 
-    if (FireSound != none)
-        Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
+	if (FireSound != none)
+		Weapon.PlaySound(FireSound, SLOT_Interact, TransientSoundVolume);
+		
+	ClientPlayForceFeedback(FireForce);
 
-    ClientPlayForceFeedback(FireForce);
-
-    FireCount++;
+	FireCount++;
 }
 
 //=============================================================================

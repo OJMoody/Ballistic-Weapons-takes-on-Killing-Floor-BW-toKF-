@@ -53,6 +53,54 @@ function KFDoorMover GetDoor()
 	return KFDoorMover(A);
 }
 
+function DoTrace(Vector Start, Rotator Dir)
+{
+	local Vector X,Y,Z, End, HitLocation, HitNormal, ArcEnd;
+	local Actor Other;
+	local array<int> HitPoints;
+	local KFPawn HitPawn;
+
+	MaxRange();
+
+	Weapon.GetViewAxes(X, Y, Z);
+
+	if (Weapon.WeaponCentered())
+		ArcEnd = (Instigator.Location + Weapon.EffectOffset.X * X + 1.5 * Weapon.EffectOffset.Z * Z);
+	else
+		ArcEnd = (Instigator.Location + Instigator.CalcDrawOffset(Weapon) + Weapon.EffectOffset.X * X + Weapon.Hand * Weapon.EffectOffset.Y * Y + Weapon.EffectOffset.Z * Z);
+
+	X = Vector(Dir);
+	End = Start + TraceRange * X;
+	Other = Instigator.HitPointTrace(HitLocation, HitNormal, End, HitPoints, Start,, 1);
+
+	if (Other != None && Other != Instigator && Other.Base != Instigator)
+	{
+		if (!Other.bWorldGeometry)
+		{
+			HitPawn = KFPawn(Other);
+
+			if (HitPawn != None)
+			{
+				if (!HitPawn.bDeleteMe)
+					HitPawn.ProcessLocationalDamage(DamageMax, Instigator, HitLocation, Momentum * X, DamageType, HitPoints);
+			}
+			else
+			{
+				Other.TakeDamage(DamageMax, Instigator, HitLocation, Momentum * X, DamageType);
+			}
+		}
+		else
+		{
+			HitLocation = HitLocation + 2.0 * HitNormal;
+		}
+	}
+	else
+	{
+		HitLocation = End;
+		HitNormal = Normal(Start - End);
+	}
+}
+
 simulated function bool AllowFire()
 {
 	local KFDoorMover WeldTarget;
@@ -86,8 +134,24 @@ simulated function bool AllowFire()
 	return Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire;
 }
 
+simulated function FlashMuzzleFlash()
+{
+	local Emitter WeldEmitter;
+
+	WeldEmitter = Weapon.Spawn(Class'KFMod.WelderHitEmitter');
+
+	if (WeldEmitter != None)
+		Weapon.AttachToBone(WeldEmitter, BallisticWeapon(Weapon).FlashBoneRight);
+}
+
 defaultproperties
 {
+	ShakeOffsetMag=(X=0.0,Y=0.0,Z=0.0)
+	ShakeOffsetRate=(X=0.0,Y=0.0,Z=0.0)
+	ShakeOffsetTime=0.0
+	ShakeRotMag=(X=0.0,Y=0.0,Z=0.0)
+	ShakeRotRate=(X=0.0,Y=0.0,Z=0.0)
+	ShakeRotTime=0.0
 	DamageMin=10
 	DamageMax=10
 	MaxAdditionalDamage=0

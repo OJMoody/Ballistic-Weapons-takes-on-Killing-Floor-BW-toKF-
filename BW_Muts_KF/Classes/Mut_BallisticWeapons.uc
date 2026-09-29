@@ -13,14 +13,13 @@ var array<BWTraderWeapon> BWTraderWeapons;
 
 function ModifyPlayer(Pawn Other)
 {
-    Log("BW TRACE ModifyPlayer Pawn="$Other);
-    Log("BW TRACE ModifyPlayer PawnClass="$Other.Class);
-    Log("BW TRACE ModifyPlayer Controller="$Other.Controller);
+	if (Other.Controller != None)
+		Log("BW TRACE ModifyPlayer ControllerClass="$Other.Controller.Class);
 
-    if (Other.Controller != None)
-        Log("BW TRACE ModifyPlayer ControllerClass="$Other.Controller.Class);
+	if (BW_KFPawn(Other) != None)
+		GiveBWWelder(Other);
 
-    Super.ModifyPlayer(Other);
+	Super.ModifyPlayer(Other);
 }
 
 function string GetInventoryClassOverride(string InventoryClassName)
@@ -43,11 +42,30 @@ function string GetInventoryClassOverride(string InventoryClassName)
 	return Super.GetInventoryClassOverride(InventoryClassName);
 }
 
+function GiveBWWelder(Pawn Other)
+{
+	local Inventory Inv;
+
+	if (Other == None)
+		return;
+
+	Inv = Other.FindInventoryType(class'Tool_WD200_Main');
+
+	if (Inv == None)
+	{
+		Inv = Spawn(class'Tool_WD200_Main');
+
+		if (Inv != None)
+			Inv.GiveTo(Other);
+	}
+}
+
 function PreBeginPlay()
 {
-    Super.PreBeginPlay();
+	Super.PreBeginPlay();
 
-    class'KFRandomItemSpawn'.default.PickupClasses[7] = class'BWArmorPickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[7] = class'BWArmorPickup';
+	class'BW_KFPawn'.default.RequiredEquipment[4] = "";
 }
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
@@ -62,6 +80,12 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 	if (Other.Class == class'Vest')
 	{
 		ReplaceWith(Other, "BW_Core_KF.BWArmorPickup");
+		return false;
+	}
+	
+	if (Other.Class == class'WelderPickup')
+	{
+		ReplaceWith(Other, "BW_WD000_KF.Tool_WD200_Pickup");
 		return false;
 	}
 
