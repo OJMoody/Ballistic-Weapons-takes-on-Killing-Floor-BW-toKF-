@@ -63,7 +63,6 @@ exec function ReloadMeNow()
 	BallisticReloadStage = 0;
 	bBallisticReload = true;
 	bIsReloading = true;
-	bBOGReloadAnimFinished = false;
 	ReloadTimer = Level.TimeSeconds;
 	
 	if (Role == ROLE_Authority)
@@ -76,33 +75,82 @@ exec function ReloadMeNow()
 	Instigator.SetAnimAction(WeaponReloadAnim);
 }
 
+simulated function Notify_ClipIn()
+{
+	if (bFireModeReloading)
+	{
+		bBallisticClipOut = false;
+		bReloadResumePending = false;
+		bBallisticReloadClipIn = false;
+		bBallisticReload = false;
+		BallisticReloadStage = 0;
+
+		UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+		if (MagAmmoRemaining <= 0)
+		{
+			if (Role == ROLE_Authority)
+				AddReloadedAmmo();
+		}
+
+		class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+		return;
+	}
+
+	if (bChangingFireMode)
+	{
+		class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+		return;
+	}
+
+	if (!bIsReloading)
+	{
+		class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+		return;
+	}
+
+	Super.Notify_ClipIn();
+}
+
+simulated function Notify_ClipOut()
+{
+	if (bFireModeReloading)
+	{
+		class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
+		return;
+	}
+
+	Super.Notify_ClipOut();
+}
+
 function ServerClipIn()
 {
-    if (Role != ROLE_Authority)
-        return;
+	if (Role != ROLE_Authority)
+		return;
 
-    if (!bIsReloading)
-        return;
+	if (!bIsReloading)
+		return;
 
-    if (!bServerBOGClipInReady)
-        return;
+	if (!bServerBOGClipInReady)
+		return;
 
-    if (MagAmmoRemaining >= MagCapacity)
-        return;
+	if (MagAmmoRemaining >= MagCapacity)
+	{
+		bServerBOGClipInReady = false;
+		return;
+	}
 
-    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-    if (AmmoAmount(0) >= MagCapacity)
-        MagAmmoRemaining = MagCapacity;
-    else
-        MagAmmoRemaining = AmmoAmount(0);
+	if (AmmoAmount(0) >= MagCapacity)
+		MagAmmoRemaining = MagCapacity;
+	else
+		MagAmmoRemaining = AmmoAmount(0);
 
-    bServerBOGClipInReady = false;
-    bBallisticReload = false;
-    bIsReloading = false;
-    bReloadEffectDone = false;
-    bReloadResumePending = false;
-    BallisticReloadStage = 0;
+	if (MagAmmoRemaining > MagCapacity)
+		MagAmmoRemaining = MagCapacity;
+
+	bServerBOGClipInReady = false;
 }
 
 simulated function WeaponTick(float DeltaTime)
@@ -114,24 +162,16 @@ simulated function WeaponTick(float DeltaTime)
 		bServerBOGClipInReady = true;
 }
 
-simulated function ActuallyFinishReloading()
-{
-	if (bIsReloading && !bBOGReloadAnimFinished)
-		return;
-
-	Super.ActuallyFinishReloading();
-}
-
 simulated function AnimEnd(int Channel)
 {
 	local name AnimName;
 	local float Frame;
 	local float Rate;
 
+	GetAnimParams(Channel, AnimName, Frame, Rate);
+
 	if (Channel == 0)
 	{
-		GetAnimParams(0, AnimName, Frame, Rate);
-
 		if (bReloadResumePlaying &&
 			(AnimName == WeaponReloadResumeAnimation ||
 				AnimName == WeaponReloadResumeAnimation2))
@@ -158,9 +198,20 @@ simulated function AnimEnd(int Channel)
 
 		if (bIsReloading && AnimName == ReloadAnim)
 		{
-			bBOGReloadAnimFinished = true;
 			bFireAnimPlaying = false;
-			ActuallyFinishReloading();
+
+			if (FireMode[0] != None)
+				FireMode[0].StopFiring();
+
+			bIsReloading = false;
+			bBallisticReload = false;
+			bBallisticReloadClipIn = false;
+			bReloadEffectDone = false;
+			bReloadResumePending = false;
+			bBallisticClipOut = false;
+			BallisticReloadStage = 0;
+
+			PlayIdle();
 			return;
 		}
 
@@ -294,10 +345,51 @@ simulated function bool PutDown()
 
 function GiveTo(Pawn Other, optional Pickup Pickup)
 {
+	local Weapon_BOGPistol_Pickup BOGPPickup;
+
 	Super.GiveTo(Other, Pickup);
 
-	if (Role == ROLE_Authority && (Pickup == None || !Pickup.bDropped))
+	if (Role != ROLE_Authority)
+		return;
+
+	BOGPPickup = Weapon_BOGPistol_Pickup(Pickup);
+
+	if (BOGPPickup != None && Pickup.bDropped && BOGPPickup.bHasSavedWeaponMode)
+	{
+		CurrentWeaponMode = BOGPPickup.SavedWeaponMode;
+
+		switch (CurrentWeaponMode)
+		{
+			case 0:
+				Skins[2] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Main", class'Material'));
+				Skins[3] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Main", class'Material'));
+				break;
+
+			case 1:
+				Skins[2] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Flame", class'Material'));
+				Skins[3] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Flame", class'Material'));
+				break;
+
+			case 2:
+				Skins[2] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Medic", class'Material'));
+				Skins[3] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Medic", class'Material'));
+				break;
+		}
+
+		if (FireMode[0] != None)
+		{
+			if (BallisticInstantFire(FireMode[0]) != None)
+				BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+			else if (BallisticShotgunFire(FireMode[0]) != None)
+				BallisticShotgunFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+		}
+
+		CheckBurstMode();
+	}
+	else
+	{
 		SetDefaultFireMode();
+	}
 }
 
 function SetDefaultFireMode()
@@ -318,6 +410,21 @@ function SetDefaultFireMode()
 		NewMode = 0;
 
 	CurrentWeaponMode = NewMode;
+
+	switch (CurrentWeaponMode)
+	{
+		case 0:
+			Skins[2] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Main", class'Material'));
+			break;
+
+		case 1:
+			Skins[2] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Flame", class'Material'));
+			break;
+
+		case 2:
+			Skins[2] = Material(DynamicLoadObject("BWKF_BOGP_T.Weapon.BOGP_Medic", class'Material'));
+			break;
+	}
 
 	if (FireMode[0] != None)
 	{

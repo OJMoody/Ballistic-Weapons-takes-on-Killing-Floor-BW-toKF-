@@ -6,23 +6,38 @@ var() class<Projectile> MedicalProjectileClass;
 
 simulated function bool AllowFire()
 {
-	if (BallisticWeapon(Weapon) != None && BallisticWeapon(Weapon).bIsReloading)
+	local BallisticWeapon BW;
+	local Weapon_BOGPistol_Main BOGP;
+
+	BW = BallisticWeapon(Weapon);
+	BOGP = Weapon_BOGPistol_Main(Weapon);
+
+	if (BW != None && BW.IsHoldingMelee())
 		return false;
 
-	if (Weapon_BOGPistol_Main(Weapon) != None && Weapon_BOGPistol_Main(Weapon).bChangingFireMode)
+	if (BW != None && BW.IsActionLocked())
 		return false;
 
-	if (Weapon_BOGPistol_Main(Weapon) != None &&
-		(Weapon_BOGPistol_Main(Weapon).MeleeState == MS_Held ||
-		 Weapon_BOGPistol_Main(Weapon).MeleeState == MS_Pending ||
-		 Weapon_BOGPistol_Main(Weapon).MeleeState == MS_Strike ||
-		 Weapon_BOGPistol_Main(Weapon).MeleeState == MS_StrikePending))
+	if (BOGP != None && BOGP.bIsReloading)
 		return false;
 
-	if (BallisticWeapon(Weapon) != None && BallisticWeapon(Weapon).MagAmmoRemaining < AmmoPerFire)
+	if (BOGP != None && BOGP.bChangingFireMode)
 		return false;
 
-	return (Weapon.AmmoAmount(ThisModeNum) >= AmmoPerFire);
+	if (BOGP != None &&
+		(BOGP.MeleeState == MS_Held ||
+		 BOGP.MeleeState == MS_Pending ||
+		 BOGP.MeleeState == MS_Strike ||
+		 BOGP.MeleeState == MS_StrikePending))
+		return false;
+
+	if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
+		return false;
+
+	if (Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire)
+		return false;
+
+	return true;
 }
 
 function PlayFiring()
@@ -102,5 +117,5 @@ defaultproperties
      EffectiveRange=2500.000000
      maxVerticalRecoilAngle=200
      maxHorizontalRecoilAngle=50
-     bWaitForRelease=true
+     bWaitForRelease=false
 }

@@ -1,5 +1,26 @@
 class Weapon_BOGPistol_Pickup extends BallisticPickup;
 
+var byte SavedWeaponMode;
+var bool bHasSavedWeaponMode;
+
+function InitDroppedPickupFor(Inventory Inv)
+{
+	local Weapon_BOGPistol_Main BOGP;
+
+	Super.InitDroppedPickupFor(Inv);
+
+	BOGP = Weapon_BOGPistol_Main(Inv);
+
+	if (BOGP != None)
+	{
+		SavedWeaponMode = BOGP.CurrentWeaponMode;
+		bHasSavedWeaponMode = true;
+
+		if (BOGP.Skins[3] != None)
+			Skins[3] = BOGP.Skins[3];
+	}
+}
+
 defaultproperties
 {
 	Weight=4.000000
