@@ -14,12 +14,12 @@ defaultproperties
     StereoFireSoundRef="BWKF_Wilson_SN.Wilson.LM-Fire"
     NoAmmoSound=Sound'KF_9MMSnd.9mm_DryFire'
     FireForce="AssaultRifleFire"
-    FireRate=0.35
+    FireRate=0.14
     RecoilRate=0.1
     maxVerticalRecoilAngle=300
     maxHorizontalRecoilAngle=50
     TweenTime=0.025
-    AmmoClass=Class'BW_WD001_KF.Weapon_M806Pistol_Ammo'
+    AmmoClass=Class'BW_WD001_KF.Weapon_Wilson41Dual_Ammo'
     AmmoPerFire=1
     BotRefireRate=0.350000
     FlashEmitterClass=Class'BW_WD001_KF.Weapon_Wilson41_FlashEmitter'

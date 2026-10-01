@@ -16,7 +16,7 @@ defaultproperties
     StereoFireSoundRef="BWKF_M806_SN.M806Fire"
     NoAmmoSound=Sound'KF_9MMSnd.9mm_DryFire'
     FireForce="AssaultRifleFire"
-    FireRate=0.25
+    FireRate=0.125
     RecoilRate=0.1
     maxVerticalRecoilAngle=300
     maxHorizontalRecoilAngle=50

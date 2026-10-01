@@ -112,17 +112,11 @@ function PlayFiring()
 {
 	local float RandPitch;
 	local BallisticWeapon BW;
-	local name DualFireAnim;
 
 	BW = BallisticWeapon(Weapon);
 
 	if (BW != None && BW.bDualWeapon)
-	{
 		bLastDualFireLeft = bDualFireLeft;
-		DualFireAnim = BW.GetDualFireAnim(bDualFireLeft);
-	}
-	else
-		DualFireAnim = FireAnim;
 
 	if (Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
 	{
@@ -131,7 +125,7 @@ function PlayFiring()
 			if (KFWeap.bAimingRifle)
 			{
 				if (BW != None && BW.bDualWeapon)
-					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, 0.0);
+					BW.PlayDualFireAnimation(bLastDualFireLeft);
 				else if (Weapon.HasAnim(FireLoopAimedAnim))
 					Weapon.PlayAnim(FireLoopAimedAnim, FireLoopAnimRate, 0.0);
 				else if (Weapon.HasAnim(FireAimedAnim))
@@ -142,7 +136,7 @@ function PlayFiring()
 			else
 			{
 				if (BW != None && BW.bDualWeapon)
-					Weapon.PlayAnim(DualFireAnim, FireAnimRate, 0.0);
+					BW.PlayDualFireAnimation(bLastDualFireLeft);
 				else if (Weapon.HasAnim(FireLoopAnim))
 					Weapon.PlayAnim(FireLoopAnim, FireLoopAnimRate, 0.0);
 				else
@@ -154,7 +148,7 @@ function PlayFiring()
 			if (KFWeap.bAimingRifle)
 			{
 				if (BW != None && BW.bDualWeapon)
-					Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, 0.0);
+					BW.PlayDualFireAnimation(bLastDualFireLeft);
 				else if (Weapon.HasAnim(FireAimedAnim))
 					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
 				else
@@ -163,7 +157,7 @@ function PlayFiring()
 			else
 			{
 				if (BW != None && BW.bDualWeapon)
-					Weapon.PlayAnim(DualFireAnim, FireAnimRate, 0.0);
+					BW.PlayDualFireAnimation(bLastDualFireLeft);
 				else
 					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
 			}

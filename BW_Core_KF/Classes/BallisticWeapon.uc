@@ -127,6 +127,15 @@ var() name AltSightFireAnimRight;
 
 var Actor AltThirdPersonActor;
 
+var() name DualFireLeftBone;
+var() name DualFireRightBone;
+
+var bool bDualFireLeftPlaying;
+var bool bDualFireRightPlaying;
+
+const DualFireLeftChannel=1;
+const DualFireRightChannel=2;
+
 
 //=============================================================================
 // RELOAD ANIMATION
@@ -138,7 +147,6 @@ var() name WeaponReloadResumeAnimation2;
 
 var() name WeaponReloadAltAnimation;
 var() name WeaponReloadAltResumeAnimation;
-
 
 //=============================================================================
 // RELOAD NOTIFIER SOUNDS
@@ -207,9 +215,81 @@ replication
 	ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
 }
 
+simulated function SetupDualFireAnimationChannels()
+{
+	if (!bDualWeapon)
+		return;
+
+	AnimBlendParams(DualFireLeftChannel, 0.0, 0.0, 0.0, DualFireLeftBone);
+	AnimBlendParams(DualFireRightChannel, 0.0, 0.0, 0.0, DualFireRightBone);
+}
+
+simulated function PlayDualFireAnimation(bool bLeft)
+{
+	local name AnimName;
+	local BallisticInstantFire BIF;
+	local float AnimRate;
+	local int Channel;
+
+	if (!bDualWeapon)
+		return;
+
+	if (bLeft)
+	{
+		if (bAimingRifle)
+			AnimName = GetDualSightFireAnim(true);
+		else
+			AnimName = GetDualFireAnim(true);
+
+		Channel = DualFireLeftChannel;
+	}
+	else
+	{
+		if (bAimingRifle)
+			AnimName = GetDualSightFireAnim(false);
+		else
+			AnimName = GetDualFireAnim(false);
+
+		Channel = DualFireRightChannel;
+	}
+
+	if (AnimName == '' || !HasAnim(AnimName))
+		return;
+
+	AnimRate = 1.0;
+
+	if (FireMode[0] != None)
+	{
+		BIF = BallisticInstantFire(FireMode[0]);
+
+		if (BIF != None)
+			AnimRate = BIF.FireAnimRate;
+	}
+
+	if (bLeft)
+	bDualFireLeftPlaying = true;
+	else
+		bDualFireRightPlaying = true;
+
+	if (bLeft)
+		AnimBlendParams(DualFireLeftChannel, 1.0, 0.0, 0.0, DualFireLeftBone);
+	else
+		AnimBlendParams(DualFireRightChannel, 1.0, 0.0, 0.0, DualFireRightBone);
+
+	PlayAnim(AnimName, AnimRate, 0.0, Channel);
+}
+
+simulated function ResetDualFireAnimationChannels()
+{
+	bDualFireLeftPlaying = false;
+	bDualFireRightPlaying = false;
+}
+
 simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
+	
+	SetupDualFireAnimationChannels();
 
 	//=========================================================================
 	// FIRE MODES
@@ -799,11 +879,6 @@ simulated function CheckPendingMelee()
 
 exec function ReloadMeNow()
 {
-	log("BW DEBUG ReloadMeNow");
-	log("BW DEBUG Mag="$MagAmmoRemaining$"/"$MagCapacity$" Ammo="$AmmoAmount(0));
-	log("BW DEBUG States: IsReloading="$bIsReloading$" BallisticReload="$bBallisticReload$" BallisticAltReload="$bBallisticAltReload$" ReloadClipIn="$bBallisticReloadClipIn);
-	log("BW DEBUG Pending: Reload="$bReloadPending$" Resume="$bReloadResumePending);
-	
 	if (ClientState == WS_BringUp)
 		return;
 
@@ -865,6 +940,7 @@ exec function ReloadMeNow()
 		bReloadResumePending = false;
 		bBallisticClipOut = false;
 		BallisticReloadStage = 0;
+		ResetDualFireAnimationChannels();
 		bBallisticReload = true;
 
 		Super.ReloadMeNow();
@@ -883,6 +959,7 @@ exec function ReloadMeNow()
 		bReloadCancelRequested = false;
 		bReloadResumePending = false;
 		bBallisticClipOut = false;
+		ResetDualFireAnimationChannels();
 		bBallisticAltReload = true;
 		BallisticReloadStage = 0;
 
@@ -900,7 +977,7 @@ simulated function bool AllowAltReload()
 exec function ReloadAlt()
 {
 	if (ClientState == WS_BringUp)
-        return;
+		return;
 	
 	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
 		return;
@@ -917,6 +994,7 @@ exec function ReloadAlt()
 	bReloadCancelRequested = false;
 	bReloadResumePending = false;
 	bBallisticClipOut = false;
+	ResetDualFireAnimationChannels();
 	bBallisticAltReload = true;
 	BallisticReloadStage = 0;
 
@@ -1959,6 +2037,8 @@ simulated function bool PutDown()
 	local bool bResult;
 
 	bPuttingDown = true;
+	
+	ResetDualFireAnimationChannels();
 
 	//=========================================================================
 	// RELOAD
@@ -2024,7 +2104,6 @@ simulated function bool PutDown()
 
 	return bResult;
 }
-
 
 //=============================================================================
 // Scope Code
@@ -2104,6 +2183,28 @@ simulated function AnimEnd(int Channel)
 	local float Frame;
 	local float Rate;
 	local int Mode;
+
+	//=============================================================================
+	// Dual Fire Animation Channels
+	//=============================================================================
+
+	if (Channel == DualFireLeftChannel)
+	{
+		bDualFireLeftPlaying = false;
+		AnimBlendParams(DualFireLeftChannel, 0.0, 0.2, 0.0, DualFireLeftBone);
+		return;
+	}
+
+	if (Channel == DualFireRightChannel)
+	{
+		bDualFireRightPlaying = false;
+		AnimBlendParams(DualFireRightChannel, 0.0, 0.2, 0.0, DualFireRightBone);
+		return;
+	}
+	
+	//=============================================================================
+	// Original Weapon Animation Channel
+	//=============================================================================
 
 	if (Channel == 0)
 	{
@@ -2270,6 +2371,9 @@ defaultproperties
 	bTorchEnabled=false
 	
 	PlayerViewOffset=(X=0.000000,Y=0.000000,Z=0.000000)
+	
+	DualFireLeftBone="RootLeft"
+	DualFireRightBone="RootRight"
 	
 	DisplayFOV=70.0
     StandardDisplayFOV=70.0

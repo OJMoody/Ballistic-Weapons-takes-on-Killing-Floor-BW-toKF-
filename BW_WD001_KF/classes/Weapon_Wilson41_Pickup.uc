@@ -3,22 +3,27 @@ class Weapon_Wilson41_Pickup extends BallisticPickup;
 function inventory SpawnCopy( pawn Other )
 {
 	local Inventory I;
+	local Inventory Result;
 
 	For( I=Other.Inventory; I!=None; I=I.Inventory )
 	{
-		if( Weapon_Wilson41_Main(I)!=None )
+		if(Weapon_Wilson41Dual_Main(I)!=None)
 		{
-			if( Inventory!=None )
-				Inventory.Destroy();
+			return None;
+		}
 
+		if(Weapon_Wilson41_Main(I)!=None)
+		{
 			InventoryType = Class'Weapon_Wilson41Dual_Main';
 			I.Destroy();
-			return Super.SpawnCopy(Other);
+
+			Result = Super.SpawnCopy(Other);
+			return Result;
 		}
 	}
 
 	InventoryType = Default.InventoryType;
-	Return Super.SpawnCopy(Other);
+	return Super.SpawnCopy(Other);
 }
 
 defaultproperties
