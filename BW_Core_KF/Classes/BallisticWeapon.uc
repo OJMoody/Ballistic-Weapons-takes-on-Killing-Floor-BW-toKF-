@@ -86,7 +86,29 @@ var() name SightIronsAnim;
 //=============================================================================
 
 var bool bBallisticReload;
-var() bool bShovelLoad;
+var() bool bShovelLoadPrimary;
+var() bool bShovelLoadSecondary;
+
+var() bool bShovelLoadEmptyStart;
+var() bool bShovelLoadEmptyLoop;
+var() bool bShovelLoadEmptyEnd;
+
+var() name ShovelReloadStartAnimation;
+var() name ShovelReloadLoopAnimation;
+var() name ShovelReloadEndAnimation;
+
+var() name ShovelReloadEmptyStartAnimation;
+var() name ShovelReloadEmptyLoopAnimation;
+var() name ShovelReloadEmptyEndAnimation;
+
+var bool bShovelReload;
+var bool bShovelReloadCancelRequested;
+var bool bShovelReloadEndRequested;
+var bool bShovelReloadStopRequested;
+var bool bShovelReloadEmpty;
+var bool bShovelReloadLooping;
+
+var byte ShovelReloadMode;
 var bool bPuttingDown;
 var bool bReloadCancelRequested;
 var bool bReloadResumePending;
@@ -209,10 +231,10 @@ var Shader ScopeScriptedShader;
 replication
 {
 	reliable if (Role < ROLE_Authority)
-	ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn;
+		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn;
 
 	reliable if (Role == ROLE_Authority)
-	ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
+		ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -945,8 +967,11 @@ exec function ReloadMeNow()
 
 		Super.ReloadMeNow();
 
-		if (bShovelLoad)
+		if (bShovelLoadPrimary)
+		{
+			ShovelReloadMode = 0;
 			BeginBallisticShovelReload();
+		}
 
 		return;
 	}
@@ -1172,9 +1197,25 @@ function BeginBallisticShovelReload()
 {
     CurrentShovelLoadAmount = GetShovelLoadAmount();
 
-    Notify_ShovelStart();
-}
+    bShovelReload = true;
+    bShovelReloadCancelRequested = false;
+    bShovelReloadEndRequested = false;
+    bShovelReloadStopRequested = false;
+    bShovelReloadLooping = false;
 
+    if (ShovelReloadMode == 0)
+        bShovelReloadEmpty = MagAmmoRemaining <= 0;
+    else
+        bShovelReloadEmpty = AltAmmoLoaded <= 0;
+
+    Log("SHOVEL BEGIN: Role="$Role);
+    Log("  Mag="$MagAmmoRemaining);
+    Log("  Reserve="$AmmoAmount(0));
+    Log("  Cancel="$bShovelReloadCancelRequested);
+    Log("  Stop="$bShovelReloadStopRequested);
+
+    PlayShovelReloadStartAnimation();
+}
 
 // Default Ballistic shovel behaviour.
 // Individual weapons can override this.
@@ -1184,6 +1225,82 @@ function int GetShovelLoadAmount()
     return 1;
 }
 
+simulated function name GetShovelReloadStartAnimation()
+{
+    if (bShovelReloadEmpty && bShovelLoadEmptyStart &&
+        ShovelReloadEmptyStartAnimation != '' &&
+        HasAnim(ShovelReloadEmptyStartAnimation))
+        return ShovelReloadEmptyStartAnimation;
+
+    return ShovelReloadStartAnimation;
+}
+
+simulated function name GetShovelReloadLoopAnimation()
+{
+    if (bShovelReloadEmpty && bShovelLoadEmptyLoop &&
+        ShovelReloadEmptyLoopAnimation != '' &&
+        HasAnim(ShovelReloadEmptyLoopAnimation))
+        return ShovelReloadEmptyLoopAnimation;
+
+    return ShovelReloadLoopAnimation;
+}
+
+simulated function name GetShovelReloadEndAnimation()
+{
+    if (bShovelReloadEmpty && bShovelLoadEmptyEnd &&
+        ShovelReloadEmptyEndAnimation != '' &&
+        HasAnim(ShovelReloadEmptyEndAnimation))
+        return ShovelReloadEmptyEndAnimation;
+
+    return ShovelReloadEndAnimation;
+}
+
+simulated function PlayShovelReloadStartAnimation()
+{
+    local name AnimName;
+
+    AnimName = GetShovelReloadStartAnimation();
+
+    if (AnimName != '' && HasAnim(AnimName))
+    {
+        PlayAnim(AnimName, ReloadAnimRate, 0.0);
+        return;
+    }
+
+    PlayIdle();
+}
+
+simulated function PlayShovelReloadLoopAnimation()
+{
+    local name AnimName;
+
+    AnimName = GetShovelReloadLoopAnimation();
+
+    if (AnimName != '' && HasAnim(AnimName))
+    {
+        bShovelReloadLooping = true;
+        PlayAnim(AnimName, ReloadAnimRate, 0.0);
+        return;
+    }
+
+    PlayIdle();
+}
+
+simulated function PlayShovelReloadEndAnimation()
+{
+    local name AnimName;
+
+    AnimName = GetShovelReloadEndAnimation();
+
+    if (AnimName != '' && HasAnim(AnimName))
+    {
+        PlayAnim(AnimName, ReloadAnimRate, 0.0);
+        return;
+    }
+
+    PlayIdle();
+}
+
 
 //=============================================================================
 // RELOAD CANCELLATION
@@ -1191,16 +1308,17 @@ function int GetShovelLoadAmount()
 
 simulated function bool InterruptReload()
 {
-	log("BW DEBUG InterruptReload");
-	log("BW DEBUG Mag="$MagAmmoRemaining$"/"$MagCapacity$" Ammo="$AmmoAmount(0));
-	log("BW DEBUG States: IsReloading="$bIsReloading$" BallisticReload="$bBallisticReload$" BallisticAltReload="$bBallisticAltReload$" ReloadClipIn="$bBallisticReloadClipIn);
-	log("BW DEBUG Pending: Reload="$bReloadPending$" Resume="$bReloadResumePending);
-
 	if (bSuppressStartFireReloadInterrupt)
-        return false;
+		return false;
 
 	if (bBallisticAltReload && !bPuttingDown)
 		return false;
+
+	if (bShovelReload)
+	{
+		bShovelReloadCancelRequested = true;
+		return true;
+	}
 
 	if (bBallisticReload || bBallisticReloadClipIn)
 		return false;
@@ -1219,7 +1337,6 @@ simulated function bool InterruptReload()
 
 		if (BallisticReloadStage == 0)
 		{
-			log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 			bReloadResumePending = true;
 			bAltReloadResumePending = true;
 			bReloadCancelRequested = false;
@@ -1239,9 +1356,6 @@ simulated function bool InterruptReload()
 
 		return true;
 	}
-
-	if (bShovelLoad && bIsReloading)
-		return true;
 
 	bIsReloading = false;
 	bBallisticReload = false;
@@ -1679,20 +1793,31 @@ simulated function Notify_ShovelStart()
     class'BUtil'.static.PlayFullSound(self, ShovelStartSound, true);
 }
 
-
 simulated function Notify_ShovelLoop()
 {
     class'BUtil'.static.PlayFullSound(self, ShovelLoopSound, true);
-
-    HandleShovelLoop();
 }
-
 
 simulated function Notify_ShovelEnd()
 {
     class'BUtil'.static.PlayFullSound(self, ShovelEndSound, true);
+}
 
-    HandleShovelEnd();
+simulated function Notify_ShellInSmall()
+{
+    Log("SHOVEL TRACE 1: Notify_ShellInSmall");
+    HandleShovelShellIn(1);
+}
+
+simulated function Notify_ShellInLarge()
+{
+    Log("SHOVEL TRACE 1: Notify_ShellInLarge");
+    HandleShovelShellIn(CurrentShovelLoadAmount);
+}
+
+simulated function Notify_ShellLoopCheck()
+{
+    HandleShovelLoopCheck();
 }
 
 
@@ -1700,23 +1825,126 @@ simulated function Notify_ShovelEnd()
 // SHOVEL HANDLERS
 //=============================================================================
 
-simulated function HandleShovelLoop()
+simulated function HandleShovelShellIn(int LoadAmount)
 {
-    /*
-        Actual KF ammunition insertion will be hooked into the
-        existing KFShotgunWeapon/KFWeapon mechanism here.
-    */
+    if (!bShovelReload)
+        return;
+
+    if (LoadAmount <= 0)
+        return;
+
+    if (Role < ROLE_Authority)
+    {
+        ServerShovelShellIn(LoadAmount);
+        return;
+    }
+
+    if (ShovelReloadMode == 0)
+        AddShovelPrimaryAmmo(LoadAmount);
+    else
+        AddShovelSecondaryAmmo(LoadAmount);
 }
 
-simulated function HandleShovelEnd()
+function ServerShovelShellIn(int LoadAmount)
 {
-    if (bReloadCancelRequested)
-    {
-        bReloadCancelRequested = false;
-        bIsReloading = false;
+    if (!bShovelReload)
+        return;
 
-        PlayReloadFinishAnimation();
+    if (LoadAmount <= 0)
+        return;
+
+    if (ShovelReloadMode == 0)
+        AddShovelPrimaryAmmo(LoadAmount);
+    else
+        AddShovelSecondaryAmmo(LoadAmount);
+}
+
+simulated function AddShovelPrimaryAmmo(int LoadAmount)
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    if (!bShovelReload)
+        return;
+
+    if (LoadAmount <= 0)
+        return;
+
+    if (MagAmmoRemaining >= MagCapacity)
+        return;
+
+    MagAmmoRemaining = MagAmmoRemaining + LoadAmount;
+
+    Log("SHOVEL AFTER ADD: "$MagAmmoRemaining$" / "$MagCapacity);
+}
+
+simulated function AddShovelSecondaryAmmo(int LoadAmount)
+{
+    local int AvailableAmmo;
+    local int ActualLoadAmount;
+
+    if (Role != ROLE_Authority)
+        return;
+
+    AvailableAmmo = AmmoAmount(1);
+
+    if (AvailableAmmo <= 0)
+        return;
+
+    ActualLoadAmount = LoadAmount;
+
+    if (ActualLoadAmount > AvailableAmmo)
+        ActualLoadAmount = AvailableAmmo;
+
+    if (ActualLoadAmount <= 0)
+        return;
+
+    if (ConsumeAmmo(1, ActualLoadAmount))
+        AltAmmoLoaded += ActualLoadAmount;
+}
+
+simulated function HandleShovelLoopCheck()
+{
+    Log("SHOVEL LOOP CHECK: Role="$Role);
+	Log("  Shovel="$bShovelReload);
+	Log("  Cancel="$bShovelReloadCancelRequested);
+	Log("  Stop="$bShovelReloadStopRequested);
+	Log("  End="$bShovelReloadEndRequested);
+	Log("  Mag="$MagAmmoRemaining);
+	Log("  Reserve="$AmmoAmount(0));
+	
+	if (!bShovelReload)
+        return;
+
+    if (bShovelReloadCancelRequested || bShovelReloadStopRequested)
+    {
+        bShovelReloadCancelRequested = false;
+        bShovelReloadStopRequested = false;
+        bShovelReloadEndRequested = true;
+        return;
     }
+
+    if (ShovelReloadMode == 0)
+    {
+        UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+        if (MagAmmoRemaining >= MagCapacity ||
+            AmmoAmount(0) <= MagAmmoRemaining)
+        {
+            bShovelReloadEndRequested = true;
+            return;
+        }
+    }
+    else
+    {
+        if (AmmoAmount(1) <= 0)
+        {
+            bShovelReloadEndRequested = true;
+            return;
+        }
+    }
+
+    bShovelReloadEndRequested = false;
 }
 
 //=============================================================================
@@ -2003,33 +2231,74 @@ simulated function Timer()
 
 simulated function bool StartFire(int Mode)
 {
-    local bool RetVal;
+	local bool RetVal;
+	local bool bAutoReloadStart;
 
-    if (ClientState == WS_BringUp)
-        return false;
+	if (ClientState == WS_BringUp)
+		return false;
 
-    if (bBallisticAltReload)
-        return false;
+	if (bBallisticAltReload)
+		return false;
 
-    if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
-        return false;
+	if (bShovelReload)
+	{
+		if (bShovelReloadLooping)
+		{
+			bShovelReloadStopRequested = true;
+			return false;
+		}
 
-    if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
-        return false;
+		return false;
+	}
+	
+	if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
+		return false;
 
-    RetVal = Super.StartFire(Mode);
+	if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
+		return false;
 
-    if (RetVal)
-    {
-        if (Mode == 0 && ForceZoomOutOnFireTime > 0)
-            ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnFireTime;
-        else if (Mode == 1 && ForceZoomOutOnAltFireTime > 0)
-            ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnAltFireTime;
+	bAutoReloadStart = false;
 
-        NumClicks = 0;
-    }
+	if (Mode == 0 && MagAmmoRemaining < 1 && BallisticMeleeFire(FireMode[Mode]) == None)
+	{
+		if (bModeZeroCanDryFire)
+		{
+			if (!bIsReloading)
+			{
+				if (FireMode[0].NextFireTime <= Level.TimeSeconds)
+				{
+					if (AllowReload())
+						bAutoReloadStart = true;
+				}
+			}
+		}
 
-    return RetVal;
+		if (!bAutoReloadStart)
+			return false;
+	}
+
+	if (bAutoReloadStart)
+		bSuppressStartFireReloadInterrupt = true;
+
+	RetVal = Super.StartFire(Mode);
+
+	if (bAutoReloadStart)
+		bSuppressStartFireReloadInterrupt = false;
+
+	if (RetVal)
+	{
+		if (Mode == 0 && ForceZoomOutOnFireTime > 0)
+			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnFireTime;
+		else if (Mode == 1 && ForceZoomOutOnAltFireTime > 0)
+			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnAltFireTime;
+
+		NumClicks = 0;
+
+		if (!bAutoReloadStart)
+			InterruptReload();
+	}
+
+	return RetVal;
 }
 
 simulated function bool PutDown()
@@ -2043,10 +2312,23 @@ simulated function bool PutDown()
 	//=========================================================================
 	// RELOAD
 	//=========================================================================
-	// Allow the weapon to be lowered at any point during a reload.
-	// Preserve the reload stage so BringUp() can resume it later.
-	
-	if (bBallisticAltReload)
+	// Shovel reloads are cancelled when the weapon is lowered.
+	// They do not use the normal reload-resume system.
+
+	if (bShovelReload)
+	{
+		bShovelReload = false;
+		bShovelReloadCancelRequested = false;
+		bShovelReloadEndRequested = false;
+		bShovelReloadStopRequested = false;
+		bShovelReloadLooping = false;
+		CurrentShovelLoadAmount = 0;
+
+		bBallisticReload = false;
+		bBallisticReloadClipIn = false;
+		bIsReloading = false;
+	}
+	else if (bBallisticAltReload)
 	{
 		bReloadResumePending = true;
 		bAltReloadResumePending = true;
@@ -2209,6 +2491,46 @@ simulated function AnimEnd(int Channel)
 	if (Channel == 0)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
+
+		if (bShovelReload)
+		{
+			if (AnimName == GetShovelReloadStartAnimation())
+			{
+				PlayShovelReloadLoopAnimation();
+				return;
+			}
+
+			if (AnimName == GetShovelReloadLoopAnimation())
+			{
+				if (bShovelReloadEndRequested)
+				{
+					bShovelReloadEndRequested = false;
+					bShovelReloadLooping = false;
+					PlayShovelReloadEndAnimation();
+				}
+				else
+				{
+					PlayShovelReloadLoopAnimation();
+				}
+
+				return;
+			}
+
+			if (AnimName == GetShovelReloadEndAnimation())
+			{
+				bShovelReload = false;
+				bShovelReloadLooping = false;
+				bShovelReloadCancelRequested = false;
+				bShovelReloadEndRequested = false;
+				bIsReloading = false;
+				bBallisticReload = false;
+				bBallisticReloadClipIn = false;
+				bReloadResumePending = false;
+
+				PlayIdle();
+				return;
+			}
+		}
 
 		if (bBallisticAltReload && AnimName == WeaponReloadAltAnimation)
 		{
@@ -2393,6 +2715,19 @@ defaultproperties
 	FireAnimLeft="FireLeft"
 	SightFireAnimRight="SightFireRight"
 	SightFireAnimLeft="SightFireLeft"
+	
+	//Shovel Defaults
+	bShovelLoadPrimary=False
+	bShovelLoadSecondary=False
+	bShovelLoadEmptyStart=False
+	bShovelLoadEmptyLoop=False
+	bShovelLoadEmptyEnd=False
+	ShovelReloadStartAnimation="ReloadStart"
+	ShovelReloadLoopAnimation="ReloadLoop"
+	ShovelReloadEndAnimation="ReloadEnd"
+	ShovelReloadEmptyStartAnimation="ReloadEmptyStart"
+	ShovelReloadEmptyLoopAnimation="ReloadEmptyLoop"
+	ShovelReloadEmptyEndAnimation="ReloadEmptyEnd"
 	
 	//BScoped Related Defaults
 	bScoped=False

@@ -160,20 +160,23 @@ simulated function float GetSpread()
 
 simulated function bool AllowFire()
 {
-    local BallisticWeapon BW;
+	local BallisticWeapon BW;
 
-    BW = BallisticWeapon(Weapon);
+	BW = BallisticWeapon(Weapon);
 
-    if (BW != None && (BW.IsHoldingMelee() || BW.IsActionLocked()))
-        return false;
+	if (BW != None && (BW.IsHoldingMelee() || BW.IsActionLocked()))
+		return false;
 
-    if (bBurstMode && bBurstComplete)
-        return false;
+	if (bBurstMode && bBurstComplete)
+		return false;
 
-    if (Weapon == None)
-        return false;
+	if (Weapon == None)
+		return false;
 
-    return Super(WeaponFire).AllowFire();
+	if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
+		return false;
+
+	return Super(WeaponFire).AllowFire();
 }
 
 function PlayFiring()

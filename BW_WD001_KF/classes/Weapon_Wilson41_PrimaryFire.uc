@@ -29,7 +29,7 @@ defaultproperties
     aimerror=30.000000
     Spread=0.015000
     SpreadStyle=SS_Random
-    bWaitForRelease=true
+    bWaitForRelease=True
     ShakeOffsetMag=(X=6.0,Y=3.0,Z=10.0)
     ShakeOffsetRate=(X=1000.0,Y=1000.0,Z=1000.0)
     ShakeOffsetTime=2.0

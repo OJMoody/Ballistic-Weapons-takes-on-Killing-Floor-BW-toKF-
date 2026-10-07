@@ -218,7 +218,6 @@ defaultproperties
     ItemName="Dual Wilson 41-DB LeMat Revolvers"
     Description="An expensive remake of an exceptionally old weapon, the Wilson 41-DB was designed for collectors and procurers of rare items from the early days of human firearms. Manufactured by the Edwinson & Sons arms co, this firearm is of high quality, sparse quantity and very high price. Never used in any military or law enforcement organisation, the Wilson 'DiamondBack', is still capable of causing damage. With a 9 cylinder revolver and single 16 gauge shotgun chamber for desperate moments, this weapon can still stop many opponents.""
 
-    bShovelLoad=False
     MagCapacity=18
 
     Mesh=Mesh'BWKF_Wilson_A.WilsonDual_FP_Mesh'

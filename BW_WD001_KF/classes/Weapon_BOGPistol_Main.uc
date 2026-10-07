@@ -487,7 +487,6 @@ defaultproperties
 	ItemName="BORT-85 Grenade Pistol"
 	Description="BORT-85 Break Open Grenade Pistol||Manufacturer: NDTR Industries|Primary: Launch Grenade / Shot|Secondary: Switch Grenade type||The need for a simple and easy to use grenade launcher arose towards the end of the first war, especially in the large industrial zones of various Outworld colonies. Skrith favoured these areas, as they were perfect for the aliens which prefered to be hidden and strike with surprise. The simple design had several benefits, as it was relatively compact, and could fire many different types of ammunition."
     Mesh=Mesh'BWKF_BOGP_A.BOGP_FP_Mesh'
-	bShovelLoad=False
     MagCapacity=1
     SelectForce="SwitchToAssaultRifle"
     AIRating=0.650000

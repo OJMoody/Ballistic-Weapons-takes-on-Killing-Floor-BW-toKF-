@@ -607,7 +607,6 @@ defaultproperties
 
 	bKFNeverThrow=True
 
-    bShovelLoad=False
     MagCapacity=8
     bShowChargingBar=True
     bTorchEnabled=True
