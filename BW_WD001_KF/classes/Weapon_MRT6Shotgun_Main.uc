@@ -150,6 +150,16 @@ simulated function AnimEnd(int Channel)
             WeaponReloadResumeAnimation = 'ReloadResume';
             return;
         }
+
+        if (AnimName == 'Fire' ||
+            AnimName == 'FireLeft' ||
+            AnimName == 'FireRight' ||
+            AnimName == 'FireNoCock' ||
+            AnimName == 'FireRightNoCock')
+        {
+            PlayIdle();
+            return;
+        }
     }
 
     Super.AnimEnd(Channel);

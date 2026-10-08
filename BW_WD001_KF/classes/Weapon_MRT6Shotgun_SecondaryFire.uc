@@ -153,7 +153,7 @@ defaultproperties
     FireSoundRef="BWKF_MRT6_SN.MRT6.MRT6SingleFire"
     StereoFireSoundRef="BWKF_MRT6_SN.MRT6.MRT6SingleFire"
     NoAmmoSoundRef="KF_PumpSGSnd.SG_DryFire"
-    FireRate=0.2
+    FireRate=0.12
     FireAnimRate=1.0
 	BotRefireRate=0.200000
     aimerror=1.000000

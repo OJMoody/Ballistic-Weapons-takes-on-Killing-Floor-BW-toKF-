@@ -272,6 +272,6 @@ defaultproperties
     ShakeRotMag=(X=50.0,Y=50.0,Z=400.0)
     ShakeRotRate=(X=12500.0,Y=12500.0,Z=12500.0)
     ShakeRotTime=5.0
-    bWaitForRelease=false
-    bRandomPitchFireSound=false
+    bWaitForRelease=True
+    bRandomPitchFireSound=False
 }
