@@ -210,7 +210,7 @@ defaultproperties
     Mesh=Mesh'BWKF_MRT6_A.MRT6_FP_Mesh'
 
 	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
-	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000,bUnavailable=True)
+	WeaponModes(1)=(ModeName="Burst",ModeID="WM_SemiAuto",Value=3.000000,bUnavailable=True)
 	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto",bUnavailable=True)
 	CurrentWeaponMode=0
 

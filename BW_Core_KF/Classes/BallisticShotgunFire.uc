@@ -160,23 +160,34 @@ simulated function float GetSpread()
 
 simulated function bool AllowFire()
 {
-	local BallisticWeapon BW;
+    local BallisticWeapon BW;
+    local int OldAmmoPerFire;
+    local bool bCanFire;
 
-	BW = BallisticWeapon(Weapon);
+    BW = BallisticWeapon(Weapon);
 
-	if (BW != None && (BW.IsHoldingMelee() || BW.IsActionLocked()))
-		return false;
+    if (BW != None && (BW.IsHoldingMelee() || BW.IsActionLocked()))
+        return false;
 
-	if (bBurstMode && bBurstComplete)
-		return false;
+    if (bBurstMode && bBurstComplete)
+        return false;
 
-	if (Weapon == None)
-		return false;
+    if (Weapon == None)
+        return false;
 
-	if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
-		return false;
+    if (bAltFire)
+    {
+        OldAmmoPerFire = AmmoPerFire;
+        AmmoPerFire = 0;
+        bCanFire = Super(WeaponFire).AllowFire();
+        AmmoPerFire = OldAmmoPerFire;
+        return bCanFire;
+    }
 
-	return Super(WeaponFire).AllowFire();
+    if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
+        return false;
+
+    return Super(WeaponFire).AllowFire();
 }
 
 function PlayFiring()
@@ -186,8 +197,6 @@ function PlayFiring()
 	local name DualFireAnim;
 
 	BW = BallisticWeapon(Weapon);
-	
-	log("ALT ANIM TRACE: AltFire="$bAltFire$" LastLeft="$bLastDualFireLeft$" AltAmmo="$BW.AltAmmoLoaded$" Anim="$BW.GetDualAltFireAnim(bLastDualFireLeft)$" SightAnim="$BW.GetDualAltSightFireAnim(bLastDualFireLeft));
 
 	if (BW != None && BW.bDualWeapon)
 	{
@@ -198,7 +207,10 @@ function PlayFiring()
 	}
 	else
 	{
-		DualFireAnim = FireAnim;
+		if (bAltFire)
+			DualFireAnim = BW.AltFireAnimation;
+		else
+			DualFireAnim = FireAnim;
 	}
 
 	if (Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
@@ -230,6 +242,8 @@ function PlayFiring()
 			else
 			{
 				if (BW != None && BW.bDualWeapon)
+					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+				else if (bAltFire)
 					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
 				else if (Weapon.HasAnim(FireLoopAnim))
 					Weapon.PlayAnim(FireLoopAnim, FireLoopAnimRate, 0.0);
@@ -296,6 +310,22 @@ function PlayFiring()
 		bDualFireLeft = !bDualFireLeft;
 }
 
+simulated function DoAltFireEffect()
+{
+    local int OldAmmoPerFire;
+
+    if (Weapon == None || Instigator == None)
+        return;
+
+    OldAmmoPerFire = AmmoPerFire;
+    AmmoPerFire = 0;
+
+    Super.ModeDoFire();
+
+    AmmoPerFire = OldAmmoPerFire;
+
+    BallisticWeapon(Weapon).ConsumeAltLoaded();
+}
 
 //=============================================================================
 // FIRE
@@ -303,85 +333,102 @@ function PlayFiring()
 
 simulated event ModeDoFire()
 {
-	local float Rec;
-	local float BurstRate;
+    local float Rec;
+    local float BurstRate;
+    local BallisticWeapon BW;
 
-	if (!AllowFire())
-		return;
+    BW = BallisticWeapon(Weapon);
 
-	if (bBurstMode && BurstCount == 0)
-	{
-		bWaitForRelease = false;
-		bNowWaiting = false;
-		bBurstComplete = false;
-	}
+    if (bAltFire || (BW != None && BW.bAltLoaded && BW.bAltFirePlaying))
+    {
+        if (BW != None && BW.bAltLoaded)
+            BW.DoAltFire();
+        else
+        {
+            bAltFire = true;
+            DoAltFireEffect();
+            bAltFire = false;
+        }
 
-	if (Instigator == None || Instigator.Controller == None)
-		return;
+        return;
+    }
 
-	Spread = GetSpread();
+    if (!AllowFire())
+        return;
 
-	Rec = GetFireSpeed();
+    if (bBurstMode && BurstCount == 0)
+    {
+        bWaitForRelease = false;
+        bNowWaiting = false;
+        bBurstComplete = false;
+    }
 
-	FireRate = default.FireRate / Rec;
-	FireAnimRate = default.FireAnimRate * Rec;
+    if (Instigator == None || Instigator.Controller == None)
+        return;
 
-	LastFireTime = Level.TimeSeconds;
+    Spread = GetSpread();
 
-	Rec = 1;
+    Rec = GetFireSpeed();
 
-	if (KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None)
-	{
-		Spread *= KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.Static.ModifyRecoilSpread(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self, Rec);
-	}
+    FireRate = default.FireRate / Rec;
+    FireAnimRate = default.FireAnimRate * Rec;
 
-	if (Weapon.Owner != None && AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
-	{
-		if (FireRate > 0.25)
-		{
-			Weapon.Owner.Velocity.X *= 0.1;
-			Weapon.Owner.Velocity.Y *= 0.1;
-		}
-		else
-		{
-			Weapon.Owner.Velocity.X *= 0.5;
-			Weapon.Owner.Velocity.Y *= 0.5;
-		}
-	}
+    LastFireTime = Level.TimeSeconds;
 
-	Super.ModeDoFire();
+    Rec = 1;
 
-	if (Instigator.IsLocallyControlled())
-		HandleRecoil(Rec);
+    if (KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo) != None && KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill != None)
+    {
+        Spread *= KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.Static.ModifyRecoilSpread(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self, Rec);
+    }
 
-	if (bBurstMode)
-	{
-		BurstCount++;
+    if (Weapon.Owner != None && AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
+    {
+        if (FireRate > 0.25)
+        {
+            Weapon.Owner.Velocity.X *= 0.1;
+            Weapon.Owner.Velocity.Y *= 0.1;
+        }
+        else
+        {
+            Weapon.Owner.Velocity.X *= 0.5;
+            Weapon.Owner.Velocity.Y *= 0.5;
+        }
+    }
 
-		if (BurstCount >= MaxBurst)
-		{
-			bBurstComplete = true;
+    Super.ModeDoFire();
 
-			NextFireTime = Level.TimeSeconds + FireRate;
+    if (Instigator.IsLocallyControlled())
+        HandleRecoil(Rec);
 
-			bWaitForRelease = true;
-			bNowWaiting = true;
-		}
-		else
-		{
-			BurstRate = FireRate * BurstFireRateFactor;
-			NextFireTime = Level.TimeSeconds + BurstRate;
-		}
-	}
+    if (bBurstMode)
+    {
+        BurstCount++;
 
-	Load = AmmoPerFire;
-	HoldTime = 0;
+        if (BurstCount >= MaxBurst)
+        {
+            bBurstComplete = true;
 
-	if (Instigator.PendingWeapon != Weapon && Instigator.PendingWeapon != None)
-	{
-		bIsFiring = false;
-		Weapon.PutDown();
-	}
+            NextFireTime = Level.TimeSeconds + FireRate;
+
+            bWaitForRelease = true;
+            bNowWaiting = true;
+        }
+        else
+        {
+            BurstRate = FireRate * BurstFireRateFactor;
+            NextFireTime = Level.TimeSeconds + BurstRate;
+        }
+    }
+
+    Load = AmmoPerFire;
+    HoldTime = 0;
+
+    if (Instigator.PendingWeapon != Weapon && Instigator.PendingWeapon != None)
+    {
+        bIsFiring = false;
+        Weapon.PutDown();
+    }
 }
 
 simulated function InitEffects()
@@ -477,6 +524,9 @@ simulated function ResetDualFire()
 simulated function StopFiring()
 {
 	Super.StopFiring();
+
+	if (bAltFire)
+		bAltFire = false;
 
 	if (bBurstMode)
 	{

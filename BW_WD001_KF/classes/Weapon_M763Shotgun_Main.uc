@@ -1,5 +1,20 @@
 class Weapon_M763Shotgun_Main extends BallisticWeapon;
 
+simulated function DoAltFire()
+{
+    local BallisticShotgunFire AltFire;
+
+    AltFire = BallisticShotgunFire(FireMode[1]);
+
+    if (AltFire == None)
+        return;
+
+    AltFire.bAltFire = true;
+    AltFire.DoAltFireEffect();
+    AltFire.bAltFire = false;
+}
+
+
 //=============================================================================
 // DEFAULT PROPERTIES
 //=============================================================================
@@ -7,7 +22,7 @@ class Weapon_M763Shotgun_Main extends BallisticWeapon;
 defaultproperties
 {
     FireModeClass(0)=Class'BW_WD001_KF.Weapon_M763Shotgun_PrimaryFire'
-    FireModeClass(1)=none //Class'BW_WD001_KF.Weapon_MRT6Shotgun_SecondaryFire'
+    FireModeClass(1)=Class'BW_WD001_KF.Weapon_M763Shotgun_SecondaryFire'
     MeleeFireClass=Class'BW_WD001_KF.Weapon_M763Shotgun_MeleeFire'
     PickupClass=Class'BW_WD001_KF.Weapon_M763Shotgun_Pickup'
     AttachmentClass=Class'BW_WD001_KF.Weapon_M763Shotgun_Attachment'
@@ -24,6 +39,16 @@ defaultproperties
 	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
 	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000,bUnavailable=True)
 	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto",bUnavailable=True)
+	WeaponModes(3)=(ModeName="Gas Shell",ModeID="WM_SemiAuto",Value=1.000000,bUnavailable=True)
+	
+	bHasSecondaryAmmo=True
+	AltAmmoLoaded=1
+	bReduceMagAmmoOnSecondaryFire=False
+	bShowAltAmmoChamber=True
+	AltLoadedWeaponMode=3
+	AltLoadedReturnWeaponMode=0
+	bAltLoadEnabled=True
+	
 	CurrentWeaponMode=0
 
     Priority=3

@@ -24,6 +24,17 @@ var() travel byte CurrentWeaponMode;
 
 var byte PendingMode;
 
+var bool bAltLoaded;
+var() byte AltLoadedWeaponMode;
+var() byte AltLoadedReturnWeaponMode;
+
+var() bool bAltLoadEnabled;
+var() name AltLoadAnimation;
+var bool bAltLoadPlaying;
+
+var() name AltFireAnimation;
+var bool bAltFirePlaying;
+
 var() bool BUseBWHands;
 var() Material BWSleeveTexture;
 var() Material InvisibleSleeveTexture;
@@ -231,10 +242,10 @@ var Shader ScopeScriptedShader;
 replication
 {
 	reliable if (Role < ROLE_Authority)
-		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn;
+		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerSetAltLoaded;
 
 	reliable if (Role == ROLE_Authority)
-		ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded;
+		ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -455,7 +466,82 @@ exec simulated function SwitchWeaponMode(optional byte ModeNum)
 
 simulated function int GetAltAmmoChamber()
 {
-    return 0;
+    return AltAmmoLoaded;
+}
+
+simulated function SetAltLoaded()
+{
+    bAltLoaded = true;
+
+    if (AltLoadedWeaponMode < WeaponModes.Length)
+        SetWeaponModeDirect(AltLoadedWeaponMode);
+
+    if (Role < ROLE_Authority)
+        ServerSetAltLoaded();
+}
+
+function ServerSetAltLoaded()
+{
+    bAltLoaded = true;
+
+    if (AltLoadedWeaponMode < WeaponModes.Length)
+        SetWeaponModeDirect(AltLoadedWeaponMode);
+
+    ClientSetAltLoaded();
+    NetUpdateTime = Level.TimeSeconds - 1;
+}
+
+simulated function ClientSetAltLoaded()
+{
+    bAltLoaded = true;
+
+    if (AltLoadedWeaponMode < WeaponModes.Length)
+        SetWeaponModeDirect(AltLoadedWeaponMode);
+}
+
+simulated function ClearAltLoaded()
+{
+    bAltLoaded = false;
+
+    if (AltLoadedReturnWeaponMode < WeaponModes.Length)
+        SetWeaponModeDirect(AltLoadedReturnWeaponMode);
+}
+
+simulated function bool StartAltLoad()
+{
+    if (!bAltLoadEnabled || bAltLoaded || bAltLoadPlaying || bAltFirePlaying)
+        return false;
+
+    if (AmmoAmount(1) < 1)
+        return false;
+
+    if (ClientState == WS_BringUp)
+        return false;
+
+    if (bIsReloading || bBallisticReload || bBallisticReloadClipIn || bShovelReload)
+        return false;
+
+    bAltLoadPlaying = true;
+
+    if (AltLoadAnimation != '')
+    {
+        PlayAnim(AltLoadAnimation, 1.0, 0.0);
+        return true;
+    }
+
+    bAltLoadPlaying = false;
+    return false;
+}
+
+simulated function ConsumeAltLoaded()
+{
+    if (!bAltLoaded)
+        return;
+
+    bAltLoaded = false;
+
+    if (AltLoadedReturnWeaponMode < WeaponModes.Length)
+        SetWeaponModeDirect(AltLoadedReturnWeaponMode);
 }
 
 //-----------------------------------------------------------------------------
@@ -465,6 +551,9 @@ simulated function int GetAltAmmoChamber()
 function ServerSwitchWeaponMode(byte NewMode)
 {
 	local int StartMode;
+
+	if (bAltLoaded)
+		return;
 
 	if (WeaponModes.Length == 0)
 		return;
@@ -504,7 +593,7 @@ simulated function string GetCurrentWeaponModeName()
 	if (CurrentWeaponMode >= WeaponModes.Length)
 		return "";
 
-	if (WeaponModes[CurrentWeaponMode].bUnavailable)
+	if (WeaponModes[CurrentWeaponMode].bUnavailable && !bAltLoaded)
 		return "";
 
 	return WeaponModes[CurrentWeaponMode].ModeName;
@@ -557,6 +646,14 @@ simulated function CommonSwitchWeaponMode(byte NewMode)
     }
 
     CheckBurstMode();
+}
+
+simulated function SetWeaponModeDirect(byte NewMode)
+{
+    if (NewMode >= WeaponModes.Length)
+        return;
+
+    CommonSwitchWeaponMode(NewMode);
 }
 
 //-----------------------------------------------------------------------------
@@ -820,7 +917,7 @@ simulated final function bool IsHoldingMelee()
 
 simulated function bool IsActionLocked()
 {
-	return bBallisticAltReload;
+	return bBallisticAltReload || bAltLoadPlaying;
 }
 
 
@@ -1208,12 +1305,6 @@ function BeginBallisticShovelReload()
     else
         bShovelReloadEmpty = AltAmmoLoaded <= 0;
 
-    Log("SHOVEL BEGIN: Role="$Role);
-    Log("  Mag="$MagAmmoRemaining);
-    Log("  Reserve="$AmmoAmount(0));
-    Log("  Cancel="$bShovelReloadCancelRequested);
-    Log("  Stop="$bShovelReloadStopRequested);
-
     PlayShovelReloadStartAnimation();
 }
 
@@ -1347,7 +1438,6 @@ simulated function bool InterruptReload()
 			return true;
 		}
 
-		log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 		bReloadResumePending = true;
 		bReloadCancelRequested = false;
 
@@ -1371,7 +1461,6 @@ simulated function bool InterruptReload()
 			break;
 
 		case 1:
-			log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 			bReloadResumePending = true;
 			bReloadCancelRequested = false;
 
@@ -1380,7 +1469,6 @@ simulated function bool InterruptReload()
 			break;
 
 		case 2:
-			log("BW DEBUG >>> SETTING bReloadResumePending TRUE");
 			bReloadResumePending = true;
 			bReloadCancelRequested = false;
 
@@ -1638,6 +1726,12 @@ simulated function Notify_ClipIn2()
         BallisticInstantFire(FireMode[0]).bDualFireLeft = false;
 }
 
+simulated function Notify_ShellAlt()
+{
+	ConsumeAmmo(1, 1);
+	SetAltLoaded();
+}
+
 simulated function Notify_SwipePoint1()
 {
     if (MeleeState != MS_None && MeleeFireMode != none)
@@ -1805,13 +1899,11 @@ simulated function Notify_ShovelEnd()
 
 simulated function Notify_ShellInSmall()
 {
-    Log("SHOVEL TRACE 1: Notify_ShellInSmall");
     HandleShovelShellIn(1);
 }
 
 simulated function Notify_ShellInLarge()
 {
-    Log("SHOVEL TRACE 1: Notify_ShellInLarge");
     HandleShovelShellIn(CurrentShovelLoadAmount);
 }
 
@@ -1874,8 +1966,6 @@ simulated function AddShovelPrimaryAmmo(int LoadAmount)
         return;
 
     MagAmmoRemaining = MagAmmoRemaining + LoadAmount;
-
-    Log("SHOVEL AFTER ADD: "$MagAmmoRemaining$" / "$MagCapacity);
 }
 
 simulated function AddShovelSecondaryAmmo(int LoadAmount)
@@ -1904,15 +1994,7 @@ simulated function AddShovelSecondaryAmmo(int LoadAmount)
 }
 
 simulated function HandleShovelLoopCheck()
-{
-    Log("SHOVEL LOOP CHECK: Role="$Role);
-	Log("  Shovel="$bShovelReload);
-	Log("  Cancel="$bShovelReloadCancelRequested);
-	Log("  Stop="$bShovelReloadStopRequested);
-	Log("  End="$bShovelReloadEndRequested);
-	Log("  Mag="$MagAmmoRemaining);
-	Log("  Reserve="$AmmoAmount(0));
-	
+{	
 	if (!bShovelReload)
         return;
 
@@ -2229,12 +2311,64 @@ simulated function Timer()
 	Super.Timer();
 }
 
+simulated function DoAltFire()
+{
+}
+
+simulated function bool StartAltFire(int InputMode)
+{
+	local BallisticShotgunFire AltFire;
+	local BallisticShotgunFire PrimaryFire;
+	local bool Result;
+
+	if (!bAltLoaded || bAltFirePlaying)
+		return false;
+
+	if (ClientState == WS_BringUp)
+		return false;
+
+	if (bIsReloading || bBallisticReload || bBallisticReloadClipIn || bShovelReload)
+		return false;
+
+	AltFire = BallisticShotgunFire(FireMode[InputMode]);
+	PrimaryFire = BallisticShotgunFire(FireMode[0]);
+
+	if (AltFire == None)
+		return false;
+
+	AltFire.bAltFire = true;
+
+	if (PrimaryFire != None)
+		PrimaryFire.bAltFire = true;
+
+	bAltFirePlaying = true;
+
+	Result = Super.StartFire(InputMode);
+
+	if (PrimaryFire != None && PrimaryFire != AltFire)
+		PrimaryFire.bAltFire = false;
+
+	if (!Result)
+	{
+		AltFire.bAltFire = false;
+		bAltFirePlaying = false;
+	}
+
+	return Result;
+}
+
 simulated function bool StartFire(int Mode)
 {
 	local bool RetVal;
 	local bool bAutoReloadStart;
 
 	if (ClientState == WS_BringUp)
+		return false;
+		
+	if (bAltFirePlaying)
+		return false;
+		
+	if (bAltLoadPlaying)
 		return false;
 
 	if (bBallisticAltReload)
@@ -2250,7 +2384,15 @@ simulated function bool StartFire(int Mode)
 
 		return false;
 	}
+
+	if (bAltLoaded)
+		return StartAltFire(Mode);
 	
+	if (Mode == 1 && bAltLoadEnabled)
+	{
+		return StartAltLoad();
+	}
+
 	if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
 		return false;
 
@@ -2306,6 +2448,18 @@ simulated function bool PutDown()
 	local bool bResult;
 
 	bPuttingDown = true;
+
+	if (bAltLoadPlaying)
+	{
+		bAltLoadPlaying = false;
+
+		if (bAltLoaded && AltLoadedWeaponMode < WeaponModes.Length)
+			SetWeaponModeDirect(AltLoadedWeaponMode);
+	}
+	else if (bAltLoaded && AltLoadedWeaponMode < WeaponModes.Length)
+	{
+		SetWeaponModeDirect(AltLoadedWeaponMode);
+	}
 	
 	ResetDualFireAnimationChannels();
 
@@ -2492,6 +2646,32 @@ simulated function AnimEnd(int Channel)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
 
+		//=============================================================================
+		// Alternate Shell Load
+		//=============================================================================
+
+		if (bAltLoadPlaying && AnimName == AltLoadAnimation)
+		{
+			bAltLoadPlaying = false;
+			PlayIdle();
+			return;
+		}
+
+		//=============================================================================
+		// Alternate Fire
+		//=============================================================================
+
+		if (bAltFirePlaying && (AnimName == AltFireAnimation || AnimName == FireMode[0].FireAnim))
+		{
+			bAltFirePlaying = false;
+			PlayIdle();
+			return;
+		}
+
+		//=============================================================================
+		// Shovel Reload
+		//=============================================================================
+
 		if (bShovelReload)
 		{
 			if (AnimName == GetShovelReloadStartAnimation())
@@ -2661,6 +2841,13 @@ defaultproperties
     WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000)
     WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto")
 	CurrentWeaponMode=0
+	
+	AltLoadedWeaponMode=255
+	AltLoadedReturnWeaponMode=0
+	
+	AltLoadAnimation="LoadAlt"
+	AltFireAnimation="FireAlt"
+	bAltLoadEnabled=False
 
 	SleeveNum=500
     BUseBWHands=False
