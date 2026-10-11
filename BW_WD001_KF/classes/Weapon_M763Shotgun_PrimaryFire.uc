@@ -6,9 +6,9 @@ class Weapon_M763Shotgun_PrimaryFire extends BallisticShotgunFire;
 
 defaultproperties
 {
-    AmmoClass=Class'BW_WD001_KF.Weapon_MRT6Shotgun_Ammo'
+    AmmoClass=Class'BW_WD001_KF.Weapon_M763Shotgun_Ammo'
     ProjectileClass=Class'BW_Core_KF.BallisticShotgunProj'
-    FlashEmitterClass=Class'BW_WD001_KF.Weapon_MRT6Shotgun_FlashEmitter'
+    FlashEmitterClass=Class'BW_WD001_KF.Weapon_M763Shotgun_FlashEmitter'
 	
     KickMomentum=(X=-45.000000,Z=10.000000)
     ProjPerFire=7
@@ -16,8 +16,8 @@ defaultproperties
     bAttachSmokeEmitter=True
     TransientSoundVolume=2.0
     TransientSoundRadius=500.000000
-    FireSoundRef="BWKF_MRT6_SN.MRT6.MRT6Fire"
-    StereoFireSoundRef="BWKF_MRT6_SN.MRT6.MRT6Fire"
+    FireSoundRef="BWKF_M763_SN.M763.M763Fire1"
+    StereoFireSoundRef="BWKF_M763_SN.M763.M763Fire1"
     NoAmmoSoundRef="KF_PumpSGSnd.SG_DryFire"
     FireRate=0.7
     FireAnimRate=1.0
@@ -26,6 +26,9 @@ defaultproperties
     Spread=1125.0
     maxVerticalRecoilAngle=1500
     maxHorizontalRecoilAngle=900
+	
+	LastShotAnim=FireEmpty
+    LastShotAnimRate=1.0
 
     //** View shake **//
     ShakeOffsetMag=(X=6.0,Y=2.0,Z=10.0)

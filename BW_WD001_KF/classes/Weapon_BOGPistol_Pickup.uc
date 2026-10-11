@@ -43,5 +43,5 @@ defaultproperties
 	CollisionHeight=5.000000
 	PickupSound=Sound'BWKF_M806_SN.M806Pullout'
 	EquipmentCategoryID=1
-	CorrespondingPerkIndex=2
+	CorrespondingPerkIndex=7
 }

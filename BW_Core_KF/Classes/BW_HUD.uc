@@ -257,6 +257,49 @@ simulated function DrawHudPassA(Canvas C)
 	DrawSpriteWidget(C, AltAmmoDivider);
 }
 
+//=============================================================================
+// AMMO DISPLAY
+//=============================================================================
+
+simulated function CalculateAmmo()
+{
+    local KFWeapon KFW;
+    local BallisticWeapon BW;
+
+    MaxAmmoPrimary = 1;
+    CurAmmoPrimary = 1;
+
+    if (PawnOwner == None || PawnOwner.Weapon == None)
+        return;
+
+    KFW = KFWeapon(PawnOwner.Weapon);
+
+    if (KFW == None)
+        return;
+
+    BW = BallisticWeapon(PawnOwner.Weapon);
+
+    PawnOwner.Weapon.GetAmmoCount(MaxAmmoPrimary, CurAmmoPrimary);
+
+    if (PawnOwner.Weapon.FireModeClass[1].default.AmmoClass != None)
+        CurClipsSecondary = PawnOwner.Weapon.AmmoAmount(1);
+
+    if (KFW.bHoldToReload || (BW != None && BW.bShowAmmoAsRounds))
+    {
+        CurClipsPrimary = Max(CurAmmoPrimary - KFW.MagAmmoRemaining, 0);
+        return;
+    }
+
+    CurClipsPrimary = (CurAmmoPrimary - KFW.MagAmmoRemaining) / KFW.MagCapacity;
+
+    if ((CurAmmoPrimary - KFW.MagAmmoRemaining) % KFW.MagCapacity > 0)
+        CurClipsPrimary += 1;
+
+    if (CurClipsPrimary < 0)
+        CurClipsPrimary = 0;
+}
+
+
 defaultproperties
 {
     AltAmmoChamberOffsetX=-13

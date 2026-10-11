@@ -13,9 +13,6 @@ var array<BWTraderWeapon> BWTraderWeapons;
 
 function ModifyPlayer(Pawn Other)
 {
-	if (Other.Controller != None)
-		Log("BW TRACE ModifyPlayer ControllerClass="$Other.Controller.Class);
-
 	if (BW_KFPawn(Other) != None)
 		GiveBWWelder(Other);
 
@@ -38,7 +35,7 @@ function string GetInventoryClassOverride(string InventoryClassName)
 	{
 		return "BW_WD001_KF.Weapon_M806Pistol_Pickup";
 	}
-	
+
 	return Super.GetInventoryClassOverride(InventoryClassName);
 }
 
@@ -82,7 +79,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 		ReplaceWith(Other, "BW_Core_KF.BWArmorPickup");
 		return false;
 	}
-	
+
 	if (Other.Class == class'WelderPickup')
 	{
 		ReplaceWith(Other, "BW_WD000_KF.Tool_WD200_Pickup");
@@ -129,8 +126,6 @@ function PostBeginPlay()
 
     KFGameType(Level.Game).PlayerControllerClass = class'BW_KFPlayerController';
 
-    Log("BW TRACE PostBeginPlay: PlayerControllerClass set to "$KFGameType(Level.Game).PlayerControllerClass);
-
     SetTimer(0.25, true);
 
     Level.Game.HUDType = "BW_Core_KF.BW_HUD";
@@ -152,7 +147,6 @@ simulated function Timer()
                 if (C.IsA('PlayerController'))
                 {
                     C.PawnClass = class'BW_KFPawn';
-                    Log("BW TRACE Timer: PawnClass set to "$C.PawnClass);
                 }
             }
 
@@ -311,7 +305,7 @@ defaultproperties
 	bNetNotify=True
 
 	bUseBWHands=True
-	
+
 	BWTraderWeapons(0)=(PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup',TraderList=2)
 	BWTraderWeapons(1)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=0)
 	BWTraderWeapons(2)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=5)
@@ -319,4 +313,5 @@ defaultproperties
 	BWTraderWeapons(4)=(PickupClass=Class'BW_WD001_KF.Weapon_MRT6Shotgun_Pickup',TraderList=1)
 	BWTraderWeapons(5)=(PickupClass=Class'Weapon_Wilson41_Pickup',TraderList=2)
 	BWTraderWeapons(6)=(PickupClass=Class'Weapon_Wilson41Dual_Pickup',TraderList=2)
+	BWTraderWeapons(7)=(PickupClass=Class'Weapon_M763Shotgun_Pickup',TraderList=1)
 }

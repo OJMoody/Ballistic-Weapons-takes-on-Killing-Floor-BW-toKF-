@@ -1,5 +1,8 @@
 class Weapon_M763Shotgun_Main extends BallisticWeapon;
 
+var Weapon_M763Shotgun_GasControl GC;
+var bool bM763UseEmptyReloadEnd;
+
 simulated function DoAltFire()
 {
     local BallisticShotgunFire AltFire;
@@ -12,6 +15,68 @@ simulated function DoAltFire()
     AltFire.bAltFire = true;
     AltFire.DoAltFireEffect();
     AltFire.bAltFire = false;
+
+    if (Role == ROLE_Authority)
+        AltAmmoLoaded = 0;
+}
+
+simulated function PostBeginPlay()
+{
+	Super.PostBeginPlay();
+
+	GC = Spawn(class'Weapon_M763Shotgun_GasControl', Self);
+
+	if (GC != None && Instigator != None)
+	{
+		GC.Instigator = Instigator;
+		GC.InstigatorController = Instigator.Controller;
+	}
+}
+
+function GiveTo(Pawn Other, optional Pickup Pickup)
+{
+	Super.GiveTo(Other, Pickup);
+
+	if (GC != None && Other != None)
+	{
+		GC.Instigator = Other;
+		GC.InstigatorController = Other.Controller;
+	}
+}
+
+simulated function name GetShovelReloadEndAnimation()
+{
+	if (bM763UseEmptyReloadEnd &&
+		bShovelLoadEmptyEnd &&
+		ShovelReloadEmptyEndAnimation != '' &&
+		HasAnim(ShovelReloadEmptyEndAnimation))
+		return ShovelReloadEmptyEndAnimation;
+
+	return ShovelReloadEndAnimation;
+}
+
+function BeginBallisticShovelReload()
+{
+    CurrentShovelLoadAmount = GetShovelLoadAmount();
+
+    bShovelReload = true;
+    bShovelReloadCancelRequested = false;
+    bShovelReloadEndRequested = false;
+    bShovelReloadStopRequested = false;
+    bShovelReloadLooping = false;
+
+    if (ShovelReloadMode == 0)
+    {
+        bShovelReloadEmpty = MagAmmoRemaining <= 0;
+        bM763UseEmptyReloadEnd = (MagAmmoRemaining <= 0 && AltAmmoLoaded <= 0);
+    }
+    else
+    {
+        bShovelReloadEmpty = AltAmmoLoaded <= 0;
+        bM763UseEmptyReloadEnd = false;
+    }
+
+    PlayShovelReloadStartAnimation();
 }
 
 
@@ -41,8 +106,9 @@ defaultproperties
 	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto",bUnavailable=True)
 	WeaponModes(3)=(ModeName="Gas Shell",ModeID="WM_SemiAuto",Value=1.000000,bUnavailable=True)
 	
+	bShowAmmoAsRounds=True
 	bHasSecondaryAmmo=True
-	AltAmmoLoaded=1
+	AltAmmoLoaded=0
 	bReduceMagAmmoOnSecondaryFire=False
 	bShowAltAmmoChamber=True
 	AltLoadedWeaponMode=3
@@ -61,20 +127,27 @@ defaultproperties
     ZoomTime=0.25
     FastZoomOutTime=0.2
     bHasAimingMode=True
+	
+	ShovelReloadStartAnimation=ReloadStart
+    ShovelReloadLoopAnimation=ReloadLoop
+    ShovelReloadEndAnimation=ReloadEnd
+    ShovelReloadEmptyEndAnimation=ReloadEndEmpty
+    bShovelLoadEmptyEnd=True
 
-	//HudImage=Texture'BWKF_MRT6_T.Icons.MedIcon_MRT6Unselected'
-    //SelectedHudImage=Texture'BWKF_MRT6_T.Icons.MedIcon_MRT6Selected'
-	//TraderInfoTexture=Texture'BWKF_MRT6_T.Icons.MedIcon_MRT6'
+	HudImage=Texture'BWKF_M763_T.Icons.MedIcon_M763_Unselected'
+    SelectedHudImage=Texture'BWKF_M763_T.Icons.MedIcon_M763_Selected'
+	TraderInfoTexture=Texture'BWKF_M763_T.Icons.MedIcon_M763'
 
     PlayerViewOffset=(X=-10.000000,Y=8.000000,Z=-7.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
-    PulloutSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    PutAwaySound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    //SightFXClass=Class'BW_WD001_KF.Weapon_MRT6Shotgun_SightLEDs'
-    //SightFXBone="MRT6"
+    PulloutSound=(Sound=Sound'BWKF_M763_SN.M763.M763Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    PutAwaySound=(Sound=Sound'BWKF_M763_SN.M763.M763Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    SightFXClass=Class'BW_WD001_KF.Weapon_M763Shotgun_SightLEDs'
+    SightFXBone="M763"
 	
-    ClipHitSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6ClipIn')
-    ClipOutSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6ClipOut')
-    ClipInSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6ClipHit')
-	CockSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6Cock')
+	SlideInSound=(Sound=Sound'BWKF_M763_SN.M763.M763Hand-2')
+	SlideOutSound=(Sound=Sound'BWKF_M763_SN.M763.M763Hand-1')
+    ClipInSound=(Sound=Sound'BWKF_M763_SN.M763.M763LoadShell1')
+	CockSound=(Sound=Sound'BWKF_M763_SN.M763.M763Cock1')
+	ShellAltInSound=(Sound=Sound'BWKF_M763_SN.M763.M763LoadShell1')
 }

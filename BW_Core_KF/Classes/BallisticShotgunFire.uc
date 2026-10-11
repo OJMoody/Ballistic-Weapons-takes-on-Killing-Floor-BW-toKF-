@@ -12,6 +12,9 @@ var bool bBerserk;
 
 var bool bAltFire;
 
+var() name LastShotAnim;
+var() float LastShotAnimRate;
+
 //=============================================================================
 // BURST
 //=============================================================================
@@ -215,7 +218,11 @@ function PlayFiring()
 
 	if (Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
 	{
-		if (FireCount > 0)
+		if (BW != None && !BW.bDualWeapon && BW.MagAmmoRemaining <= 0 && LastShotAnim != '' && Weapon.HasAnim(LastShotAnim))
+		{
+			Weapon.PlayAnim(LastShotAnim, LastShotAnimRate, TweenTime);
+		}
+		else if (FireCount > 0)
 		{
 			if (KFWeap.bAimingRifle)
 			{

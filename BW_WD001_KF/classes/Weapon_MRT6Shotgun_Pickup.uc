@@ -23,5 +23,5 @@ defaultproperties
 	CollisionRadius=35.000000
 	CollisionHeight=5.000000
 	EquipmentCategoryID=1
-	CorrespondingPerkIndex=2
+	CorrespondingPerkIndex=1
 }

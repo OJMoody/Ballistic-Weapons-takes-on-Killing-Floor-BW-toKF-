@@ -2,15 +2,15 @@ class Weapon_M763Shotgun_Pickup extends BallisticPickup;
 
 defaultproperties
 {
-	AmmoMesh=StaticMesh'BWKF_MRT6_SM.MRT6_ClipPickup_SM'
+	AmmoMesh=StaticMesh'BWKF_M763_SM.M763_MainPickup_SM'
 	InventoryType=Class'BW_WD001_KF.Weapon_M763Shotgun_Main'
-	PickupSound=Sound'BWKF_MRT6_SN.MRT6.MRT6Pullout'
-	StaticMesh=StaticMesh'BWKF_MRT6_SM.MRT6_MainPickup_SM'
+	PickupSound=Sound'BWKF_M763_SN.M763.M763Pullout'
+	StaticMesh=StaticMesh'BWKF_M763_SM.M763_MainPickup_SM'
 	
-	Weight=4.000000
-	cost=400
+	Weight=7.000000
+	cost=700
 	AmmoCost=20
-	BuyClipSize=10
+	BuyClipSize=8
 	PowerValue=30
 	SpeedValue=40
 	RangeValue=40
@@ -18,10 +18,11 @@ defaultproperties
 	ItemName="M763 Shotgun"
 	ItemShortName="M763 Shotgun"
 	AmmoItemName="12 Gauge Shells"
-	PickupMessage="You got the M763 Shotgun"
+	SecondaryAmmoShortName="12 Gauge Gas Shells"
+	PickupMessage="You picked up the M763 Shotgun"
 	PickupForce="AssaultRiflePickup"
 	CollisionRadius=35.000000
 	CollisionHeight=5.000000
 	EquipmentCategoryID=1
-	CorrespondingPerkIndex=2
+	CorrespondingPerkIndex=1
 }

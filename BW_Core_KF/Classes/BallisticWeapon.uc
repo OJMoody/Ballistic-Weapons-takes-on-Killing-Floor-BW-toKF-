@@ -140,6 +140,8 @@ var bool bSuppressStartFireReloadInterrupt;
 
 var bool bReloadPending;
 
+var() bool bShowAmmoAsRounds;
+
 //=============================================================================
 // Dual Weapons
 //=============================================================================
@@ -211,6 +213,9 @@ var() BUtil.FullSound ShovelEndSound;
 
 var() BUtil.FullSound PutAwaySound;
 var() BUtil.FullSound PulloutSound;
+
+var() BUtil.FullSound ClipInLargeSound;
+var() BUtil.FullSound ShellAltInSound;
 
 //=============================================================================
 // SCOPES
@@ -1728,8 +1733,15 @@ simulated function Notify_ClipIn2()
 
 simulated function Notify_ShellAlt()
 {
-	ConsumeAmmo(1, 1);
-	SetAltLoaded();
+    class'BUtil'.static.PlayFullSound(self, ShellAltInSound, true);
+
+    if (Role == ROLE_Authority && AltAmmoLoaded <= 0 && AmmoAmount(1) > 0)
+    {
+        ConsumeAmmo(1, 1);
+        AltAmmoLoaded = 1;
+    }
+
+    SetAltLoaded();
 }
 
 simulated function Notify_SwipePoint1()
@@ -1899,11 +1911,13 @@ simulated function Notify_ShovelEnd()
 
 simulated function Notify_ShellInSmall()
 {
+    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
     HandleShovelShellIn(1);
 }
 
 simulated function Notify_ShellInLarge()
 {
+    class'BUtil'.static.PlayFullSound(self, ClipInLargeSound, true);
     HandleShovelShellIn(CurrentShovelLoadAmount);
 }
 
@@ -2661,7 +2675,7 @@ simulated function AnimEnd(int Channel)
 		// Alternate Fire
 		//=============================================================================
 
-		if (bAltFirePlaying && (AnimName == AltFireAnimation || AnimName == FireMode[0].FireAnim))
+		if (bAltFirePlaying && (AnimName == AltFireAnimation || AnimName == FireMode[0].FireAnim || AnimName == 'FireEmpty'))
 		{
 			bAltFirePlaying = false;
 			PlayIdle();
@@ -2833,6 +2847,9 @@ defaultproperties
 	SlideOutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	PulloutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+	
+	ShellAltInSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)
+	ClipInLargeSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)
 	
 	ClipOutAltSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	ClipInAltSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
