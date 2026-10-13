@@ -9,6 +9,8 @@ var bool bServerBOGClipInReady;
 var float ServerBOGClipInTime;
 var() float ServerClipInDelay;
 
+var bool bFireModeResumePending;
+
 //=============================================================================
 // SERVER FIRE
 //=============================================================================
@@ -75,52 +77,103 @@ exec function ReloadMeNow()
 	Instigator.SetAnimAction(WeaponReloadAnim);
 }
 
+simulated function Notify_NoClipIn()
+{
+    local name AnimName;
+    local float AnimFrame, AnimRate;
+
+    GetAnimParams(0, AnimName, AnimFrame, AnimRate);
+
+    if (bReloadResumePlaying && AnimName == 'ChangeFireModeResume')
+    {
+        bReloadResumePlaying = false;
+        bChangingFireMode = false;
+        bFireModeReloading = false;
+        bFireAnimPlaying = false;
+        bBallisticClipOut = false;
+        bBallisticReloadClipIn = false;
+        bBallisticReload = false;
+        bReloadResumePending = false;
+        BallisticReloadStage = 0;
+
+        class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+        return;
+    }
+
+    bBallisticClipOut = false;
+    bReloadResumePending = false;
+    bBallisticReloadClipIn = false;
+    bBallisticReload = false;
+    BallisticReloadStage = 0;
+
+    class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+}
+
 simulated function Notify_ClipIn()
 {
-	if (bFireModeReloading)
-	{
-		bBallisticClipOut = false;
-		bReloadResumePending = false;
-		bBallisticReloadClipIn = false;
-		bBallisticReload = false;
-		BallisticReloadStage = 0;
+    local name AnimName;
+    local float AnimFrame, AnimRate;
 
-		UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+    GetAnimParams(0, AnimName, AnimFrame, AnimRate);
 
-		if (MagAmmoRemaining <= 0)
-		{
-			if (Role == ROLE_Authority)
-				AddReloadedAmmo();
-		}
+    if (bReloadResumePlaying && AnimName == 'ReloadResume')
+    {
+        bIsReloading = true;
+        bBallisticReload = true;
 
-		class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
-		return;
-	}
+        if (Role == ROLE_Authority)
+            bServerBOGClipInReady = true;
 
-	if (bChangingFireMode)
-	{
-		class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
-		return;
-	}
+        Super.Notify_ClipIn();
 
-	if (!bIsReloading)
-	{
-		class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
-		return;
-	}
+        class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+        return;
+    }
 
-	Super.Notify_ClipIn();
+    if (bFireModeReloading)
+    {
+        bBallisticClipOut = false;
+        bReloadResumePending = false;
+        bBallisticReloadClipIn = false;
+        bBallisticReload = false;
+        BallisticReloadStage = 0;
+
+        UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+        if (MagAmmoRemaining <= 0)
+        {
+            if (Role == ROLE_Authority)
+                AddReloadedAmmo();
+        }
+
+        class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+        return;
+    }
+
+    if (bChangingFireMode)
+    {
+        class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+        return;
+    }
+
+    if (!bIsReloading)
+    {
+        class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
+        return;
+    }
+
+    Super.Notify_ClipIn();
 }
 
 simulated function Notify_ClipOut()
 {
-	if (bFireModeReloading)
-	{
-		class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
-		return;
-	}
+    if (bFireModeReloading || bChangingFireMode)
+    {
+        class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
+        return;
+    }
 
-	Super.Notify_ClipOut();
+    Super.Notify_ClipOut();
 }
 
 function ServerClipIn()
@@ -164,76 +217,92 @@ simulated function WeaponTick(float DeltaTime)
 
 simulated function AnimEnd(int Channel)
 {
-	local name AnimName;
-	local float Frame;
-	local float Rate;
+    local name AnimName;
+    local float AnimFrame, AnimRate;
+    local int Mode;
 
-	GetAnimParams(Channel, AnimName, Frame, Rate);
+    GetAnimParams(Channel, AnimName, AnimFrame, AnimRate);
 
-	if (Channel == 0)
-	{
-		if (bReloadResumePlaying &&
-			(AnimName == WeaponReloadResumeAnimation ||
-				AnimName == WeaponReloadResumeAnimation2))
-		{
-			bReloadResumePlaying = false;
+    if (Channel == 0)
+    {
+        if (bFireAnimPlaying && AnimName == 'Fire')
+        {
+            bFireAnimPlaying = false;
+        }
 
-			if (bChangingFireMode)
-			{
-				bChangingFireMode = false;
-				bFireModeReloading = false;
-				bFireAnimPlaying = false;
-			}
-		}
+        if (bReloadResumePlaying && AnimName == 'ChangeFireModeResume')
+        {
+            bReloadResumePlaying = false;
+            bChangingFireMode = false;
+            bFireModeReloading = false;
+            bFireAnimPlaying = false;
+            bBallisticClipOut = false;
+            bBallisticReloadClipIn = false;
+            bBallisticReload = false;
+            bReloadResumePending = false;
+            BallisticReloadStage = 0;
+        }
 
-		if (bFireModeReloading && AnimName == ReloadAnim)
-		{
-			bFireModeReloading = false;
-			bChangingFireMode = false;
-			bIsReloading = false;
-			bFireAnimPlaying = false;
-			PlayIdle();
-			return;
-		}
+        // Bug 4: Clear fire-mode reload state when its animation ends.
+        if (bFireModeReloading && AnimName == 'Reload')
+        {
+            bChangingFireMode = false;
+            bFireModeReloading = false;
+            bFireAnimPlaying = false;
+            bBallisticClipOut = false;
+            bBallisticReloadClipIn = false;
+            bBallisticReload = false;
+            bReloadResumePending = false;
+            BallisticReloadStage = 0;
+        }
 
-		if (bIsReloading && AnimName == ReloadAnim)
-		{
-			bFireAnimPlaying = false;
+        // Complete bring-up when ChangeFireModeResume finishes.
+        if (AnimName == 'ChangeFireModeResume' && ClientState == WS_BringUp)
+        {
+            bReloadResumePlaying = false;
+            bChangingFireMode = false;
+            bFireModeReloading = false;
+            bFireAnimPlaying = false;
+            bBallisticClipOut = false;
+            bBallisticReloadClipIn = false;
+            bBallisticReload = false;
+            bReloadResumePending = false;
+            BallisticReloadStage = 0;
 
-			if (FireMode[0] != None)
-				FireMode[0].StopFiring();
+            for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
+                FireMode[Mode].InitEffects();
 
-			bIsReloading = false;
-			bBallisticReload = false;
-			bBallisticReloadClipIn = false;
-			bReloadEffectDone = false;
-			bReloadResumePending = false;
-			bBallisticClipOut = false;
-			BallisticReloadStage = 0;
+            PlayIdle();
+            ClientState = WS_ReadyToFire;
+            return;
+        }
 
-			PlayIdle();
-			return;
-		}
+        if (bChangingFireMode && AnimName == 'ChangeFireMode')
+        {
+            bChangingFireMode = false;
+            PlayIdle();
+            return;
+        }
 
-		if (bFireAnimPlaying && AnimName == FireMode[0].FireAnim)
-		{
-			bFireAnimPlaying = false;
-			PlayIdle();
-			return;
-		}
+        if (bReloadResumePlaying && AnimName == 'ReloadResume')
+        {
+            bReloadResumePlaying = false;
+            bFireAnimPlaying = false;
+            bFireModeReloading = false;
+            bChangingFireMode = false;
+            bReloadResumePending = false;
+        }
 
-		if (bChangingFireMode && AnimName == 'ChangeFireMode')
-		{
-			bChangingFireMode = false;
-			PlayIdle();
-			return;
-		}
-	}
+        if (bFireAnimPlaying && AnimName == 'ReloadAnim')
+        {
+            bFireAnimPlaying = false;
+            bFireModeReloading = false;
+            bChangingFireMode = false;
+            ActuallyFinishReloading();
+        }
+    }
 
-	if (bIsReloading)
-		return;
-
-	Super.AnimEnd(Channel);
+    Super.AnimEnd(Channel);
 }
 
 simulated function Notify_ChangeFireMode()
@@ -299,7 +368,7 @@ simulated function ZoomIn(bool bClient)
 }
 
 simulated exec function SwitchWeaponMode(optional byte ModeNum)
-{
+{	
 	if (bChangingFireMode)
 		return;
 
@@ -325,22 +394,61 @@ simulated function MeleeHoldImpl()
 
 simulated function BringUp(optional Weapon PrevWeapon)
 {
-	if (MagAmmoRemaining > 0)
-		SelectAnim = 'Pullout';
-	else
-		SelectAnim = 'PulloutOpen';
+    local name SavedReloadResumeAnimation;
+    local name ResumeAnim;
 
-	Super.BringUp(PrevWeapon);
+    if (MagAmmoRemaining > 0)
+        SelectAnim = 'Pullout';
+    else
+        SelectAnim = 'PulloutOpen';
+
+    if (bFireModeResumePending)
+    {
+        if (MagAmmoRemaining > 0)
+            ResumeAnim = 'ChangeFireModeResume';
+        else
+            ResumeAnim = 'ReloadResume';
+
+        if (HasAnim(ResumeAnim))
+        {
+            SavedReloadResumeAnimation = WeaponReloadResumeAnimation;
+            WeaponReloadResumeAnimation = ResumeAnim;
+
+            bReloadResumePending = true;
+            bChangingFireMode = true;
+            bFireModeResumePending = false;
+
+            Super.BringUp(PrevWeapon);
+
+            WeaponReloadResumeAnimation = SavedReloadResumeAnimation;
+            return;
+        }
+    }
+
+    bFireModeResumePending = false;
+    Super.BringUp(PrevWeapon);
 }
 
 simulated function bool PutDown()
 {
-	if (MagAmmoRemaining > 0)
-		PutDownAnim = 'Putaway';
-	else
-		PutDownAnim = 'PutawayOpen';
+    if (bChangingFireMode)
+    {
+        bFireModeResumePending = true;
+        bReloadResumePending = false;
+        bBallisticClipOut = false;
+        bBallisticReloadClipIn = false;
+        bBallisticReload = false;
+        bIsReloading = false;
+        bFireModeReloading = false;
+        BallisticReloadStage = 0;
+    }
 
-	return Super.PutDown();
+    if (MagAmmoRemaining > 0)
+        PutDownAnim = 'Putaway';
+    else
+        PutDownAnim = 'PutawayOpen';
+
+    return Super.PutDown();
 }
 
 function GiveTo(Pawn Other, optional Pickup Pickup)
