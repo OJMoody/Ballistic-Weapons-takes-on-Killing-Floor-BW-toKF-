@@ -2,6 +2,11 @@ class Weapon_M763Shotgun_Main extends BallisticWeapon;
 
 var Weapon_M763Shotgun_GasControl GC;
 var bool bM763UseEmptyReloadEnd;
+var bool bM763StartedEmptyAtReload;
+var bool bM763PulloutPending;
+var bool bM763AltShellAtPutdown;
+var name M763SavedSelectAnim;
+var bool bM763RestoreSelectAnimPending;
 
 simulated function DoAltFire()
 {
@@ -65,6 +70,9 @@ function BeginBallisticShovelReload()
     bShovelReloadStopRequested = false;
     bShovelReloadLooping = false;
 
+    bM763PulloutPending = false;
+    bM763StartedEmptyAtReload = (ShovelReloadMode == 0 && MagAmmoRemaining <= 0);
+
     if (ShovelReloadMode == 0)
     {
         bShovelReloadEmpty = MagAmmoRemaining <= 0;
@@ -77,6 +85,62 @@ function BeginBallisticShovelReload()
     }
 
     PlayShovelReloadStartAnimation();
+}
+
+simulated function bool PutDown()
+{
+    if (bShovelReload && bShovelReloadLooping)
+    {
+        bM763PulloutPending = true;
+        bM763AltShellAtPutdown = (AltAmmoLoaded > 0);
+    }
+
+    return Super.PutDown();
+}
+
+simulated function BringUp(optional Weapon PrevWeapon)
+{
+    M763SavedSelectAnim = SelectAnim;
+
+    if (bM763PulloutPending)
+    {
+        if (bM763StartedEmptyAtReload && !bM763AltShellAtPutdown)
+        {
+            SelectAnim = 'PulloutReloadEnd';
+            bM763RestoreSelectAnimPending = true;
+        }
+        else
+            bM763RestoreSelectAnimPending = false;
+    }
+    else
+        bM763RestoreSelectAnimPending = false;
+
+    Super.BringUp(PrevWeapon);
+
+    bM763PulloutPending = false;
+}
+
+simulated function AnimEnd(int Channel)
+{
+    local name AnimName;
+    local float Frame;
+    local float Rate;
+
+    if (Channel == 0 && bM763RestoreSelectAnimPending)
+    {
+        GetAnimParams(0, AnimName, Frame, Rate);
+
+        if (AnimName == 'PulloutReloadEnd')
+        {
+            Super.AnimEnd(Channel);
+
+            SelectAnim = M763SavedSelectAnim;
+            bM763RestoreSelectAnimPending = false;
+            return;
+        }
+    }
+
+    Super.AnimEnd(Channel);
 }
 
 
@@ -94,7 +158,7 @@ defaultproperties
 	
 	WeaponReloadAnim=Reload_Single9mm
     ItemName="M763 Shotgun"
-    Description=""
+    Description="The Avenger single barreled shotgun is the standard spread weapon of the UTC infantry divisions. Its high damage, reliability and good range for a shotgun have made this gun one of the humans' favourites; the M763 has blown open more Krao drones than can be counted. After its many successes, even during trials by the UTC's Reunited Jamaican Army, defending from wave upon wave of Krao minions during the 'Red Storm' Skrith invasion, the Avenger became the standard issue shotgun and a favorite of many forces including the UTC RJA Division."
 	
     MagCapacity=8
 

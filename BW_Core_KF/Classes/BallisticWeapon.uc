@@ -2400,7 +2400,15 @@ simulated function bool StartFire(int Mode)
 	}
 
 	if (bAltLoaded)
+	{
+		if (Mode == 0 && MagAmmoRemaining < 1 && AltAmmoLoaded > 0)
+		{
+			DoAltFire();
+			return true;
+		}
+
 		return StartAltFire(Mode);
+	}
 	
 	if (Mode == 1 && bAltLoadEnabled)
 	{
