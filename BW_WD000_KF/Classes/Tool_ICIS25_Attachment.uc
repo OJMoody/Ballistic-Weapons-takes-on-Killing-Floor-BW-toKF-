@@ -1,0 +1,62 @@
+class Tool_ICIS25_Attachment extends BallisticAttachment;
+
+defaultproperties
+{
+	Mesh=SkeletalMesh'BWKF_ICIS_A.ICISStim_TP_Mesh'
+
+    MovementAnims(0)=JogF_Syringe
+    MovementAnims(1)=JogB_Syringe
+    MovementAnims(2)=JogL_Syringe
+    MovementAnims(3)=JogR_Syringe
+    CrouchAnims(0)=CHwalkF_Syringe
+    CrouchAnims(1)=CHwalkB_Syringe
+    CrouchAnims(2)=CHwalkL_Syringe
+    CrouchAnims(3)=CHwalkR_Syringe
+    AirStillAnim=JumpF_Mid
+    AirAnims(0)=JumpF_Mid
+    AirAnims(1)=JumpF_Mid
+    AirAnims(2)=JumpL_Mid
+    AirAnims(3)=JumpR_Mid
+    TakeoffStillAnim=JumpF_Takeoff
+    TakeoffAnims(0)=JumpF_Takeoff
+    TakeoffAnims(1)=JumpF_Takeoff
+    TakeoffAnims(2)=JumpL_Takeoff
+    TakeoffAnims(3)=JumpR_Takeoff
+    LandAnims(0)=JumpF_Land
+    LandAnims(1)=JumpF_Land
+    LandAnims(2)=JumpL_Land
+    LandAnims(3)=JumpR_Land
+    TurnRightAnim=TurnR_Syringe
+    TurnLeftAnim=TurnL_Syringe
+    CrouchTurnRightAnim=CH_TurnR_Syringe
+    CrouchTurnLeftAnim=CH_TurnL_Syringe
+    IdleRestAnim=Idle_Syringe//Idle_Rest
+    IdleCrouchAnim=CHIdle_Syringe
+    IdleSwimAnim=Swim_Tread
+    IdleWeaponAnim=Idle_Syringe//Idle_Rifle
+    IdleHeavyAnim=Idle_Syringe//Idle_Biggun
+    IdleRifleAnim=Idle_Syringe//Idle_Rifle
+    IdleChatAnim=Idle_Syringe
+    FireAnims(0)=HealTeam_Syringe
+    FireAnims(1)=HealTeam_Syringe
+    FireAnims(2)=HealTeam_Syringe
+    FireAnims(3)=HealTeam_Syringe
+    FireAltAnims(0)=Heal_Syringe
+    FireAltAnims(1)=Heal_Syringe
+    FireAltAnims(2)=Heal_Syringe
+    FireAltAnims(3)=Heal_Syringe
+    FireCrouchAnims(0)=CHHealTeam_Syringe
+    FireCrouchAnims(1)=CHHealTeam_Syringe
+    FireCrouchAnims(2)=CHHealTeam_Syringe
+    FireCrouchAnims(3)=CHHealTeam_Syringe
+    FireCrouchAltAnims(0)=CHHeal_Syringe
+    FireCrouchAltAnims(1)=CHHeal_Syringe
+    FireCrouchAltAnims(2)=CHHeal_Syringe
+    FireCrouchAltAnims(3)=CHHeal_Syringe
+    HitAnims(0)=HitF_Syringe
+    HitAnims(1)=HitB_Syringe
+    HitAnims(2)=HitL_Syringe
+    HitAnims(3)=HitR_Syringe
+    PostFireBlendStandAnim=Blend_Syringe
+    PostFireBlendCrouchAnim=CHBlend_Syringe
+}

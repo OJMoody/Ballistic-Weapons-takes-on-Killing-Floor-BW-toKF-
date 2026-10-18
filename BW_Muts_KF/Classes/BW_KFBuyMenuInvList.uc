@@ -91,7 +91,7 @@ function UpdateMyBuyables()
         }
 
         // No need for Syringe, Welder or WD200 Combat Welder
-		if ( CurInv.IsA('Welder') || CurInv.IsA('Syringe') || CurInv.IsA('Tool_WD200_Main') )
+		if (CurInv.IsA('Welder') || CurInv.IsA('Syringe') || CurInv.IsA('Tool_WD200_Main') || CurInv.IsA('Tool_ICIS25_Main'))
 		{
 			continue;
 		}

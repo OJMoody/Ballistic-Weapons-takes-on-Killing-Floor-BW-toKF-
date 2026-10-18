@@ -21,6 +21,11 @@ function ModifyPlayer(Pawn Other)
 
 function string GetInventoryClassOverride(string InventoryClassName)
 {
+	if (InventoryClassName ~= "KFMod.Syringe")
+	{
+		return "BW_WD000_KF.Tool_ICIS25_Main";
+	}
+
 	if (InventoryClassName ~= "KFMod.Single")
 	{
 		return "BW_WD001_KF.Weapon_M806Pistol_Main";
@@ -62,6 +67,7 @@ function PreBeginPlay()
 	Super.PreBeginPlay();
 
 	class'KFRandomItemSpawn'.default.PickupClasses[7] = class'BWArmorPickup';
+	class'BW_KFPawn'.default.RequiredEquipment[3] = "BW_WD000_KF.Tool_ICIS25_Main";
 	class'BW_KFPawn'.default.RequiredEquipment[4] = "";
 }
 

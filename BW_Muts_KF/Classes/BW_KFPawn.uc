@@ -210,6 +210,48 @@ function ServerBuyWeapon( Class<Weapon> WClass, float ItemWeight )
 	SetTraderUpdate();
 }
 
+simulated exec function QuickHeal()
+{
+	local Tool_ICIS25_Main S;
+	local Inventory I;
+	local byte C;
+
+	if (Health >= HealthMax)
+		return;
+
+	for (I = Inventory; I != None && C++ < 250; I = I.Inventory)
+	{
+		S = Tool_ICIS25_Main(I);
+
+		if (S != None)
+			break;
+	}
+
+	if (S == None)
+		return;
+
+	if (S.ChargeBar() < 0.95)
+		return;
+
+	bIsQuickHealing = 1;
+
+	if (Weapon == None)
+	{
+		PendingWeapon = S;
+		ChangedWeapon();
+	}
+	else if (Weapon != S)
+	{
+		PendingWeapon = S;
+		Weapon.PutDown();
+	}
+	else
+	{
+		bIsQuickHealing = 0;
+		S.HackClientStartFire();
+	}
+}
+
 //=============================================================================
 // SERVER SELL WEAPON
 //=============================================================================
@@ -438,4 +480,9 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	}
 
 	Log("BW_KFPawn ServerSellWeapon: No matching inventory weapon found");
+}
+
+defaultproperties
+{
+    RequiredEquipment(3)="BW_WD000_KF.Tool_ICIS25_Main"
 }
