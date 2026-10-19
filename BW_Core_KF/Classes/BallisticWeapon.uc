@@ -2876,7 +2876,7 @@ defaultproperties
 
 	SleeveNum=500
     BUseBWHands=False
-    BWSleeveTexture=Texture'BWKF_Core_T.HandRig.BallisticHandRigKF-Tex'
+    BWSleeveTexture=Shader'BWKF_Core_T.HandRig.Hands-Shiny'
 	InvisibleSleeveTexture=Texture'BWKF_Core_T.Misc.Invisible'
 	
 	AmmoIcon=Texture'KillingFloorHUD.HUD.Hud_Bullets'

@@ -59,6 +59,7 @@ exec function ReloadMeNow()
 	if (!AllowReload())
 		return;
 
+	bFireAnimPlaying = false;
 	bReloadCancelRequested = false;
 	bReloadResumePending = false;
 	bBallisticClipOut = false;

@@ -210,6 +210,7 @@ defaultproperties
 	RecoilRate=0
 	maxVerticalRecoilAngle=0
 	maxHorizontalRecoilAngle=0
+	bFiringDoesntAffectMovement=True
 	ShellEjectClass=None
 	ShellEjectBoneName=Root
 	

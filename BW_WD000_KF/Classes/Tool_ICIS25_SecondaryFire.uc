@@ -92,6 +92,7 @@ defaultproperties
 	RecoilRate=0
 	maxVerticalRecoilAngle=0
 	maxHorizontalRecoilAngle=0
+	bFiringDoesntAffectMovement=True
 	ShellEjectClass=None
 	ShellEjectBoneName=Root
 	
@@ -101,8 +102,6 @@ defaultproperties
     FireAnim="SelfMedicateFire"
     TweenTime=0.100000
     TransientSoundVolume=1.800000
-	FireSound=SoundGroup'BWKF_ICIS_SN.ICIS.ICIS_Melee'
-    FireSoundRef="BWKF_ICIS_SN.ICIS.ICIS_Melee"
-    StereoFireSoundRef="BWKF_ICIS_SN.ICIS.ICIS_Melee"
+	FireSound=None
     FlashEmitterClass=None
 }
