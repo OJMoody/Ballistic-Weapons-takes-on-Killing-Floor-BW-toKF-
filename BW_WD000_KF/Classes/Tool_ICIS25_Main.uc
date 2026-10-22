@@ -295,7 +295,7 @@ defaultproperties
 	PlayerViewOffset=(X=30.000000,Z=-10.000000)
 	Priority=6
 	InventoryGroup=5
-	GroupOffset=2
+	GroupOffset=1
 	
 	PulloutSound=(Sound=Sound'BWKF_ICIS_SN.ICIS.ICISPullout')
     PutAwaySound=(Sound=Sound'BWKF_ICIS_SN.ICIS.ICISPutaway')

@@ -31,7 +31,8 @@ defaultproperties
 	Mesh=SkeletalMesh'BWKF_WD200_A.CombatWelder_FP_Mesh'
 	PlayerViewOffset=(X=10.000000,Y=-2.000000,Z=-15.000000)
 	InventoryGroup=5
-	GroupOffset=1
+	Priority=5
+	GroupOffset=2
 	
 	WeaponModes(2)=(ModeName="Weld",ModeID="WM_FullAuto")
 	CurrentWeaponMode=2

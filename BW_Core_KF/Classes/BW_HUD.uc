@@ -101,9 +101,67 @@ simulated function DrawHudPassA(Canvas C)
 	local byte OldSecondaryIconAlpha1;
 	local byte OldSecondaryDigitsAlpha0;
 	local byte OldSecondaryDigitsAlpha1;
+	local BallisticHandGrenade Grenade;
+	local byte OldGrenadeClipBGAlpha0, OldGrenadeClipBGAlpha1;
+	local byte OldGrenadeClipIconAlpha0, OldGrenadeClipIconAlpha1;
+	local byte OldGrenadeClipDigitsAlpha0, OldGrenadeClipDigitsAlpha1;
+	local byte OldGrenadeReserveBGAlpha0, OldGrenadeReserveBGAlpha1;
+	local byte OldGrenadeReserveIconAlpha0, OldGrenadeReserveIconAlpha1;
+	local byte OldGrenadeReserveDigitsAlpha0, OldGrenadeReserveDigitsAlpha1;
+
+	Grenade = BallisticHandGrenade(PawnOwner.Weapon);
 
 	if (PawnOwner != None && PawnOwner.Weapon != None)
 		BW = BallisticWeapon(PawnOwner.Weapon);
+
+	if (Grenade != None)
+	{
+		OldGrenadeClipBGAlpha0 = BulletsInClipBG.Tints[0].A;
+		OldGrenadeClipBGAlpha1 = BulletsInClipBG.Tints[1].A;
+		OldGrenadeClipIconAlpha0 = BulletsInClipIcon.Tints[0].A;
+		OldGrenadeClipIconAlpha1 = BulletsInClipIcon.Tints[1].A;
+		OldGrenadeClipDigitsAlpha0 = BulletsInClipDigits.Tints[0].A;
+		OldGrenadeClipDigitsAlpha1 = BulletsInClipDigits.Tints[1].A;
+
+		OldGrenadeReserveBGAlpha0 = ClipsBG.Tints[0].A;
+		OldGrenadeReserveBGAlpha1 = ClipsBG.Tints[1].A;
+		OldGrenadeReserveIconAlpha0 = ClipsIcon.Tints[0].A;
+		OldGrenadeReserveIconAlpha1 = ClipsIcon.Tints[1].A;
+		OldGrenadeReserveDigitsAlpha0 = ClipsDigits.Tints[0].A;
+		OldGrenadeReserveDigitsAlpha1 = ClipsDigits.Tints[1].A;
+
+		BulletsInClipBG.Tints[0].A = 0;
+		BulletsInClipBG.Tints[1].A = 0;
+		BulletsInClipIcon.Tints[0].A = 0;
+		BulletsInClipIcon.Tints[1].A = 0;
+		BulletsInClipDigits.Tints[0].A = 0;
+		BulletsInClipDigits.Tints[1].A = 0;
+
+		ClipsBG.Tints[0].A = 0;
+		ClipsBG.Tints[1].A = 0;
+		ClipsIcon.Tints[0].A = 0;
+		ClipsIcon.Tints[1].A = 0;
+		ClipsDigits.Tints[0].A = 0;
+		ClipsDigits.Tints[1].A = 0;
+
+		Super.DrawHudPassA(C);
+
+		BulletsInClipBG.Tints[0].A = OldGrenadeClipBGAlpha0;
+		BulletsInClipBG.Tints[1].A = OldGrenadeClipBGAlpha1;
+		BulletsInClipIcon.Tints[0].A = OldGrenadeClipIconAlpha0;
+		BulletsInClipIcon.Tints[1].A = OldGrenadeClipIconAlpha1;
+		BulletsInClipDigits.Tints[0].A = OldGrenadeClipDigitsAlpha0;
+		BulletsInClipDigits.Tints[1].A = OldGrenadeClipDigitsAlpha1;
+
+		ClipsBG.Tints[0].A = OldGrenadeReserveBGAlpha0;
+		ClipsBG.Tints[1].A = OldGrenadeReserveBGAlpha1;
+		ClipsIcon.Tints[0].A = OldGrenadeReserveIconAlpha0;
+		ClipsIcon.Tints[1].A = OldGrenadeReserveIconAlpha1;
+		ClipsDigits.Tints[0].A = OldGrenadeReserveDigitsAlpha0;
+		ClipsDigits.Tints[1].A = OldGrenadeReserveDigitsAlpha1;
+
+		return;
+	}
 
 	if (BW == None)
 	{
@@ -258,6 +316,214 @@ simulated function DrawHudPassA(Canvas C)
 }
 
 //=============================================================================
+// INVENTORY SELECTION FILTER
+//=============================================================================
+
+function bool CanSelectInventoryItem(Inventory Item)
+{
+    local BallisticHandGrenade Grenade;
+
+    Grenade = BallisticHandGrenade(Item);
+
+    if (Grenade != None && Grenade.bRequireAmmoToSelect && Grenade.AmmoAmount(0) <= 0)
+        return false;
+
+    return true;
+}
+
+function PrevWeapon()
+{
+    local Inventory CurInv;
+    local InventoryCategory Categorized[5];
+    local int i, j;
+    local bool bSelectedFound;
+
+    if (PawnOwner != None && PawnOwner.Inventory != None && ShowInventory())
+    {
+        for (CurInv = PawnOwner.Inventory; CurInv != None; CurInv = CurInv.Inventory)
+        {
+            if (CurInv.InventoryGroup > 0 && CanSelectInventoryItem(CurInv))
+            {
+                if (CurInv == SelectedInventory)
+                {
+                    SelectedInventoryCategory = CurInv.InventoryGroup - 1;
+                    SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount;
+                    bSelectedFound = true;
+                }
+
+                Categorized[CurInv.InventoryGroup - 1].Items[Categorized[CurInv.InventoryGroup - 1].ItemCount++] = CurInv;
+            }
+        }
+
+        if (!bSelectedFound)
+        {
+            for (i = 0; i < 5; i++)
+            {
+                if (Categorized[i].ItemCount > 0)
+                {
+                    SelectedInventoryCategory = i;
+                    SelectedInventoryIndex = 0;
+                    SelectedInventory = Categorized[i].Items[0];
+                    return;
+                }
+            }
+
+            return;
+        }
+
+        if (SelectedInventoryIndex >= Categorized[SelectedInventoryCategory].ItemCount)
+            SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
+
+        if (SelectedInventoryIndex > 0)
+        {
+            SelectedInventoryIndex--;
+            SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+        }
+        else
+        {
+            for (i = SelectedInventoryCategory - 1; i != SelectedInventoryCategory && j < 10; i--)
+            {
+                if (i < 0)
+                    i = 4;
+
+                if (Categorized[i].ItemCount > 0)
+                {
+                    SelectedInventoryCategory = i;
+                    SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
+                    SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+                    return;
+                }
+
+                j++;
+            }
+
+            SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
+            if (SelectedInventoryIndex >= 0)
+                SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+        }
+    }
+}
+
+function NextWeapon()
+{
+    local Inventory CurInv;
+    local InventoryCategory Categorized[5];
+    local int i, j;
+    local bool bSelectedFound;
+
+    if (PawnOwner != None && PawnOwner.Inventory != None && ShowInventory())
+    {
+        for (CurInv = PawnOwner.Inventory; CurInv != None; CurInv = CurInv.Inventory)
+        {
+            if (CurInv.InventoryGroup > 0 && CanSelectInventoryItem(CurInv))
+            {
+                if (CurInv == SelectedInventory)
+                {
+                    SelectedInventoryCategory = CurInv.InventoryGroup - 1;
+                    SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount;
+                    bSelectedFound = true;
+                }
+
+                Categorized[CurInv.InventoryGroup - 1].Items[Categorized[CurInv.InventoryGroup - 1].ItemCount++] = CurInv;
+            }
+        }
+
+        if (!bSelectedFound)
+        {
+            for (i = 0; i < 5; i++)
+            {
+                if (Categorized[i].ItemCount > 0)
+                {
+                    SelectedInventoryCategory = i;
+                    SelectedInventoryIndex = 0;
+                    SelectedInventory = Categorized[i].Items[0];
+                    return;
+                }
+            }
+
+            return;
+        }
+
+        if (SelectedInventoryIndex >= Categorized[SelectedInventoryCategory].ItemCount)
+            SelectedInventoryIndex = Categorized[SelectedInventoryCategory].ItemCount - 1;
+
+        if (SelectedInventoryIndex < Categorized[SelectedInventoryCategory].ItemCount - 1)
+        {
+            SelectedInventoryIndex++;
+            SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+        }
+        else
+        {
+            for (i = SelectedInventoryCategory + 1; i != SelectedInventoryCategory && j < 10; i++)
+            {
+                if (i > 4)
+                    i = 0;
+
+                if (Categorized[i].ItemCount > 0)
+                {
+                    SelectedInventoryCategory = i;
+                    SelectedInventoryIndex = 0;
+                    SelectedInventory = Categorized[SelectedInventoryCategory].Items[SelectedInventoryIndex];
+                    return;
+                }
+
+                j++;
+            }
+
+            SelectedInventoryIndex = 0;
+            if (Categorized[SelectedInventoryCategory].ItemCount > 0)
+                SelectedInventory = Categorized[SelectedInventoryCategory].Items[0];
+        }
+    }
+}
+
+function SelectWeapon()
+{
+    local Inventory I;
+    local bool bFoundItem;
+    local bool bAllowSelect;
+    local KFHumanPawn KFHP;
+
+    HideInventory();
+
+    if (PawnOwner == None)
+        return;
+
+    KFHP = KFHumanPawn(PawnOwner);
+
+    if (KFHP == None || SelectedInventory == None)
+        return;
+
+    for (I = PawnOwner.Inventory; I != None; I = I.Inventory)
+    {
+        if (I == SelectedInventory)
+        {
+            bFoundItem = true;
+            break;
+        }
+    }
+
+    if (!bFoundItem || !CanSelectInventoryItem(SelectedInventory))
+        return;
+
+    bAllowSelect = KFHP.AllowHoldWeapon(KFWeapon(SelectedInventory));
+
+    if (!bAllowSelect)
+        return;
+
+    PawnOwner.PendingWeapon = Weapon(SelectedInventory);
+
+    if (PawnOwner.Weapon != None)
+    {
+        if (PawnOwner.Weapon != PawnOwner.PendingWeapon)
+            PawnOwner.Weapon.PutDown();
+    }
+    else
+        PawnOwner.ChangedWeapon();
+}
+
+
+//=============================================================================
 // AMMO DISPLAY
 //=============================================================================
 
@@ -297,6 +563,37 @@ simulated function CalculateAmmo()
 
     if (CurClipsPrimary < 0)
         CurClipsPrimary = 0;
+}
+
+//=============================================================================
+// BALLISTIC GRENADE HUD
+//=============================================================================
+
+simulated function UpdateHud()
+{
+    local Inventory Inv;
+    local BallisticHandGrenade Grenade;
+
+    Super.UpdateHud();
+
+    if (PawnOwner == None)
+    {
+        GrenadeDigits.Value = 0;
+        return;
+    }
+
+    for (Inv = PawnOwner.Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        Grenade = BallisticHandGrenade(Inv);
+
+        if (Grenade != None)
+            break;
+    }
+
+    if (Grenade != None)
+        GrenadeDigits.Value = Grenade.AmmoAmount(0);
+    else
+        GrenadeDigits.Value = 0;
 }
 
 

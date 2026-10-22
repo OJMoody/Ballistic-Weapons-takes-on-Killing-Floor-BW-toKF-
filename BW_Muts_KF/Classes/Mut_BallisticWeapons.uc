@@ -152,7 +152,7 @@ simulated function Timer()
             {
                 if (C.IsA('PlayerController'))
                 {
-                    C.PawnClass = class'BW_KFPawn';
+					C.PawnClass = class'BW_KFPawn';
                 }
             }
 

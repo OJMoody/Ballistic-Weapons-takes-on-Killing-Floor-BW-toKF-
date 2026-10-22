@@ -11,6 +11,12 @@ var float GrenadeChargeTime;
 var() name GrenadePrepareAnimation;
 var() name GrenadeThrowAnimation;
 
+var bool bSkipGrenadePutDown;
+
+var bool bGrenadePulloutPlaying;
+
+var() bool bRequireAmmoToSelect;
+
 replication
 {
     reliable if (Role < ROLE_Authority)
@@ -23,29 +29,31 @@ replication
 
 simulated function bool StartFire(int Mode)
 {
-    log("NRP57: StartFire Mode="$Mode);
-    log("NRP57: ClientState="$ClientState);
-    log("NRP57: AmmoAmount="$AmmoAmount(0));
-    log("NRP57: PrepareAnim="$GrenadePrepareAnimation$" ThrowAnim="$GrenadeThrowAnimation);
+
+	log("NRP57 TRACE StartFire: Mode="$Mode
+    $" AmmoAmount="$AmmoAmount(0)
+    $" AmmoCharge="$AmmoCharge[0]
+    $" AmmoActor="$Ammo[0]
+    $" ClientState="$ClientState
+    $" Charging="$bGrenadeCharging
+    $" Pending="$bGrenadeThrowPending
+    $" Released="$bGrenadeReleased);
 
     if (Mode != 0)
         return false;
 
     if (ClientState == WS_BringUp)
     {
-        log("NRP57: Blocked by WS_BringUp");
         return false;
     }
 
-    if (bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging)
-    {
-        log("NRP57: Blocked by grenade state");
-        return false;
-    }
+    if (bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging || bGrenadePulloutPlaying)
+	{
+		return false;
+	}
 
     if (AmmoAmount(0) < 1 || GrenadePrepareAnimation == '' || GrenadeThrowAnimation == '')
     {
-        log("NRP57: Blocked by ammo or animation configuration");
         return false;
     }
 
@@ -54,7 +62,6 @@ simulated function bool StartFire(int Mode)
     GrenadeChargeStartTime = Level.TimeSeconds;
     GrenadeChargeTime = 0.0;
 
-    log("NRP57: Playing preparation animation");
     LoopAnim(GrenadePrepareAnimation, 1.0, 0.0);
 
     if (Role < ROLE_Authority)
@@ -65,8 +72,6 @@ simulated function bool StartFire(int Mode)
 
 simulated event StopFire(int Mode)
 {
-    log("NRP57: StopFire Mode="$Mode$" Charging="$bGrenadeCharging);
-
     if (Mode != 0 || !bGrenadeCharging)
     {
         Super.StopFire(Mode);
@@ -77,8 +82,6 @@ simulated event StopFire(int Mode)
 	bGrenadeCharging = false;
 	GrenadeChargeTime = FMax(0.0, Level.TimeSeconds - GrenadeChargeStartTime);
 
-    log("NRP57: Starting throw, ChargeTime="$GrenadeChargeTime);
-
     if (Role == ROLE_Authority)
         BeginGrenadeThrow();
     else
@@ -88,14 +91,51 @@ simulated event StopFire(int Mode)
     }
 }
 
+simulated function Weapon WeaponChange(byte F, bool bSilent)
+{
+    if (bRequireAmmoToSelect && InventoryGroup == F && AmmoAmount(0) <= 0)
+    {
+        if (Inventory == None)
+            return None;
+
+        return Inventory.WeaponChange(F, bSilent);
+    }
+
+    return Super.WeaponChange(F, bSilent);
+}
+
+simulated function Weapon PrevWeapon(Weapon CurrentChoice, Weapon CurrentWeapon)
+{
+    if (bRequireAmmoToSelect && AmmoAmount(0) <= 0)
+    {
+        if (Inventory == None)
+            return CurrentChoice;
+
+        return Inventory.PrevWeapon(CurrentChoice, CurrentWeapon);
+    }
+
+    return Super.PrevWeapon(CurrentChoice, CurrentWeapon);
+}
+
+simulated function Weapon NextWeapon(Weapon CurrentChoice, Weapon CurrentWeapon)
+{
+    if (bRequireAmmoToSelect && AmmoAmount(0) <= 0)
+    {
+        if (Inventory == None)
+            return CurrentChoice;
+
+        return Inventory.NextWeapon(CurrentChoice, CurrentWeapon);
+    }
+
+    return Super.NextWeapon(CurrentChoice, CurrentWeapon);
+}
+
 //=============================================================================
 // THROW ANIMATION
 //=============================================================================
 
 simulated function BeginGrenadeThrow()
 {
-    log("NRP57: BeginGrenadeThrow Pending="$bGrenadeThrowPending$" Released="$bGrenadeReleased);
-
     if (bGrenadeThrowPending || bGrenadeReleased)
         return;
 
@@ -129,20 +169,20 @@ function ReleaseGrenade()
 {
     local BallisticHandGrenadeFire GrenadeFire;
 
-    log("NRP57: ReleaseGrenade Role="$Role$" Pending="$bGrenadeThrowPending$" Released="$bGrenadeReleased$" Ammo="$AmmoAmount(0));
+	log("NRP57 TRACE ReleaseGrenade: AmmoAmount="$AmmoAmount(0)
+    $" AmmoCharge="$AmmoCharge[0]
+    $" AmmoActor="$Ammo[0]);
 
     if (Role != ROLE_Authority)
         return;
 
     if (!bGrenadeThrowPending || bGrenadeReleased)
     {
-        log("NRP57: Release rejected by state");
         return;
     }
 
     if (AmmoAmount(0) < 1 || FireMode[0] == None)
     {
-        log("NRP57: Release rejected by ammo or fire mode");
         bGrenadeThrowPending = false;
         return;
     }
@@ -151,7 +191,6 @@ function ReleaseGrenade()
 
     if (GrenadeFire == None)
     {
-        log("NRP57: Release rejected by fire class");
         bGrenadeThrowPending = false;
         return;
     }
@@ -161,9 +200,19 @@ function ReleaseGrenade()
 
     GrenadeFire.CacheThrowPower(GrenadeChargeTime);
     ConsumeAmmo(0, 1);
-    log("NRP57: Ammo after consume="$AmmoAmount(0));
     GrenadeFire.DoFireEffect();
 }
+
+function GiveAmmo(int m, WeaponPickup WP, bool bJustSpawned)
+{
+    Super.GiveAmmo(m, WP, bJustSpawned);
+
+    // Hand grenades have no magazine, so KF1 initializes their ammo to zero.
+    // Seed the ammo inventory object with its initial amount instead.
+    if (!bNoAmmoInstances && m == 0 && bJustSpawned && Ammo[0] != None && Ammo[0].AmmoAmount < 1)
+        Ammo[0].AddAmmo(Ammo[0].InitialAmount);
+}
+
 
 //=============================================================================
 // ANIMATION END
@@ -180,14 +229,32 @@ simulated function AnimEnd(int Channel)
         GetAnimParams(0, AnimName, Frame, Rate);
 
         if (bGrenadeCharging && AnimName == GrenadePrepareAnimation)
-		{
-			LoopAnim(GrenadePrepareAnimation, 0.0, 0.0);
-			return;
-		}
+        {
+            LoopAnim(GrenadePrepareAnimation, 0.0, 0.0);
+            return;
+        }
 
-        if (bGrenadeThrowPending && AnimName == GrenadeThrowAnimation)
+        if ((bGrenadeThrowPending || bGrenadeReleased) && AnimName == GrenadeThrowAnimation)
         {
             FinishGrenadeThrow();
+
+            if (AmmoAmount(0) > 0)
+            {
+                if (SelectAnim != '' && HasAnim(SelectAnim))
+                {
+                    bGrenadePulloutPlaying = true;
+                    PlayAnim(SelectAnim, SelectAnimRate, 0.0);
+                }
+                else
+                    PlayIdle();
+            }
+
+            return;
+        }
+
+        if (bGrenadePulloutPlaying && AnimName == SelectAnim)
+        {
+            bGrenadePulloutPlaying = false;
             PlayIdle();
             return;
         }
@@ -230,6 +297,8 @@ function ServerFinishGrenadeThrow()
     bGrenadeCharging = false;
     bGrenadeThrowPending = false;
     bGrenadeReleased = false;
+
+    SwitchBackIfEmpty();
 }
 
 //=============================================================================
@@ -244,13 +313,63 @@ simulated function FinishGrenadeThrow()
 
     if (Role < ROLE_Authority)
         ServerFinishGrenadeThrow();
+    else
+        SwitchBackIfEmpty();
+}
+
+
+//=============================================================================
+// RETURN TO PREVIOUS WEAPON
+//=============================================================================
+
+function SwitchBackIfEmpty()
+{
+    if (Role != ROLE_Authority || AmmoAmount(0) > 0 || Instigator == None)
+        return;
+
+    if (Instigator.Weapon != self || Instigator.PendingWeapon != None)
+        return;
+
+    bSkipGrenadePutDown = true;
+    Instigator.SwitchToLastWeapon();
+}
+
+simulated function bool PutDown()
+{
+    local bool bResult;
+    local name SavedPutDownAnim;
+
+    if (!bSkipGrenadePutDown)
+        return Super.PutDown();
+
+    bSkipGrenadePutDown = false;
+
+    SavedPutDownAnim = PutDownAnim;
+    PutDownAnim = '';
+
+    bResult = Super.PutDown();
+
+    PutDownAnim = SavedPutDownAnim;
+
+    return bResult;
 }
 
 defaultproperties
 {
-	bNoAmmoInstances=True
-	AmmoClass(0)=Class'KFMod.FragAmmo'
-	AmmoClass(1)=Class'KFMod.FragAmmo'
-	AmmoCharge(0)=4
-	AmmoCharge(1)=4
+	bRequireAmmoToSelect=True
+	bNoAmmoInstances=False
+	bHasAimingMode=False
+	AmmoClass(0)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
+	AmmoClass(1)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
+	AmmoCharge(0)=5
+	AmmoCharge(1)=5
+	Weight=0.000000
+	InventoryGroup=5
+	GroupOffset=3
+	Priority=4
+	
+	bKFNeverThrow=True
+	
+	WeaponModes(0)=(ModeName="Throw",ModeID="WM_SemiAuto")
+	CurrentWeaponMode=0
 }

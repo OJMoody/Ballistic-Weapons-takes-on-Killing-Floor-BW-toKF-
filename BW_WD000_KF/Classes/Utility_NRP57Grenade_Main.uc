@@ -5,11 +5,9 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD000_KF.Utility_NRP57Grenade_PrimaryFire'
     FireModeClass(1)=Class'BW_WD000_KF.Utility_NRP57Grenade_PrimaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_NRP57Grenade_Pickup'
-
-    InventoryGroup=4
-    Priority=5
-
-    ItemName="NRP57 Grenade"
+	
+	AmmoClass(0)=Class'BW_WD000_KF.Utility_NRP57Grenade_Ammo'
+	AmmoClass(1)=Class'BW_WD000_KF.Utility_NRP57Grenade_Ammo'
 
     GrenadePrepareAnimation="PrepThrow"
     GrenadeThrowAnimation="Throw"
@@ -19,4 +17,5 @@ defaultproperties
 	PlayerViewPivot=(Yaw=0)
 	
 	Mesh=Mesh'BWKF_NRP5_A.NRP5_FP_Mesh'
+	ItemName="NRP57 Grenade"
 }

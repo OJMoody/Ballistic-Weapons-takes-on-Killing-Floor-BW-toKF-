@@ -1,5 +1,7 @@
 class BW_KFPawn extends KFHumanPawn;
 
+var class<BallisticHandGrenade> DefaultGrenadeClass;
+
 //=============================================================================
 // SERVER BUY WEAPON
 //=============================================================================
@@ -273,11 +275,8 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	local int NewWilsonMagAmmo;
 	local float Price;
 
-	Log("BW_KFPawn ServerSellWeapon: WClass="$WClass);
-
 	if ( !CanBuyNow() || Class<KFWeapon>(WClass) == none || Class<KFWeaponPickup>(WClass.Default.PickupClass) == none )
 	{
-		Log("BW_KFPawn ServerSellWeapon: Initial validation FAILED");
 		SetTraderUpdate();
 		Return;
 	}
@@ -286,9 +285,6 @@ function ServerSellWeapon( Class<Weapon> WClass )
 	{
 		if ( I.Class == WClass )
 		{
-			Log("BW_KFPawn ServerSellWeapon: Found inventory class "$I.Class);
-			Log("BW_KFPawn ServerSellWeapon: Inventory object "$I);
-
 			if ( KFWeapon(I) != none && KFWeapon(I).SellValue != -1 )
 			{
 				Price = KFWeapon(I).SellValue;
@@ -358,16 +354,10 @@ function ServerSellWeapon( Class<Weapon> WClass )
 
 			if ( Weapon_M806DualPistol_Main(I) != none )
 			{
-				Log("BW_KFPawn ServerSellWeapon: M806 DUAL BLOCK ENTERED");
-
 				NewM806Ammo = Weapon_M806DualPistol_Main(I).AmmoAmount(0) / 2;
 				NewM806MagAmmo = Weapon_M806DualPistol_Main(I).MagAmmoRemaining / 2;
 
 				Price = Price / 2;
-
-				Log("BW_KFPawn ServerSellWeapon: M806 Ammo="$NewM806Ammo);
-				Log("BW_KFPawn ServerSellWeapon: M806 MagAmmo="$NewM806MagAmmo);
-				Log("BW_KFPawn ServerSellWeapon: M806 Sale Price="$Price);
 
 				if ( I == Weapon || I == PendingWeapon )
 					ClientCurrentWeaponSold();
@@ -379,19 +369,13 @@ function ServerSellWeapon( Class<Weapon> WClass )
 
 				NewM806 = Spawn(class'Weapon_M806Pistol_Main');
 
-				Log("BW_KFPawn ServerSellWeapon: Spawned M806 single = "$NewM806);
-
 				if ( NewM806 != none )
 				{
 					NewM806.GiveTo(self);
 
-					Log("BW_KFPawn ServerSellWeapon: M806 GiveTo complete");
-
 					NewM806.AddAmmo(NewM806Ammo - NewM806.AmmoAmount(0), 0);
 					NewM806.MagAmmoRemaining = NewM806MagAmmo;
 					NewM806.SellValue = Price;
-
-					Log("BW_KFPawn ServerSellWeapon: M806 single configured");
 				}
 
 				SetTraderUpdate();
@@ -408,18 +392,11 @@ function ServerSellWeapon( Class<Weapon> WClass )
 
 			if ( Weapon_Wilson41Dual_Main(I) != none )
 			{
-				Log("BW_KFPawn ServerSellWeapon: WILSON DUAL BLOCK ENTERED");
-
 				NewWilsonAmmo = Weapon_Wilson41Dual_Main(I).AmmoAmount(0) / 2;
 				NewWilsonAltAmmo = Weapon_Wilson41Dual_Main(I).AmmoAmount(1) / 2;
 				NewWilsonMagAmmo = Weapon_Wilson41Dual_Main(I).MagAmmoRemaining / 2;
 
 				Price = Price / 2;
-
-				Log("BW_KFPawn ServerSellWeapon: Wilson Ammo="$NewWilsonAmmo);
-				Log("BW_KFPawn ServerSellWeapon: Wilson AltAmmo="$NewWilsonAltAmmo);
-				Log("BW_KFPawn ServerSellWeapon: Wilson MagAmmo="$NewWilsonMagAmmo);
-				Log("BW_KFPawn ServerSellWeapon: Wilson Sale Price="$Price);
 
 				if ( I == Weapon || I == PendingWeapon )
 					ClientCurrentWeaponSold();
@@ -431,21 +408,15 @@ function ServerSellWeapon( Class<Weapon> WClass )
 
 				NewWilson41 = Spawn(class'Weapon_Wilson41_Main');
 
-				Log("BW_KFPawn ServerSellWeapon: Spawned Wilson single = "$NewWilson41);
-
 				if ( NewWilson41 != none )
 				{
 					NewWilson41.GiveTo(self);
-
-					Log("BW_KFPawn ServerSellWeapon: Wilson GiveTo complete");
 
 					NewWilson41.AddAmmo(NewWilsonAmmo - NewWilson41.AmmoAmount(0), 0);
 					NewWilson41.AddAmmo(NewWilsonAltAmmo - NewWilson41.AmmoAmount(1), 1);
 					NewWilson41.MagAmmoRemaining = NewWilsonMagAmmo;
 					NewWilson41.AltAmmoLoaded = 1;
 					NewWilson41.SellValue = Price;
-
-					Log("BW_KFPawn ServerSellWeapon: Wilson single configured");
 				}
 
 				SetTraderUpdate();
@@ -478,11 +449,91 @@ function ServerSellWeapon( Class<Weapon> WClass )
 			return;
 		}
 	}
-
-	Log("BW_KFPawn ServerSellWeapon: No matching inventory weapon found");
 }
+
+exec function SwitchToLastWeapon()
+{
+    local BallisticHandGrenade LastGrenade;
+
+    if (Weapon == None || Weapon.OldWeapon == None)
+        return;
+
+    LastGrenade = BallisticHandGrenade(Weapon.OldWeapon);
+
+    if (LastGrenade != None && LastGrenade.bRequireAmmoToSelect && LastGrenade.AmmoAmount(0) <= 0)
+        return;
+
+    Super.SwitchToLastWeapon();
+}
+
+function ThrowGrenade()
+{
+    local Inventory Inv;
+    local BallisticHandGrenade Grenade;
+    local Weapon PreviousWeapon;
+
+    if (Weapon == None || PendingWeapon != None)
+        return;
+
+    // If a grenade is already equipped, toggle it away.
+    Grenade = BallisticHandGrenade(Weapon);
+
+    if (Grenade != None)
+    {
+        // Never interrupt an active grenade throw.
+        if (Grenade.bGrenadeCharging || Grenade.bGrenadeThrowPending || Grenade.bGrenadeReleased)
+            return;
+
+        // Prefer the weapon previously held before the grenade.
+        PreviousWeapon = Grenade.OldWeapon;
+
+        // If no previous weapon was recorded, find another owned weapon.
+        if (PreviousWeapon == None || PreviousWeapon == Weapon)
+        {
+            for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+            {
+                PreviousWeapon = Weapon(Inv);
+
+                if (PreviousWeapon != None && PreviousWeapon != Weapon)
+                    break;
+            }
+        }
+
+        if (PreviousWeapon == None || PreviousWeapon == Weapon)
+            return;
+
+        PendingWeapon = PreviousWeapon;
+        Weapon.PutDown();
+        return;
+    }
+
+    // Find the player's owned grenade, regardless of its specific class.
+    for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        Grenade = BallisticHandGrenade(Inv);
+
+        if (Grenade != None && Grenade.AmmoAmount(0) > 0)
+            break;
+    }
+
+    if (Grenade == None)
+        return;
+
+    PendingWeapon = Grenade;
+    Weapon.PutDown();
+}
+
+function AddDefaultInventory()
+{
+    if (DefaultGrenadeClass != None)
+        RequiredEquipment[2] = string(DefaultGrenadeClass);
+
+    Super.AddDefaultInventory();
+}
+
 
 defaultproperties
 {
     RequiredEquipment(3)="BW_WD000_KF.Tool_ICIS25_Main"
+	DefaultGrenadeClass=class'BW_WD000_KF.Utility_NRP57Grenade_Main'
 }
