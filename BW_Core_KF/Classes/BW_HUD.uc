@@ -109,11 +109,14 @@ simulated function DrawHudPassA(Canvas C)
 	local byte OldGrenadeReserveIconAlpha0, OldGrenadeReserveIconAlpha1;
 	local byte OldGrenadeReserveDigitsAlpha0, OldGrenadeReserveDigitsAlpha1;
 
-	Grenade = BallisticHandGrenade(PawnOwner.Weapon);
+	Grenade = None;
 
 	if (PawnOwner != None && PawnOwner.Weapon != None)
+	{
 		BW = BallisticWeapon(PawnOwner.Weapon);
-
+		Grenade = BallisticHandGrenade(PawnOwner.Weapon);
+	}
+	
 	if (Grenade != None)
 	{
 		OldGrenadeClipBGAlpha0 = BulletsInClipBG.Tints[0].A;

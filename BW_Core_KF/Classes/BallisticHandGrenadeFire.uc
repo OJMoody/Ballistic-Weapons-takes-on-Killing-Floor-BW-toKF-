@@ -1,20 +1,35 @@
 class BallisticHandGrenadeFire extends RocketFire
     abstract;
 
+var() float GrenadeBaseThrowSpeed;
+var() float GrenadeThrowChargeTime;
+var() float GrenadeMaxThrowBonus;
+
+var() name GrenadePrepareAnimation;
+var() name GrenadeThrowAnimation;
+
 var float CachedThrowPower;
 
 //=============================================================================
 // THROW POWER
 //=============================================================================
 
-function float CalculateThrowPower()
+function float CalculateGrenadeThrowPower()
 {
-    return 0.2 + FClamp(HoldTime - 0.2, 0.0, 1.0) * 0.8;
+    if (GrenadeThrowChargeTime <= 0.0)
+        return 1.0 + FMax(0.0, GrenadeMaxThrowBonus);
+
+    return 1.0 + FClamp(HoldTime / GrenadeThrowChargeTime, 0.0, 1.0)
+        * FMax(0.0, GrenadeMaxThrowBonus);
 }
 
-function CacheThrowPower(float ChargeTime)
+function CacheGrenadeThrowPower(float ChargeTime)
 {
-    CachedThrowPower = 0.2 + FClamp(ChargeTime - 0.2, 0.0, 1.0) * 0.8;
+    if (GrenadeThrowChargeTime <= 0.0)
+        CachedThrowPower = 1.0 + FMax(0.0, GrenadeMaxThrowBonus);
+    else
+        CachedThrowPower = 1.0 + FClamp(ChargeTime / GrenadeThrowChargeTime, 0.0, 1.0)
+            * FMax(0.0, GrenadeMaxThrowBonus);
 }
 
 //=============================================================================
@@ -64,7 +79,7 @@ function PostSpawnProjectile(Projectile P)
 {
     local Grenade G;
     local Vector X, Y, Z;
-    local float PawnSpeed, ThrowPower;
+    local float PawnSpeed, ThrowPower, BaseThrowSpeed;
 
     G = Grenade(P);
 
@@ -80,17 +95,22 @@ function PostSpawnProjectile(Projectile P)
         return;
     }
 
+    BaseThrowSpeed = GrenadeBaseThrowSpeed;
+
+    if (BaseThrowSpeed <= 0.0)
+        BaseThrowSpeed = G.Speed;
+
     ThrowPower = CachedThrowPower;
 
     if (ThrowPower <= 0.0)
-        ThrowPower = CalculateThrowPower();
+        ThrowPower = CalculateGrenadeThrowPower();
 
     CachedThrowPower = 0.0;
 
     Weapon.GetViewAxes(X, Y, Z);
     PawnSpeed = X dot Instigator.Velocity;
 
-    G.Speed = G.Speed * FClamp(ThrowPower, 0.2, 1.0);
+    G.Speed = BaseThrowSpeed * FMax(1.0, ThrowPower);
     G.Speed += PawnSpeed;
     G.Velocity = G.Speed * Vector(G.Rotation);
 
@@ -99,6 +119,10 @@ function PostSpawnProjectile(Projectile P)
 
 defaultproperties
 {
+    GrenadeBaseThrowSpeed=850.000000
+    GrenadeThrowChargeTime=2.500000
+    GrenadeMaxThrowBonus=0.250000
+
     ProjSpawnOffset=(X=25.0,Y=-10.0,Z=0.0)
     AmmoPerFire=0
     bWaitForRelease=False

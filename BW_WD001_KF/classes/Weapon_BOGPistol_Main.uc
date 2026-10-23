@@ -602,7 +602,7 @@ defaultproperties
     CurrentRating=0.650000
     Priority=210
     InventoryGroup=2
-    GroupOffset=3
+    GroupOffset=5
     BobDamping=6.000000
     LightType=LT_None
     LightBrightness=0.000000

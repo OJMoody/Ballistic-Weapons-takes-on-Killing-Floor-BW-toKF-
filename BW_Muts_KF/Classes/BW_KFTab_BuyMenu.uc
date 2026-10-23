@@ -129,6 +129,9 @@ function ConfirmGrenadeSelection()
 
     BWPawn.ServerSelectGrenadeClass(PendingGrenadeClass);
 
+	if (KFPlayerController(PlayerOwner()) != None)
+		KFPlayerController(PlayerOwner()).bDoTraderUpdate = true;
+
     KFGRI = KFGameReplicationInfo(PlayerOwner().GameReplicationInfo);
 
     if (KFGRI != None)
@@ -137,6 +140,27 @@ function ConfirmGrenadeSelection()
     bGrenadeSelectionConfirmed = true;
 
     UpdateGrenadeSelectionControls();
+}
+
+function RefreshGrenadeDisplay()
+{
+    local GUIBuyable GrenadeBuyable;
+
+    if (PendingGrenadeClass == None)
+        return;
+
+    GrenadeBuyable = BuildGrenadeBuyable(PendingGrenadeClass);
+
+    if (GrenadeBuyable == None)
+        return;
+
+    TheBuyable = GrenadeBuyable;
+    LastBuyable = GrenadeBuyable;
+
+    ItemInfo.Display(GrenadeBuyable);
+    SetInfoText();
+    UpdatePanel();
+    UpdateBuySellButtons();
 }
 
 function OnAnychange()

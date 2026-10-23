@@ -216,7 +216,7 @@ defaultproperties
 
     Priority=3
     InventoryGroup=2
-    GroupOffset=100
+    GroupOffset=6
     Weight=0.000000
     bModeZeroCanDryFire=True
 

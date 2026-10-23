@@ -8,11 +8,9 @@ var bool bGrenadeCharging;
 var float GrenadeChargeStartTime;
 var float GrenadeChargeTime;
 
-var() name GrenadePrepareAnimation;
-var() name GrenadeThrowAnimation;
+var byte GrenadeFireMode;
 
 var bool bSkipGrenadePutDown;
-
 var bool bGrenadePulloutPlaying;
 
 var() bool bRequireAmmoToSelect;
@@ -20,7 +18,8 @@ var() bool bRequireAmmoToSelect;
 replication
 {
     reliable if (Role < ROLE_Authority)
-        ServerBeginGrenadeThrow, ServerCommitGrenadeThrow, ServerReleaseGrenade, ServerFinishGrenadeThrow;
+        ServerBeginGrenadeThrow, ServerCommitGrenadeThrow,
+        ServerReleaseGrenade, ServerFinishGrenadeThrow;
 }
 
 //=============================================================================
@@ -29,67 +28,66 @@ replication
 
 simulated function bool StartFire(int Mode)
 {
+    local BallisticHandGrenadeFire GrenadeFire;
 
-	log("NRP57 TRACE StartFire: Mode="$Mode
-    $" AmmoAmount="$AmmoAmount(0)
-    $" AmmoCharge="$AmmoCharge[0]
-    $" AmmoActor="$Ammo[0]
-    $" ClientState="$ClientState
-    $" Charging="$bGrenadeCharging
-    $" Pending="$bGrenadeThrowPending
-    $" Released="$bGrenadeReleased);
-
-    if (Mode != 0)
+    if (Mode < 0 || Mode > 1)
         return false;
 
     if (ClientState == WS_BringUp)
-    {
         return false;
-    }
 
     if (bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging || bGrenadePulloutPlaying)
-	{
-		return false;
-	}
-
-    if (AmmoAmount(0) < 1 || GrenadePrepareAnimation == '' || GrenadeThrowAnimation == '')
-    {
         return false;
-    }
 
+    GrenadeFire = BallisticHandGrenadeFire(FireMode[Mode]);
+
+    if (GrenadeFire == None)
+        return false;
+
+    if (AmmoAmount(0) < 1 || GrenadeFire.GrenadePrepareAnimation == ''
+        || GrenadeFire.GrenadeThrowAnimation == '')
+        return false;
+
+    GrenadeFireMode = Mode;
     bGrenadeCharging = true;
-	FireMode[Mode].bIsFiring = true;
+    FireMode[Mode].bIsFiring = true;
+
     GrenadeChargeStartTime = Level.TimeSeconds;
     GrenadeChargeTime = 0.0;
 
-    LoopAnim(GrenadePrepareAnimation, 1.0, 0.0);
+    LoopAnim(GrenadeFire.GrenadePrepareAnimation, 1.0, 0.0);
 
     if (Role < ROLE_Authority)
-        ServerBeginGrenadeThrow();
+        ServerBeginGrenadeThrow(Mode);
 
     return true;
 }
 
 simulated event StopFire(int Mode)
 {
-    if (Mode != 0 || !bGrenadeCharging)
+    if (Mode != GrenadeFireMode || !bGrenadeCharging)
     {
         Super.StopFire(Mode);
         return;
     }
 
-    FireMode[Mode].bIsFiring = false;
-	bGrenadeCharging = false;
-	GrenadeChargeTime = FMax(0.0, Level.TimeSeconds - GrenadeChargeStartTime);
+    FireMode[GrenadeFireMode].bIsFiring = false;
+    bGrenadeCharging = false;
+
+    GrenadeChargeTime = FMax(0.0, Level.TimeSeconds - GrenadeChargeStartTime);
 
     if (Role == ROLE_Authority)
         BeginGrenadeThrow();
     else
     {
         BeginGrenadeThrow();
-        ServerCommitGrenadeThrow(GrenadeChargeTime);
+        ServerCommitGrenadeThrow(GrenadeFireMode, GrenadeChargeTime);
     }
 }
+
+//=============================================================================
+// WEAPON SELECTION
+//=============================================================================
 
 simulated function Weapon WeaponChange(byte F, bool bSilent)
 {
@@ -136,11 +134,21 @@ simulated function Weapon NextWeapon(Weapon CurrentChoice, Weapon CurrentWeapon)
 
 simulated function BeginGrenadeThrow()
 {
+    local BallisticHandGrenadeFire GrenadeFire;
+
     if (bGrenadeThrowPending || bGrenadeReleased)
         return;
 
+    if (GrenadeFireMode > 1)
+        return;
+
+    GrenadeFire = BallisticHandGrenadeFire(FireMode[GrenadeFireMode]);
+
+    if (GrenadeFire == None)
+        return;
+
     bGrenadeThrowPending = true;
-    PlayAnim(GrenadeThrowAnimation, 1.0, 0.0);
+    PlayAnim(GrenadeFire.GrenadeThrowAnimation, 1.0, 0.0);
 }
 
 //=============================================================================
@@ -155,39 +163,33 @@ simulated function Notify_GrenadeLeaveHand()
     if (Role < ROLE_Authority)
     {
         bGrenadeReleased = true;
-        ServerReleaseGrenade();
+        ServerReleaseGrenade(GrenadeFireMode);
     }
     else
-        ReleaseGrenade();
+        ReleaseGrenade(GrenadeFireMode);
 }
 
 //=============================================================================
 // AUTHORITATIVE RELEASE
 //=============================================================================
 
-function ReleaseGrenade()
+function ReleaseGrenade(byte Mode)
 {
     local BallisticHandGrenadeFire GrenadeFire;
-
-	log("NRP57 TRACE ReleaseGrenade: AmmoAmount="$AmmoAmount(0)
-    $" AmmoCharge="$AmmoCharge[0]
-    $" AmmoActor="$Ammo[0]);
 
     if (Role != ROLE_Authority)
         return;
 
-    if (!bGrenadeThrowPending || bGrenadeReleased)
-    {
+    if (!bGrenadeThrowPending || bGrenadeReleased || Mode != GrenadeFireMode)
         return;
-    }
 
-    if (AmmoAmount(0) < 1 || FireMode[0] == None)
+    if (Mode > 1 || AmmoAmount(0) < 1 || FireMode[Mode] == None)
     {
         bGrenadeThrowPending = false;
         return;
     }
 
-    GrenadeFire = BallisticHandGrenadeFire(FireMode[0]);
+    GrenadeFire = BallisticHandGrenadeFire(FireMode[Mode]);
 
     if (GrenadeFire == None)
     {
@@ -198,7 +200,8 @@ function ReleaseGrenade()
     bGrenadeReleased = true;
     bGrenadeThrowPending = false;
 
-    GrenadeFire.CacheThrowPower(GrenadeChargeTime);
+    GrenadeFire.CacheGrenadeThrowPower(GrenadeChargeTime);
+
     ConsumeAmmo(0, 1);
     GrenadeFire.DoFireEffect();
 }
@@ -213,7 +216,6 @@ function GiveAmmo(int m, WeaponPickup WP, bool bJustSpawned)
         Ammo[0].AddAmmo(Ammo[0].InitialAmount);
 }
 
-
 //=============================================================================
 // ANIMATION END
 //=============================================================================
@@ -223,18 +225,25 @@ simulated function AnimEnd(int Channel)
     local name AnimName;
     local float Frame;
     local float Rate;
+    local BallisticHandGrenadeFire GrenadeFire;
 
     if (Channel == 0)
     {
         GetAnimParams(0, AnimName, Frame, Rate);
 
-        if (bGrenadeCharging && AnimName == GrenadePrepareAnimation)
+        if (GrenadeFireMode <= 1)
+            GrenadeFire = BallisticHandGrenadeFire(FireMode[GrenadeFireMode]);
+
+        if (bGrenadeCharging && GrenadeFire != None
+            && AnimName == GrenadeFire.GrenadePrepareAnimation)
         {
-            LoopAnim(GrenadePrepareAnimation, 0.0, 0.0);
+            LoopAnim(GrenadeFire.GrenadePrepareAnimation, 0.0, 0.0);
             return;
         }
 
-        if ((bGrenadeThrowPending || bGrenadeReleased) && AnimName == GrenadeThrowAnimation)
+        if ((bGrenadeThrowPending || bGrenadeReleased)
+            && GrenadeFire != None
+            && AnimName == GrenadeFire.GrenadeThrowAnimation)
         {
             FinishGrenadeThrow();
 
@@ -267,33 +276,47 @@ simulated function AnimEnd(int Channel)
 // SERVER RPCS
 //=============================================================================
 
-function ServerBeginGrenadeThrow()
+function ServerBeginGrenadeThrow(byte Mode)
 {
-    if (bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging || AmmoAmount(0) < 1)
+    local BallisticHandGrenadeFire GrenadeFire;
+
+    if (Mode > 1 || bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging
+        || AmmoAmount(0) < 1)
         return;
 
+    GrenadeFire = BallisticHandGrenadeFire(FireMode[Mode]);
+
+    if (GrenadeFire == None || GrenadeFire.GrenadePrepareAnimation == ''
+        || GrenadeFire.GrenadeThrowAnimation == '')
+        return;
+
+    GrenadeFireMode = Mode;
     bGrenadeCharging = true;
     GrenadeChargeStartTime = Level.TimeSeconds;
     GrenadeChargeTime = 0.0;
 }
 
-function ServerCommitGrenadeThrow(float ChargeTime)
+function ServerCommitGrenadeThrow(byte Mode, float ChargeTime)
 {
-    if (Role != ROLE_Authority || !bGrenadeCharging)
+    if (Role != ROLE_Authority || !bGrenadeCharging || Mode != GrenadeFireMode)
         return;
 
     GrenadeChargeTime = FMax(0.0, ChargeTime);
     bGrenadeCharging = false;
+
     BeginGrenadeThrow();
 }
 
-function ServerReleaseGrenade()
+function ServerReleaseGrenade(byte Mode)
 {
-    ReleaseGrenade();
+    ReleaseGrenade(Mode);
 }
 
-function ServerFinishGrenadeThrow()
+function ServerFinishGrenadeThrow(byte Mode)
 {
+    if (Mode != GrenadeFireMode)
+        return;
+
     bGrenadeCharging = false;
     bGrenadeThrowPending = false;
     bGrenadeReleased = false;
@@ -312,11 +335,10 @@ simulated function FinishGrenadeThrow()
     bGrenadeReleased = false;
 
     if (Role < ROLE_Authority)
-        ServerFinishGrenadeThrow();
+        ServerFinishGrenadeThrow(GrenadeFireMode);
     else
         SwitchBackIfEmpty();
 }
-
 
 //=============================================================================
 // RETURN TO PREVIOUS WEAPON
@@ -354,6 +376,10 @@ simulated function bool PutDown()
     return bResult;
 }
 
+//=============================================================================
+// AMMO
+//=============================================================================
+
 function Ammunition GetGrenadeAmmo()
 {
     return Ammo[0];
@@ -361,20 +387,20 @@ function Ammunition GetGrenadeAmmo()
 
 defaultproperties
 {
-	bRequireAmmoToSelect=True
-	bNoAmmoInstances=False
-	bHasAimingMode=False
-	AmmoClass(0)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
-	AmmoClass(1)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
-	AmmoCharge(0)=5
-	AmmoCharge(1)=5
-	Weight=0.000000
-	InventoryGroup=5
-	GroupOffset=3
-	Priority=4
-	
-	bKFNeverThrow=True
-	
-	WeaponModes(0)=(ModeName="Throw",ModeID="WM_SemiAuto")
-	CurrentWeaponMode=0
+    bRequireAmmoToSelect=True
+    bNoAmmoInstances=False
+    bHasAimingMode=False
+    AmmoClass(0)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
+    AmmoClass(1)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
+    AmmoCharge(0)=5
+    AmmoCharge(1)=5
+    Weight=0.000000
+    InventoryGroup=5
+    GroupOffset=3
+    Priority=4
+
+    bKFNeverThrow=True
+
+    WeaponModes(0)=(ModeName="Throw",ModeID="WM_SemiAuto")
+    CurrentWeaponMode=0
 }
