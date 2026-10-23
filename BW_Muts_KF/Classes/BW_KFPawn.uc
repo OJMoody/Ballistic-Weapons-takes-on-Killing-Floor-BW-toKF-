@@ -1,6 +1,13 @@
 class BW_KFPawn extends KFHumanPawn;
 
 var class<BallisticHandGrenade> DefaultGrenadeClass;
+var class<BallisticHandGrenade> PendingGrenadeClass;
+
+replication
+{
+    reliable if (Role < ROLE_Authority)
+        ServerSelectGrenadeClass;
+}
 
 //=============================================================================
 // SERVER BUY WEAPON
@@ -254,6 +261,83 @@ simulated exec function QuickHeal()
 	}
 }
 
+
+//=============================================================================
+// GRENADE TYPE REPLACEMENT
+//=============================================================================
+
+function ServerSelectGrenadeClass(class<BallisticHandGrenade> NewGrenadeClass)
+{
+    local Inventory Inv;
+    local BallisticHandGrenade OldGrenade, NewGrenade;
+    local Ammunition OldAmmo, NewAmmo;
+    local int SavedAmmo;
+    local bool bWasEquipped;
+
+    if (Role != ROLE_Authority || !CanBuyNow() || NewGrenadeClass == None)
+        return;
+
+    // Find the existing grenade.
+    for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        OldGrenade = BallisticHandGrenade(Inv);
+
+        if (OldGrenade != None)
+            break;
+    }
+
+    if (OldGrenade == None || OldGrenade.Class == NewGrenadeClass)
+        return;
+
+    OldAmmo = OldGrenade.GetGrenadeAmmo();
+
+    if (OldAmmo == None)
+        return;
+
+    SavedAmmo = Min(5, OldAmmo.AmmoAmount);
+    bWasEquipped = (Weapon == OldGrenade);
+
+    // Create and initialize the replacement.
+    NewGrenade = Spawn(NewGrenadeClass);
+
+    if (NewGrenade == None)
+        return;
+
+    NewGrenade.GiveTo(Self);
+
+    if (NewGrenade.Owner != Self)
+    {
+        NewGrenade.Destroy();
+        return;
+    }
+
+    NewAmmo = NewGrenade.GetGrenadeAmmo();
+
+    if (NewAmmo == None)
+    {
+        NewGrenade.Destroy();
+        return;
+    }
+
+    // Replace the initial ammo amount with the saved amount.
+    NewAmmo.AmmoAmount = SavedAmmo;
+
+	// Clear references to the grenade being removed.
+	for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+	{
+		if (Weapon(Inv) != None && Weapon(Inv).OldWeapon == OldGrenade)
+			Weapon(Inv).OldWeapon = None;
+	}
+
+    // Remove the old grenade through the normal inventory path.
+    OldGrenade.Destroy();
+
+    // If the grenade was equipped, force the replacement to be selected.
+    if (bWasEquipped && NewAmmo.AmmoAmount > 0)
+		ClientForceChangeWeapon(NewGrenade);
+}
+
+
 //=============================================================================
 // SERVER SELL WEAPON
 //=============================================================================
@@ -454,16 +538,59 @@ function ServerSellWeapon( Class<Weapon> WClass )
 exec function SwitchToLastWeapon()
 {
     local BallisticHandGrenade LastGrenade;
+    local Inventory Inv;
+    local Weapon FallbackWeapon;
+    local bool bNeedFallback;
 
-    if (Weapon == None || Weapon.OldWeapon == None)
+    if (Weapon == None)
         return;
 
     LastGrenade = BallisticHandGrenade(Weapon.OldWeapon);
 
-    if (LastGrenade != None && LastGrenade.bRequireAmmoToSelect && LastGrenade.AmmoAmount(0) <= 0)
-        return;
+    // A missing previous weapon or an empty grenade requires a fallback.
+    bNeedFallback = (Weapon.OldWeapon == None);
 
-    Super.SwitchToLastWeapon();
+    if (LastGrenade != None && LastGrenade.bRequireAmmoToSelect && LastGrenade.AmmoAmount(0) <= 0)
+        bNeedFallback = true;
+
+    if (!bNeedFallback)
+    {
+        Super.SwitchToLastWeapon();
+        return;
+    }
+
+    // Prefer the A909 melee weapon.
+    for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        FallbackWeapon = Weapon(Inv);
+
+        if (FallbackWeapon != None && FallbackWeapon != Weapon
+            && FallbackWeapon.Class == class'BW_WD001_KF.Weapon_A909Blades_Main')
+            break;
+
+        FallbackWeapon = None;
+    }
+
+    // Otherwise, choose another owned non-grenade weapon.
+    if (FallbackWeapon == None)
+    {
+        for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+        {
+            FallbackWeapon = Weapon(Inv);
+
+            if (FallbackWeapon != None && FallbackWeapon != Weapon
+                && BallisticHandGrenade(FallbackWeapon) == None)
+                break;
+
+            FallbackWeapon = None;
+        }
+    }
+
+    if (FallbackWeapon != None)
+    {
+        PendingWeapon = FallbackWeapon;
+        Weapon.PutDown();
+    }
 }
 
 function ThrowGrenade()
@@ -529,6 +656,110 @@ function AddDefaultInventory()
         RequiredEquipment[2] = string(DefaultGrenadeClass);
 
     Super.AddDefaultInventory();
+}
+
+function bool ServerBuyAmmo(Class<Ammunition> AClass, bool bOnlyClip)
+{
+    local Inventory Inv;
+    local BallisticHandGrenade Grenade;
+    local Ammunition GrenadeAmmo;
+    local class<KFWeaponPickup> GrenadePickupClass;
+    local KFPlayerReplicationInfo KFPRI;
+    local float UnitCost;
+    local int AmmoToBuy;
+    local int AmmoMissing;
+    local int AffordableAmmo;
+
+    // Find the player's existing ballistic hand grenade.
+    if (AClass == class'FragAmmo' || Class<BallisticHandGrenadeAmmo>(AClass) != None)
+    {
+        for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+        {
+            Grenade = BallisticHandGrenade(Inv);
+
+            if (Grenade != None && Grenade.GetGrenadeAmmo() != None)
+				break;
+
+            Grenade = None;
+        }
+
+        if (Grenade != None)
+        {
+            if (!CanBuyNow())
+            {
+                SetTraderUpdate();
+                return false;
+            }
+
+            GrenadeAmmo = Grenade.GetGrenadeAmmo();
+            GrenadePickupClass = Class<KFWeaponPickup>(Grenade.PickupClass);
+            KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
+
+            if (GrenadePickupClass == None || KFPRI == None)
+            {
+                SetTraderUpdate();
+                return false;
+            }
+
+            // Grenade and Utility capacity is always 5.
+			GrenadeAmmo.MaxAmmo = 5;
+
+            AmmoMissing = GrenadeAmmo.MaxAmmo - GrenadeAmmo.AmmoAmount;
+
+            if (AmmoMissing <= 0)
+            {
+                SetTraderUpdate();
+                return false;
+            }
+
+            // The shared grenade pickup defines the price per grenade.
+            UnitCost = GrenadePickupClass.default.AmmoCost;
+
+            if (KFPRI.ClientVeteranSkill != None)
+                UnitCost *= KFPRI.ClientVeteranSkill.static.GetAmmoCostScaling(KFPRI, GrenadePickupClass);
+
+            UnitCost = Max(1.0, float(int(UnitCost)));
+
+            // A single purchase buys one grenade; a refill buys all missing grenades.
+            if (bOnlyClip)
+                AmmoToBuy = Min(BallisticHandGrenadeAmmo(GrenadeAmmo).AmmoPickupAmount, AmmoMissing);
+            else
+                AmmoToBuy = AmmoMissing;
+
+            if (PlayerReplicationInfo.Score < UnitCost)
+            {
+                SetTraderUpdate();
+                return false;
+            }
+
+            // Allow a partial refill when the player cannot afford the full amount.
+            AffordableAmmo = int(PlayerReplicationInfo.Score / UnitCost);
+            AmmoToBuy = Min(AmmoToBuy, AffordableAmmo);
+
+            if (AmmoToBuy <= 0)
+            {
+                SetTraderUpdate();
+                return false;
+            }
+
+            // Deduct payment and replenish the existing ammo object.
+			log("Grenade Purchase: Pickup="$GrenadePickupClass@"AmmoCost="$GrenadePickupClass.default.AmmoCost@"UnitCost="$UnitCost);
+			log("Grenade Purchase: AmmoToBuy="$AmmoToBuy@"CashBefore="$PlayerReplicationInfo.Score);
+
+			PlayerReplicationInfo.Score -= float(AmmoToBuy) * UnitCost;
+
+			log("Grenade Purchase: CashAfter="$PlayerReplicationInfo.Score);
+
+			GrenadeAmmo.AddAmmo(AmmoToBuy);
+
+            SetTraderUpdate();
+
+            return true;
+        }
+    }
+
+    // Preserve the normal KF1 purchase path for every other ammunition type.
+    return Super.ServerBuyAmmo(AClass, bOnlyClip);
 }
 
 

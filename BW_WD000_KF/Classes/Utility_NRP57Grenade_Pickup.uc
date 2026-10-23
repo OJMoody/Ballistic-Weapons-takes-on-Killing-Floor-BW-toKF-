@@ -1,7 +1,7 @@
 //=============================================================================
 // NRP57 Grenade Pickup.
 //=============================================================================
-class Utility_NRP57Grenade_Pickup extends BallisticWeaponPickup;
+class Utility_NRP57Grenade_Pickup extends BallisticHandGrenadePickup;
 
 defaultproperties
 {
@@ -16,7 +16,7 @@ defaultproperties
     InventoryType=Class'BW_WD000_KF.Utility_NRP57Grenade_Main'
 	AmmoAmount(0)=4
     AmmoAmount(1)=4
-    PickupMessage="You picked up the NRP57 Grenade"
+    PickupMessage="You picked up the NRP57 Frag Grenade"
     PickupSound=none
     PickupForce="AssaultRiflePickup"
     CollisionHeight=5.000000

@@ -8,6 +8,10 @@ function UpdateMyBuyables()
 	local class<KFVeterancyTypes> PlayerVeterancy;
 	local KFPlayerReplicationInfo KFPRI;
 	local GUIBuyable MyBuyable, KnifeBuyable, FragBuyable, SecondaryAmmoBuyable;
+	local GUIBuyable GrenadeBuyable;
+	local BallisticHandGrenade HandGrenade;
+	local Ammunition GrenadeAmmo;
+	local class<KFWeaponPickup> GrenadePickup;
 	local Inventory CurInv;
 	local KFLevelRules KFLR;
 	local bool bHasDual, bHasDualCannon, bHasDual44, bhasDualM23, bHasDualFlareGuns, bHasGoldDualCannon;
@@ -17,10 +21,7 @@ function UpdateMyBuyables()
 
 	//Let's start with our current inventory
 	if ( PlayerOwner().Pawn.Inventory == none )
-    {
-        log("Inventory is none!");
         return;
-    }
 
 	DualDivider = 1;
 	AutoFillCost = 0.00000;
@@ -280,9 +281,14 @@ function UpdateMyBuyables()
 				MyBuyable.bSellable	= false;
 				KnifeBuyable = MyBuyable;
 			}
-			else if ( CurInv.IsA('Frag') )
+			else if (BallisticHandGrenade(CurInv) != None)
 			{
-				MyBuyable.bSellable	= false;
+				MyBuyable.bSellable = false;
+				GrenadeBuyable = MyBuyable;
+			}
+			else if (CurInv.IsA('Frag'))
+			{
+				MyBuyable.bSellable = false;
 				FragBuyable = MyBuyable;
 			}
 			else if ( NumInvItems < 7 )
@@ -314,9 +320,9 @@ function UpdateMyBuyables()
 	MyBuyable.bSellable			= false;
 	MyBuyable.ItemPerkIndex		= class'BuyableVest'.default.CorrespondingPerkIndex;
 
-	MyBuyables[7] = none;
+	MyBuyables[7] = None;
 
-	if ( SecondaryAmmoBuyable != none )
+	if (SecondaryAmmoBuyable != None)
 	{
 		MyBuyables[8] = SecondaryAmmoBuyable;
 	}
@@ -325,9 +331,38 @@ function UpdateMyBuyables()
 		MyBuyables[8] = KnifeBuyable;
 	}
 
-	MyBuyables[9] = FragBuyable;
+	// Ballistic hand grenade: free equipment entry, paid ammo replenishment.
+	if (GrenadeBuyable != None)
+	{
+		MyBuyables[9] = GrenadeBuyable;
+
+		HandGrenade = BallisticHandGrenade(
+			PlayerOwner().Pawn.FindInventoryType(GrenadeBuyable.ItemWeaponClass)
+		);
+
+		if (HandGrenade != None)
+		{
+			GrenadeAmmo = HandGrenade.GetGrenadeAmmo();
+			GrenadePickup = Class<KFWeaponPickup>(HandGrenade.PickupClass);
+
+			if (GrenadeAmmo != None && GrenadePickup != None)
+			{
+				GrenadeBuyable.ItemCost = 0;
+				GrenadeBuyable.ItemAmmoCost = GrenadePickup.default.AmmoCost;
+				GrenadeBuyable.ItemAmmoCurrent = GrenadeAmmo.AmmoAmount;
+				GrenadeBuyable.ItemAmmoMax = GrenadeAmmo.MaxAmmo;
+				GrenadeBuyable.ItemFillAmmoCost =
+					(GrenadeAmmo.MaxAmmo - GrenadeAmmo.AmmoAmount)
+					* GrenadePickup.default.AmmoCost;
+			}
+		}
+	}
+	else
+	{
+		MyBuyables[9] = FragBuyable;
+	}
+
 	MyBuyables[10] = MyBuyable;
 
-	//Now Update the list
 	UpdateList();
 }

@@ -354,6 +354,11 @@ simulated function bool PutDown()
     return bResult;
 }
 
+function Ammunition GetGrenadeAmmo()
+{
+    return Ammo[0];
+}
+
 defaultproperties
 {
 	bRequireAmmoToSelect=True
