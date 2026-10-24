@@ -3,6 +3,7 @@ class BallisticHandGrenadeProjectile extends KFMod.Nade
 	
 var() class<Actor> GrenadeExplosionEffectClass;
 var() SoundGroup GrenadeExplosionSound;
+var() int ShrapnelCount;
 
 //=============================================================================
 // DIRECT IMPACT DAMAGE
@@ -87,7 +88,7 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 {
     local PlayerController LocalPlayer;
     local Projectile P;
-    local byte i;
+    local int i;
 
     if (bHasExploded)
         return;
@@ -100,13 +101,16 @@ simulated function Explode(vector HitLocation, vector HitNormal)
     else if (ExplodeSounds.Length > 0)
         PlaySound(ExplodeSounds[Rand(ExplodeSounds.Length)],, 2.0);
 
-    // Preserve the stock KF grenade shrapnel.
-    for (i = Rand(6); i < 10; i++)
+    // Spawn a fixed number of shrapnel projectiles.
+    if (Role == ROLE_Authority && ShrapnelCount > 0 && ShrapnelClass != None)
     {
-        P = Spawn(ShrapnelClass,,, HitLocation, RotRand(True));
+        for (i = 0; i < ShrapnelCount; i++)
+        {
+            P = Spawn(ShrapnelClass,,, HitLocation, RotRand(True));
 
-        if (P != None)
-            P.RemoteRole = ROLE_None;
+            if (P != None)
+                P.RemoteRole = ROLE_None;
+        }
     }
 
     if (EffectIsRelevant(Location, False))
@@ -143,4 +147,6 @@ defaultproperties
     DampenFactorParallel=0.350000
 
     ExplodeTimer=3.000000
+	ShrapnelCount=0
+    ShrapnelClass=Class'KFMod.KFShrapnel'
 }

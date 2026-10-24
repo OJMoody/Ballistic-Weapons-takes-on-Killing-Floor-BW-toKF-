@@ -1,0 +1,65 @@
+class Utility_NRXGrenade_Attachment extends BallisticAttachment ;
+
+defaultproperties
+{
+	Mesh=SkeletalMesh'BWKF_NRXS_A.NRXS_TP_Mesh'
+	DrawScale=1.000000
+	bDoFiringEffects=False
+
+    MovementAnims(0)=JogF_Knife 
+    MovementAnims(1)=JogB_Knife
+    MovementAnims(2)=JogL_Knife
+    MovementAnims(3)=JogR_Knife
+    CrouchAnims(0)=CHwalkF_Knife
+    CrouchAnims(1)=CHwalkB_Knife
+    CrouchAnims(2)=CHwalkL_Knife
+    CrouchAnims(3)=CHwalkR_Knife
+    AirStillAnim=JumpF_Mid
+    AirAnims(0)=JumpF_Mid
+    AirAnims(1)=JumpF_Mid
+    AirAnims(2)=JumpL_Mid
+    AirAnims(3)=JumpR_Mid
+    TakeoffStillAnim=JumpF_Takeoff
+    TakeoffAnims(0)=JumpF_Takeoff
+    TakeoffAnims(1)=JumpF_Takeoff
+    TakeoffAnims(2)=JumpL_Takeoff
+    TakeoffAnims(3)=JumpR_Takeoff
+    LandAnims(0)=JumpF_Land
+    LandAnims(1)=JumpF_Land
+    LandAnims(2)=JumpL_Land
+    LandAnims(3)=JumpR_Land
+
+    TurnRightAnim=TurnR_Knife
+    TurnLeftAnim=TurnL_Knife
+    CrouchTurnRightAnim=CH_TurnR_Knife
+    CrouchTurnLeftAnim=CH_TurnL_Knife
+    IdleRestAnim=Idle_Knife//Idle_Rest
+    IdleCrouchAnim=CHIdle_Knife
+    IdleSwimAnim=Swim_Tread
+    IdleWeaponAnim=Idle_Knife//Idle_Rifle
+    IdleHeavyAnim=Idle_Knife//Idle_Biggun
+    IdleRifleAnim=Idle_Knife//Idle_Rifle
+    IdleChatAnim=Idle_Knife
+    FireAnims(0)=Fire_Bullpup
+    FireAnims(1)=Fire_Bullpup
+    FireAnims(2)=Fire_Bullpup
+    FireAnims(3)=Fire_Bullpup
+    FireAltAnims(0)=Fire_Bullpup
+    FireAltAnims(1)=Fire_Bullpup
+    FireAltAnims(2)=Fire_Bullpup
+    FireAltAnims(3)=Fire_Bullpup
+    FireCrouchAnims(0)=CHFire_BullPup
+    FireCrouchAnims(1)=CHFire_BullPup
+    FireCrouchAnims(2)=CHFire_BullPup
+    FireCrouchAnims(3)=CHFire_BullPup
+    FireCrouchAltAnims(0)=CHFire_BullPup
+    FireCrouchAltAnims(1)=CHFire_BullPup
+    FireCrouchAltAnims(2)=CHFire_BullPup
+    FireCrouchAltAnims(3)=CHFire_BullPup
+    HitAnims(0)=HitF_Knife
+    HitAnims(1)=HitB_Knife
+    HitAnims(2)=HitL_Knife
+    HitAnims(3)=HitR_Knife
+    PostFireBlendStandAnim=Blend_Knife
+    PostFireBlendCrouchAnim=CHBlend_Knife
+}

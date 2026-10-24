@@ -3,7 +3,7 @@ class Utility_G28Aerosol_Attachment extends BallisticAttachment;
 defaultproperties
 {
 	Mesh=SkeletalMesh'BWKF_G28M_A.G28_TP_Mesh'
-	DrawScale=0.400000
+	DrawScale=1.000000
 	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Knife 
