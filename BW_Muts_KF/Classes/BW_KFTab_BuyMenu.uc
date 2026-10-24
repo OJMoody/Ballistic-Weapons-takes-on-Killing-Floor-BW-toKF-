@@ -284,4 +284,5 @@ defaultproperties
     GrenadeClasses(1)=Class'BW_WD000_KF.Utility_FP7Grenade_Main'
     GrenadeClasses(2)=Class'BW_WD000_KF.Utility_G28Aerosol_Main'
     GrenadeClasses(3)=Class'BW_WD000_KF.Utility_NRXGrenade_Main'
+    GrenadeClasses(4)=Class'BW_WD000_KF.Utility_T10Grenade_Main'
 }

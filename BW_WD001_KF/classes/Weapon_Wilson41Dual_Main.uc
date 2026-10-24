@@ -230,7 +230,7 @@ defaultproperties
     Priority=3
     InventoryGroup=2
     GroupOffset=4
-    Weight=4.000000
+    Weight=8.000000
     bModeZeroCanDryFire=True
     SellValue=300
 

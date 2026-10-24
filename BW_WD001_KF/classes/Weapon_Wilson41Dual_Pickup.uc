@@ -2,7 +2,7 @@ class Weapon_Wilson41Dual_Pickup extends BallisticPickup;
 
 defaultproperties
 {
-	Weight=4.000000
+	Weight=8.000000
 	cost=800
 	AmmoCost=20
 	BuyClipSize=9

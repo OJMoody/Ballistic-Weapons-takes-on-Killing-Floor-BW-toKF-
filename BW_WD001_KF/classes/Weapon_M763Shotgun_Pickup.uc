@@ -7,7 +7,7 @@ defaultproperties
 	PickupSound=Sound'BWKF_M763_SN.M763.M763Pullout'
 	StaticMesh=StaticMesh'BWKF_M763_SM.M763_MainPickup_SM'
 	
-	Weight=7.000000
+	Weight=6.000000
 	cost=700
 	AmmoCost=20
 	BuyClipSize=8

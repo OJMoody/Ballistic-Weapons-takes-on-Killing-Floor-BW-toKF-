@@ -658,7 +658,9 @@ function AddDefaultInventory()
 
     DefaultGrenadeClass = class'BW_WD000_KF.Utility_NRP57Grenade_Main';
 
-    if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetFirebug')
+    if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetBerserker')
+        DefaultGrenadeClass = class'BW_WD000_KF.Utility_T10Grenade_Main';
+    else if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetFirebug')
         DefaultGrenadeClass = class'BW_WD000_KF.Utility_FP7Grenade_Main';
     else if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetFieldMedic')
         DefaultGrenadeClass = class'BW_WD000_KF.Utility_G28Aerosol_Main';

@@ -1004,7 +1004,7 @@ defaultproperties
     Priority=3
     InventoryGroup=2
     GroupOffset=2
-    Weight=0.000000
+    Weight=4.000000
     bModeZeroCanDryFire=True
 	bDualWeapon=True
     PlayerIronSightFOV=65

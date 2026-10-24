@@ -217,7 +217,7 @@ defaultproperties
     Priority=3
     InventoryGroup=2
     GroupOffset=6
-    Weight=0.000000
+    Weight=4.000000
     bModeZeroCanDryFire=True
 
     PlayerIronSightFOV=65
