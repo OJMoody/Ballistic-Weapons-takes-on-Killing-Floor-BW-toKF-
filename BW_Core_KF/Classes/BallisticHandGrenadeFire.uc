@@ -119,6 +119,7 @@ function PostSpawnProjectile(Projectile P)
     Super.PostSpawnProjectile(G);
 }
 
+
 defaultproperties
 {
     GrenadeBaseThrowSpeed=850.000000

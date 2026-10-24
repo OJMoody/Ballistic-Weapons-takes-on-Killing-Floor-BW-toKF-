@@ -16,6 +16,7 @@ defaultproperties
 	
 	Mesh=Mesh'BWKF_FP7_A.FP7_FP_Mesh'
 	ItemName="FP7 Incendiary Grenade"
+	Description="A deadly hand grenade, the FP7 releases a searing blast of flames capable of melting metal with tempatures of over 7500 degrees Fahrenheit. The flames will continue to burn for a while, causing significant damage to anyone caught within the blast radius. FP7s are still widely used against both soldiers and equipment. The weapon was used extensivly during both Human-Skrith wars and is especially famous for its part in the UTC-Cryon battles where the UTC 'Ice Hogs' used it to incinerate Cryon cyborgs."
 	
 	HudImage=texture'BWKF_FP7_T.Icons.MedIcon_FP7_Unselected'
     SelectedHudImage=texture'BWKF_FP7_T.Icons.MedIcon_FP7_Selected'

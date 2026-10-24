@@ -17,6 +17,7 @@ var() bool bRequireAmmoToSelect;
 
 var() BUtil.FullSound GrenadePinPullSound;
 var() BUtil.FullSound GrenadePinPushSound;
+var() BUtil.FullSound GrenadeClipOutSound;
 
 replication
 {
@@ -194,6 +195,11 @@ simulated function Notify_GrenadePinPush()
     class'BUtil'.static.PlayFullSound(self, GrenadePinPushSound);
 }
 
+simulated function Notify_GrenadeClipOut()
+{
+    class'BUtil'.static.PlayFullSound(self, GrenadeClipOutSound);
+}
+
 //=============================================================================
 // AUTHORITATIVE RELEASE
 //=============================================================================
@@ -298,6 +304,77 @@ simulated function AnimEnd(int Channel)
 }
 
 //=============================================================================
+// CLEANUP INTERRUPTED GRENADE ACTIONS
+//=============================================================================
+
+simulated function CancelGrenadeAction()
+{
+    local int i;
+    local BallisticHandGrenadeFire GrenadeFire;
+
+    // Clear any interrupted charging or throwing state.
+    bGrenadeThrowPending = false;
+    bGrenadeReleased = false;
+    bGrenadeCharging = false;
+    bGrenadePulloutPlaying = false;
+
+    GrenadeChargeStartTime = 0.0;
+    GrenadeChargeTime = 0.0;
+
+    // Prevent a fire mode remaining stuck in its firing state.
+    for (i = 0; i < 2; i++)
+    {
+        if (FireMode[i] != None)
+        {
+            FireMode[i].bIsFiring = false;
+
+            GrenadeFire = BallisticHandGrenadeFire(FireMode[i]);
+
+            if (GrenadeFire != None)
+                GrenadeFire.CachedThrowPower = 0.0;
+        }
+    }
+
+    // Ensure the held grenade is visible when equipped again.
+    SetBoneScale(1, 1.0, 'Grenade');
+}
+
+//=============================================================================
+// PUT DOWN
+//=============================================================================
+
+simulated function bool PutDown()
+{
+    local bool bResult;
+    local name SavedPutDownAnim;
+
+    if (!bSkipGrenadePutDown)
+    {
+        bResult = Super.PutDown();
+
+        if (bResult)
+            CancelGrenadeAction();
+
+        return bResult;
+    }
+
+    bSkipGrenadePutDown = false;
+    bSkipPutAwaySound = true;
+
+    SavedPutDownAnim = PutDownAnim;
+    PutDownAnim = '';
+
+    bResult = Super.PutDown();
+
+    PutDownAnim = SavedPutDownAnim;
+
+    if (bResult)
+        CancelGrenadeAction();
+
+    return bResult;
+}
+
+//=============================================================================
 // SERVER RPCS
 //=============================================================================
 
@@ -379,27 +456,6 @@ function SwitchBackIfEmpty()
 
     bSkipGrenadePutDown = true;
     Instigator.SwitchToLastWeapon();
-}
-
-simulated function bool PutDown()
-{
-    local bool bResult;
-    local name SavedPutDownAnim;
-
-    if (!bSkipGrenadePutDown)
-        return Super.PutDown();
-
-    bSkipGrenadePutDown = false;
-    bSkipPutAwaySound = true;
-
-    SavedPutDownAnim = PutDownAnim;
-    PutDownAnim = '';
-
-    bResult = Super.PutDown();
-
-    PutDownAnim = SavedPutDownAnim;
-
-    return bResult;
 }
 
 //=============================================================================

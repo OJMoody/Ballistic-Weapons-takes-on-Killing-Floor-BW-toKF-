@@ -656,12 +656,12 @@ function AddDefaultInventory()
 
     KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
 
-    // Default grenade for all perks.
     DefaultGrenadeClass = class'BW_WD000_KF.Utility_NRP57Grenade_Main';
 
-    // Firebug starts with the FP7.
     if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetFirebug')
         DefaultGrenadeClass = class'BW_WD000_KF.Utility_FP7Grenade_Main';
+    else if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetFieldMedic')
+        DefaultGrenadeClass = class'BW_WD000_KF.Utility_G28Aerosol_Main';
 
     RequiredEquipment[2] = string(DefaultGrenadeClass);
 
