@@ -15,6 +15,9 @@ var bool bGrenadePulloutPlaying;
 
 var() bool bRequireAmmoToSelect;
 
+var() BUtil.FullSound GrenadePinPullSound;
+var() BUtil.FullSound GrenadePinPushSound;
+
 replication
 {
     reliable if (Role < ROLE_Authority)
@@ -148,17 +151,23 @@ simulated function BeginGrenadeThrow()
         return;
 
     bGrenadeThrowPending = true;
+
+    class'BUtil'.static.PlayFullSound(self, GrenadeFire.GrenadeThrowSound);
+
     PlayAnim(GrenadeFire.GrenadeThrowAnimation, 1.0, 0.0);
 }
 
 //=============================================================================
-// GRENADE NOTIFIER
+// GRENADE NOTIFIERS
 //=============================================================================
 
 simulated function Notify_GrenadeLeaveHand()
 {
     if (!bGrenadeThrowPending || bGrenadeReleased)
         return;
+
+    // Hide the grenade held in the first-person mesh.
+    SetBoneScale(1, 0.0, 'Grenade');
 
     if (Role < ROLE_Authority)
     {
@@ -167,6 +176,22 @@ simulated function Notify_GrenadeLeaveHand()
     }
     else
         ReleaseGrenade(GrenadeFireMode);
+}
+
+simulated function Notify_GrenadePullOut()
+{
+    // Show the grenade held in the first-person mesh.
+    SetBoneScale(1, 1.0, 'Grenade');
+}
+
+simulated function Notify_GrenadePinPull()
+{
+    class'BUtil'.static.PlayFullSound(self, GrenadePinPullSound);
+}
+
+simulated function Notify_GrenadePinPush()
+{
+    class'BUtil'.static.PlayFullSound(self, GrenadePinPushSound);
 }
 
 //=============================================================================
@@ -365,6 +390,7 @@ simulated function bool PutDown()
         return Super.PutDown();
 
     bSkipGrenadePutDown = false;
+    bSkipPutAwaySound = true;
 
     SavedPutDownAnim = PutDownAnim;
     PutDownAnim = '';
@@ -390,10 +416,18 @@ defaultproperties
     bRequireAmmoToSelect=True
     bNoAmmoInstances=False
     bHasAimingMode=False
+
     AmmoClass(0)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
     AmmoClass(1)=Class'BW_Core_KF.BallisticHandGrenadeAmmo'
+
     AmmoCharge(0)=5
     AmmoCharge(1)=5
+
+    PulloutSound=(Sound=Sound'BWKF_Core_SN.NRP57.NRP57-Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    PutAwaySound=(Sound=Sound'BWKF_Core_SN.NRP57.NRP57-Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    GrenadePinPullSound=(Sound=Sound'BWKF_Core_SN.NRP57.NRP57-PinOut',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    GrenadePinPushSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+
     Weight=0.000000
     InventoryGroup=5
     GroupOffset=3

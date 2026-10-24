@@ -141,6 +141,7 @@ var bool bSuppressStartFireReloadInterrupt;
 var bool bReloadPending;
 
 var() bool bShowAmmoAsRounds;
+var bool bSkipPutAwaySound;
 
 //=============================================================================
 // Dual Weapons
@@ -2558,6 +2559,10 @@ simulated function bool PutDown()
 
 	bResult = Super.PutDown();
 
+	if (bResult && !bSkipPutAwaySound)
+		class'BUtil'.static.PlayFullSound(self, PutAwaySound);
+
+	bSkipPutAwaySound = false;
 	bPuttingDown = false;
 
 	return bResult;

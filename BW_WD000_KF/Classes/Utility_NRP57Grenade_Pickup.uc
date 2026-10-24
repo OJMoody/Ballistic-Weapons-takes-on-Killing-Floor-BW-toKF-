@@ -10,8 +10,9 @@ defaultproperties
     PowerValue=5
     SpeedValue=60
     RangeValue=0
-    Description="NRP57 Grenade"
-    ItemName="NRP57 Grenade"
+	StaticMesh=StaticMesh'BWKF_NRP5_SM.NRP57_MainPickup_SM'
+    Description="NRP57 Frag Grenade"
+    ItemName="NRP57 Frag Grenade"
     ItemShortName="NRP57 Grenade"
     InventoryType=Class'BW_WD000_KF.Utility_NRP57Grenade_Main'
 	AmmoAmount(0)=4
