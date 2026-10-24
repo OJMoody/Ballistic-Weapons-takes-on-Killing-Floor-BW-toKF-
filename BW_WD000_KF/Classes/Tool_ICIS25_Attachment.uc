@@ -3,6 +3,7 @@ class Tool_ICIS25_Attachment extends BallisticAttachment;
 defaultproperties
 {
 	Mesh=SkeletalMesh'BWKF_ICIS_A.ICISStim_TP_Mesh'
+	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Syringe
     MovementAnims(1)=JogB_Syringe

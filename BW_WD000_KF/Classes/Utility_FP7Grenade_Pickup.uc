@@ -10,6 +10,7 @@ defaultproperties
     PowerValue=5
     SpeedValue=60
     RangeValue=0
+	StaticMesh=StaticMesh'BWKF_FP7_SM.FP7_MainPickup_SM'
     Description="FP7 Incendiary Grenade"
     ItemName="FP7 Incendiary Grenade"
     ItemShortName="FP7 Grenade"

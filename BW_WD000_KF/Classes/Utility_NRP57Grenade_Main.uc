@@ -5,6 +5,7 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD000_KF.Utility_NRP57Grenade_PrimaryFire'
     FireModeClass(1)=Class'BW_WD000_KF.Utility_NRP57Grenade_SecondaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_NRP57Grenade_Pickup'
+	MeleeFireClass=Class'Utility_NRP57Grenade_MeleeFire'
 	AttachmentClass=Class'BW_WD000_KF.Utility_NRP57Grenade_Attachment'
 	
 	AmmoClass(0)=Class'BW_WD000_KF.Utility_NRP57Grenade_Ammo'

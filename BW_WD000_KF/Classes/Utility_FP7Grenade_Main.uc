@@ -3,8 +3,9 @@ class Utility_FP7Grenade_Main extends BallisticHandGrenade;
 defaultproperties
 {
     FireModeClass(0)=Class'BW_WD000_KF.Utility_FP7Grenade_PrimaryFire'
-    FireModeClass(1)=Class'BW_WD000_KF.Utility_FP7Grenade_PrimaryFire'
+    FireModeClass(1)=Class'BW_WD000_KF.Utility_FP7Grenade_SecondaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_FP7Grenade_Pickup'
+	MeleeFireClass=Class'Utility_FP7Grenade_MeleeFire'
 	
 	AmmoClass(0)=Class'BW_WD000_KF.Utility_FP7Grenade_Ammo'
 	AmmoClass(1)=Class'BW_WD000_KF.Utility_FP7Grenade_Ammo'

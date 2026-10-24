@@ -652,8 +652,18 @@ function ThrowGrenade()
 
 function AddDefaultInventory()
 {
-    if (DefaultGrenadeClass != None)
-        RequiredEquipment[2] = string(DefaultGrenadeClass);
+    local KFPlayerReplicationInfo KFPRI;
+
+    KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
+
+    // Default grenade for all perks.
+    DefaultGrenadeClass = class'BW_WD000_KF.Utility_NRP57Grenade_Main';
+
+    // Firebug starts with the FP7.
+    if (KFPRI != None && KFPRI.ClientVeteranSkill == class'KFVetFirebug')
+        DefaultGrenadeClass = class'BW_WD000_KF.Utility_FP7Grenade_Main';
+
+    RequiredEquipment[2] = string(DefaultGrenadeClass);
 
     Super.AddDefaultInventory();
 }
