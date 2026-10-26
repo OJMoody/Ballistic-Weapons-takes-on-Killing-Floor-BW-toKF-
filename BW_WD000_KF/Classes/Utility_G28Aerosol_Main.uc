@@ -5,7 +5,7 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD000_KF.Utility_G28Aerosol_PrimaryFire'
     FireModeClass(1)=Class'BW_WD000_KF.Utility_G28Aerosol_SecondaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_G28Aerosol_Pickup'
-	//MeleeFireClass=Class'Utility_G28Aerosol_MeleeFire'
+	MeleeFireClass=Class'Utility_G28Aerosol_MeleeFire'
 	AttachmentClass=Class'BW_WD000_KF.Utility_G28Aerosol_Attachment'
 	
 	GrenadeClipOutSound=(Sound=Sound'BWKF_G28M_SN.G28.G28-ClipTwist',Volume=1.000000,Radius=128.000000)

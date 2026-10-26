@@ -5,7 +5,7 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD000_KF.Utility_NRXGrenade_PrimaryFire'
     FireModeClass(1)=Class'BW_WD000_KF.Utility_NRXGrenade_SecondaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_NRXGrenade_Pickup'
-	//MeleeFireClass=Class'Utility_NRXGrenade_MeleeFire'
+	MeleeFireClass=Class'Utility_NRXGrenade_MeleeFire'
 	AttachmentClass=Class'BW_WD000_KF.Utility_NRXGrenade_Attachment'
 	
 	AmmoClass(0)=Class'BW_WD000_KF.Utility_NRXGrenade_Ammo'

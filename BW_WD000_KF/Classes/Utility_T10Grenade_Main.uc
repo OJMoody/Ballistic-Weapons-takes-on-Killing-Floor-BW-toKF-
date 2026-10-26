@@ -5,7 +5,7 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD000_KF.Utility_T10Grenade_PrimaryFire'
     FireModeClass(1)=Class'BW_WD000_KF.Utility_T10Grenade_SecondaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_T10Grenade_Pickup'
-	//MeleeFireClass=Class'Utility_T10Grenade_MeleeFire'
+	MeleeFireClass=Class'Utility_T10Grenade_MeleeFire'
 	AttachmentClass=Class'BW_WD000_KF.Utility_T10Grenade_Attachment'
 	
 	AmmoClass(0)=Class'BW_WD000_KF.Utility_T10Grenade_Ammo'
