@@ -226,6 +226,7 @@ var() bool bScoped;
 
 var() Material ScopeMaskMaterial;
 var() Material ScopeFallbackMaterial;
+var() Material ScopeTextureOverlay;
 
 var() int ScopeLensMaterialID;
 
@@ -326,7 +327,23 @@ simulated function ResetDualFireAnimationChannels()
 
 simulated event PostBeginPlay()
 {
+	bHasScope = bScoped;
+	
+	 if (bScoped)
+        KFScopeDetail = KF_ModelScopeHigh;
+	
 	Super.PostBeginPlay();
+	
+	if (bScoped)
+    {
+        KFScopeDetail = KF_ModelScopeHigh;
+
+        if (Level.NetMode != NM_DedicatedServer)
+        {
+            InitializeScope();
+            AdjustIngameScope();
+        }
+    }
 	
 	SetupDualFireAnimationChannels();
 
@@ -413,13 +430,37 @@ simulated function name GetDualAltSightFireAnim(bool bLeft)
 
 simulated function ZoomIn(bool bAnimateTransition)
 {
+    local KFPlayerController KFPC;
+
     if (bReloadResumePlaying || bBallisticAltReload)
+        return;
+
+    if (bScoped)
+        AdjustIngameScope();
+
+    if (bScoped && (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh))
     {
+        if (ClientState != WS_PutDown && ClientState != WS_BringUp)
+        {
+            Super(BaseKFWeapon).ZoomIn(bAnimateTransition);
+
+            bAimingRifle = True;
+
+            if (KFHumanPawn(Instigator) != None)
+                KFHumanPawn(Instigator).SetAiming(True);
+
+            KFPC = KFPlayerController(Instigator.Controller);
+
+            if (Level.NetMode != NM_DedicatedServer && KFPC != None && AimInSound != None)
+                PlayOwnedSound(AimInSound, SLOT_Misc,,,,, false);
+        }
+
         return;
     }
 
     Super.ZoomIn(bAnimateTransition);
 }
+
 
 //------------------------------------------------------------------------------
 // HandleSleeveSwapping() - This function will handle sleeve swapping for
@@ -2584,7 +2625,12 @@ simulated function InitializeScope()
         if (ScopeScriptedTexture != none)
         {
             ScopeScriptedTexture.FallbackMaterial = ScopeFallbackMaterial;
-            ScopeScriptedTexture.SetSize(ScopeTextureSize, ScopeTextureSize);
+
+            if (ScopeTextureSizeHigh > 0)
+                ScopeScriptedTexture.SetSize(ScopeTextureSizeHigh, ScopeTextureSizeHigh);
+            else
+                ScopeScriptedTexture.SetSize(ScopeTextureSize, ScopeTextureSize);
+
             ScopeScriptedTexture.Client = self;
         }
     }
@@ -2626,13 +2672,199 @@ simulated event RenderTexture(ScriptedTexture Tex)
 
     PortalFOV = ScopePortalFOV;
 
-    if (ScopePortalFOVHigh > 0.0 && ScopeTextureSizeHigh > ScopeTextureSize)
+    if (ScopePortalFOVHigh > 0.0)
         PortalFOV = ScopePortalFOVHigh;
 
     RollMod = Instigator.GetViewRotation();
 
     if (Owner != none)
         Tex.DrawPortal(0, 0, Tex.USize, Tex.VSize, Owner, (Instigator.Location + Instigator.EyePosition()), RollMod, PortalFOV);
+}
+
+simulated function bool ShouldDrawPortal()
+{
+    return bScoped && bAimingRifle &&
+        (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh);
+}
+
+simulated function AdjustIngameScope()
+{
+    local PlayerController PC;
+
+    if (!bScoped || Instigator == None)
+        return;
+
+    ZoomedDisplayFOV = CalcFOVForAspectRatio(ScopeZoomedDisplayFOV);
+    ZoomedDisplayFOVHigh = CalcFOVForAspectRatio(ScopeZoomedDisplayFOVHigh);
+
+    if (ScopeZoomedDisplayFOVHigh > 0.0)
+        ZoomedDisplayFOV = ZoomedDisplayFOVHigh;
+
+    PC = PlayerController(Instigator.Controller);
+
+    switch (KFScopeDetail)
+    {
+        case KF_ModelScope:
+            if (bAimingRifle)
+                DisplayFOV = ZoomedDisplayFOV;
+
+            if (PC != None && bAimingRifle && PC.DesiredFOV == PlayerIronSightFOV)
+            {
+                if (Level.NetMode != NM_DedicatedServer && KFPlayerController(PC) != None)
+                    KFPlayerController(PC).TransitionFOV(KFPlayerController(PC).DefaultFOV, 0.0);
+            }
+            break;
+
+        case KF_TextureScope:
+            if (bAimingRifle)
+                DisplayFOV = ZoomedDisplayFOV;
+            break;
+
+        case KF_ModelScopeHigh:
+            if (bAimingRifle)
+            {
+                if (ScopeZoomedDisplayFOVHigh > 0.0)
+                    DisplayFOV = ZoomedDisplayFOVHigh;
+                else
+                    DisplayFOV = ZoomedDisplayFOV;
+            }
+            break;
+    }
+
+    if (PC != None)
+        log("BOG SCOPE DEBUG: Detail="$KFScopeDetail$" Desired="$PC.DesiredFOV$" Display="$DisplayFOV);
+}
+
+simulated event OnZoomInFinished()
+{
+    Super.OnZoomInFinished();
+
+    if (bScoped && KFScopeDetail == KF_TextureScope &&
+        Level.NetMode != NM_DedicatedServer &&
+        Instigator != None &&
+        KFPlayerController(Instigator.Controller) != None)
+    {
+        KFPlayerController(Instigator.Controller).TransitionFOV(PlayerIronSightFOV, 0.0);
+    }
+}
+
+simulated function SetScopeBlendColor(Canvas C)
+{
+    local byte Val;
+    local Color Clr;
+    local Color Fog;
+
+    Clr.R = 255;
+    Clr.G = 255;
+    Clr.B = 255;
+    Clr.A = 255;
+
+    if (Instigator != None && Instigator.Region.Zone != None &&
+        Instigator.Region.Zone.bDistanceFog)
+    {
+        Fog = Instigator.Region.Zone.DistanceFogColor;
+        Val = Max(Fog.R, Fog.G);
+        Val = Max(Val, Fog.B);
+
+        if (Val > 128)
+        {
+            Val -= 128;
+            Clr.R -= Val;
+            Clr.G -= Val;
+            Clr.B -= Val;
+        }
+    }
+
+    C.DrawColor = Clr;
+}
+
+simulated event RenderOverlays(Canvas Canvas)
+{
+    local int M;
+    local PlayerController PC;
+    local vector ScopeDrawOffset;
+
+    if (Instigator == None)
+        return;
+
+    PC = PlayerController(Instigator.Controller);
+
+    if (PC == None)
+        return;
+
+    if (Hand < -1.0 || Hand > 1.0)
+        return;
+
+    if (bScoped && (ScopeScriptedTexture == None || ScopeScriptedCombiner == None || ScopeScriptedShader == None))
+    {
+        InitializeScope();
+        AdjustIngameScope();
+    }
+
+    Canvas.DrawActor(None, false, true);
+
+    for (M = 0; M < NUM_FIRE_MODES; M++)
+    {
+        if (FireMode[M] != None)
+            FireMode[M].DrawMuzzleFlash(Canvas);
+    }
+
+    SetLocation(Instigator.Location + Instigator.CalcDrawOffset(self));
+    SetRotation(Instigator.GetViewRotation() + ZoomRotInterp);
+
+    PreDrawFPWeapon();
+
+    if (bScoped && bAimingRifle &&
+        (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh) &&
+        ScopeScriptedTexture != None && ScopeScriptedShader != None)
+    {
+        if (ShouldDrawPortal())
+        {
+            Skins[ScopeLensMaterialID] = ScopeScriptedShader;
+            ScopeScriptedTexture.Client = self;
+            ScopeScriptedTexture.Revision = ScopeScriptedTexture.Revision + 1;
+        }
+
+        bDrawingFirstPerson = true;
+
+        if (KFScopeDetail == KF_ModelScopeHigh)
+            ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffsetHigh;
+        else
+            ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffset;
+
+        Canvas.DrawBoundActor(self, false, false, DisplayFOV, PC.Rotation, rot(0,0,0), ScopeDrawOffset);
+
+        bDrawingFirstPerson = false;
+    }
+    else if (bScoped && ScopeTextureOverlay != None &&
+        KFScopeDetail == KF_TextureScope &&
+        PC.DesiredFOV == PlayerIronSightFOV && bAimingRifle)
+    {
+        Skins[ScopeLensMaterialID] = ScopeFallbackMaterial;
+
+        SetScopeBlendColor(Canvas);
+
+        Canvas.Style = ERenderStyle.STY_Normal;
+
+        Canvas.SetPos(0, 0);
+        Canvas.DrawTile(ScopeTextureOverlay, (Canvas.SizeX - Canvas.SizeY) / 2, Canvas.SizeY, 0.0, 0.0, 8, 8);
+
+        Canvas.SetPos(Canvas.SizeX, 0);
+        Canvas.DrawTile(ScopeTextureOverlay, -(Canvas.SizeX - Canvas.SizeY) / 2, Canvas.SizeY, 0.0, 0.0, 8, 8);
+
+        Canvas.Style = 255;
+        Canvas.SetPos((Canvas.SizeX - Canvas.SizeY) / 2, 0);
+        Canvas.DrawTile(ScopeTextureOverlay, Canvas.SizeY, Canvas.SizeY, 0.0, 0.0, 1024, 1024);
+    }
+    else
+    {
+        if (bScoped)
+            Skins[ScopeLensMaterialID] = ScopeFallbackMaterial;
+
+        bDrawingFirstPerson = true;
+        Canvas.DrawActor(self, false, false, DisplayFOV);
+        bDrawingFirstPerson = false;
+    }
 }
 
 
@@ -2950,6 +3182,7 @@ defaultproperties
 	bScoped=False
 	ScopeMaskMaterial=Texture'KillingFloorWeapons.CommandoCross'
 	ScopeFallbackMaterial=Shader'ScopeShaders.Zoomblur.LensShader'
+	ScopeTextureOverlay=FinalBlend'KillingFloorWeapons.Xbow.CommandoCrossFinalBlend'
 	ScopeLensMaterialID=0
 	ScopePortalFOV=12.0
 	ScopePortalFOVHigh=22.0
