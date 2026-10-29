@@ -1,5 +1,32 @@
 class Weapon_M46A1Rifle_PrimaryFire extends BallisticInstantFire;
 
+simulated event ModeDoFire()
+{
+    local Weapon_M46A1Rifle_Main M46;
+
+    M46 = Weapon_M46A1Rifle_Main(Weapon);
+
+    if (M46 != None)
+    {
+        if (M46.bM46MinePrimed || M46.bM46MineLaunching || M46.bM46MinePriming)
+            return;
+    }
+
+    Super.ModeDoFire();
+}
+
+simulated function bool AllowFire()
+{
+    local Weapon_M46A1Rifle_Main M46;
+
+    M46 = Weapon_M46A1Rifle_Main(Weapon);
+
+    if (M46 != None &&
+        (M46.bM46MinePriming || M46.bM46MinePrimed || M46.bM46MineLaunching))
+        return false;
+
+    return Super.AllowFire();
+}
 
 defaultproperties
 {

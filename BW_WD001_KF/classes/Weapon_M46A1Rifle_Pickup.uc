@@ -14,9 +14,9 @@ defaultproperties
 	PowerValue=30
 	SpeedValue=40
 	RangeValue=40
-	Description="M46A1 'Jackle' Combar Rifle"
-	ItemName="M46A1 'Jackle' Combar Rifle"
-	ItemShortName="M46A1 Combar Rifle"
+	Description="M46A1 'Jackle' Combat Rifle"
+	ItemName="M46A1 'Jackle' Combat Rifle"
+	ItemShortName="M46A1 Combat Rifle"
 	AmmoItemName=".310 M46 Rounds"
 	SecondaryAmmoShortName="M46 Proximity Grenades"
 	PickupMessage="You picked up the M46 Combat Rifle"
