@@ -321,4 +321,5 @@ defaultproperties
 	BWTraderWeapons(6)=(PickupClass=Class'BW_WD001_KF.Weapon_Wilson41Dual_Pickup',TraderList=2)
 	BWTraderWeapons(7)=(PickupClass=Class'BW_WD001_KF.Weapon_M763Shotgun_Pickup',TraderList=1)
 	BWTraderWeapons(8)=(PickupClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Pickup',TraderList=3)
+	BWTraderWeapons(9)=(PickupClass=Class'BW_WD001_KF.Weapon_M46A2Rifle_Pickup',TraderList=3)
 }
