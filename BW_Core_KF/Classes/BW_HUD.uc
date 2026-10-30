@@ -297,6 +297,7 @@ simulated function DrawHudPassA(Canvas C)
 	DrawNumericWidget(C, AltAmmoChamberDigits, DigitsSmall);
 
 	AltAmmoReserveDigits = SecondaryClipsDigits;
+	AltAmmoReserveDigits.Value = BW.AmmoAmount(1);
 	AltAmmoReserveDigits.OffsetX += AltAmmoReserveOffsetX;
 	DrawNumericWidget(C, AltAmmoReserveDigits, DigitsSmall);
 

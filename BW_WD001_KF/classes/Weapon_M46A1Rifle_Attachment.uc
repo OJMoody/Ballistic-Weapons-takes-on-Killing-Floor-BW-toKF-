@@ -4,12 +4,51 @@ class Weapon_M46A1Rifle_Attachment extends BallisticAttachment;
 // DEFAULT PROPERTIES
 //=============================================================================
 
+var class<Emitter> mMuzFlashClassSecondary;
+var Emitter mMuzFlash3rdSecondary;
+
+simulated function PostBeginPlay()
+{
+    Super.PostBeginPlay();
+
+    if (Instigator != None && Instigator.IsLocallyControlled())
+        SetBoneScale(0, 0.0, 'RDS');
+}
+
+simulated function DoFlashEmitter()
+{
+    if (FiringMode == 1)
+    {
+        if (mMuzFlash3rdSecondary == None)
+        {
+            mMuzFlash3rdSecondary = Spawn(mMuzFlashClassSecondary);
+
+            if (mMuzFlash3rdSecondary != None)
+            {
+                AttachToBone(mMuzFlash3rdSecondary, 'GrenMuzzle');
+
+                if (mMuzFlashScale != 1.0 && BallisticEmitter(mMuzFlash3rdSecondary) != None)
+                    BallisticEmitter(mMuzFlash3rdSecondary).ScaleEmitter(mMuzFlash3rdSecondary, mMuzFlashScale);
+            }
+        }
+
+        if (mMuzFlash3rdSecondary != None)
+            mMuzFlash3rdSecondary.SpawnParticle(1);
+
+        return;
+    }
+
+    Super.DoFlashEmitter();
+}
+
 defaultproperties
 {
-    Mesh=SkeletalMesh'BWKF_M763_A.M763_TP_Mesh'
+    Mesh=SkeletalMesh'BWKF_M46_A.M46A1_TP_Mesh'
+	DrawScale=0.200000
 
-    mMuzFlashClass=Class'BW_WD001_KF.Weapon_M763Shotgun_FlashEmitter'
-    mMuzFlashScale=1.000000
+    mMuzFlashClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFlashEmitter'
+	mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFlashEmitter'
+	mMuzFlashScale=1.000000
 
     mTracerClass=Class'KFMod.KFNewTracer'
     mShellCaseEmitterClass=Class'KFMod.KFShellSpewer'

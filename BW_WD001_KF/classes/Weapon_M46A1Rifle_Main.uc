@@ -3,7 +3,15 @@ class Weapon_M46A1Rifle_Main extends BallisticWeapon;
 var bool bM46MinePriming;
 var bool bM46MinePrimed;
 var bool bM46MineLaunching;
+var bool bM46GrenadeReloading;
+var bool bM46AmmoInitialized;
+var bool bM46EmptyReload;
+
 var() Sound M46MineLaunchSound;
+
+var() Sound GrenOpenSound;
+var() Sound GrenLoadSound;
+var() Sound GrenCloseSound;
 
 //=============================================================================
 // Alt Grenade Firing
@@ -11,7 +19,7 @@ var() Sound M46MineLaunchSound;
 
 simulated function bool StartFire(int Mode)
 {
-	if (bM46MinePrimed)
+    if (bM46MinePrimed)
     {
         if (bM46MineLaunching)
             return false;
@@ -25,8 +33,11 @@ simulated function bool StartFire(int Mode)
 
     if (Mode == 1)
     {
-        if (bM46MinePriming || bM46MineLaunching)
+        if (bM46MinePriming || bM46MineLaunching || bM46GrenadeReloading)
             return false;
+
+        if (AltAmmoLoaded <= 0)
+            return StartM46GrenadeReload();
 
         if (Super.StartFire(Mode))
         {
@@ -53,40 +64,40 @@ simulated function LaunchM46Mine()
     local Vector SpawnLocation;
     local Rotator SpawnRotation;
 
-    Log("M46 DEBUG: LaunchM46Mine called. Role="$Role$" Primed="$bM46MinePrimed$" Launching="$bM46MineLaunching);
-
     if (!bM46MinePrimed)
-    {
-        Log("M46 DEBUG: Launch rejected - not primed.");
         return;
-    }
 
     if (bM46MineLaunching)
+        return;
+
+    if (Role == ROLE_Authority && AltAmmoLoaded <= 0)
     {
-        Log("M46 DEBUG: Launch rejected - already launching.");
+        bM46MinePriming = false;
+        bM46MinePrimed = false;
+        IdleAnim = default.IdleAnim;
+        IdleAimAnim = default.IdleAimAnim;
         return;
     }
 
-    bM46MinePriming = False;
-    bM46MinePrimed = False;
-    bM46MineLaunching = True;
+    bM46MinePriming = false;
+    bM46MinePrimed = false;
+    bM46MineLaunching = true;
+
+    IdleAimAnim = default.IdleAimAnim;
 
     if (bAimingRifle)
         PlayAnim('SightGrenadeFire', 1.0, 0.0);
     else
         PlayAnim('GrenadeFire', 1.0, 0.0);
 
+    if (Instigator != None && Instigator.IsLocallyControlled() && FireMode[1] != None)
+        Weapon_M46A1Rifle_SecondaryFire(FireMode[1]).TriggerGrenadeFlash();
+
     if (Role != ROLE_Authority)
-    {
-        Log("M46 DEBUG: Spawn skipped - not authority.");
         return;
-    }
 
     if (Instigator == None)
-    {
-        Log("M46 DEBUG: Spawn failed - no Instigator.");
         return;
-    }
 
     SpawnRotation = Instigator.GetViewRotation();
 
@@ -94,21 +105,16 @@ simulated function LaunchM46Mine()
         + vect(0,0,1) * Instigator.EyeHeight
         + Vector(SpawnRotation) * (Instigator.CollisionRadius + 32.0);
 
-    Log("M46 DEBUG: Attempting projectile spawn at "$SpawnLocation);
-
-    Mine = Spawn(
-        class'Weapon_M46A1Rifle_MineProjectile',
-        Instigator,
-        ,
-        SpawnLocation,
-        SpawnRotation
-    );
+    Mine = Spawn(class'Weapon_M46A1Rifle_MineProjectile', Instigator,, SpawnLocation, SpawnRotation);
 
     if (Mine == None)
         return;
-		
-	if (M46MineLaunchSound != None)
-		PlaySound(M46MineLaunchSound,, 1.0,, 256.0);
+
+    // Consume the chambered grenade after successfully spawning the projectile.
+    AltAmmoLoaded = 0;
+
+    if (M46MineLaunchSound != None)
+        PlaySound(M46MineLaunchSound,, 1.0,, 256.0);
 
     Mine.Instigator = Instigator;
     Mine.InstigatorController = Instigator.Controller;
@@ -120,27 +126,65 @@ simulated function LaunchM46Mine()
 simulated function AnimEnd(int Channel)
 {
     local name AnimName;
-    local float Frame;
-    local float Rate;
+    local name SavedReloadAnim;
+    local name SavedResumeAnim;
+    local float AnimFrame;
+    local float AnimRate;
 
     if (Channel == 0)
     {
-        GetAnimParams(0, AnimName, Frame, Rate);
+        GetAnimParams(0, AnimName, AnimFrame, AnimRate);
 
-        if (AnimName == 'GrenadePrep' && bM46MinePriming)
+        // Grenade preparation finished.
+        if (bM46MinePriming)
         {
             bM46MinePriming = false;
             bM46MinePrimed = true;
+
+            IdleAnim = 'GrenadeIdle';
+            IdleAimAnim = 'GrenadeIdle';
             LoopAnim('GrenadeIdle', 1.0, 0.0);
             return;
         }
 
-        if ((AnimName == 'GrenadeFire' || AnimName == 'SightGrenadeFire') && bM46MineLaunching)
-		{
-			bM46MineLaunching = false;
-			PlayIdle();
-			return;
-		}
+        // Grenade firing finished.
+        if (bM46MineLaunching)
+        {
+            bM46MineLaunching = false;
+
+            IdleAnim = default.IdleAnim;
+            IdleAimAnim = default.IdleAimAnim;
+            PlayIdle();
+            return;
+        }
+
+        // Grenade reload finished.
+        if (bM46GrenadeReloading)
+        {
+            bM46GrenadeReloading = false;
+
+            IdleAnim = 'Idle';
+            IdleAimAnim = default.IdleAimAnim;
+            PlayIdle();
+            return;
+        }
+
+        SavedReloadAnim = ReloadAnim;
+        SavedResumeAnim = WeaponReloadResumeAnimation;
+
+        // Allow the inherited reload completion logic to recognise ReloadEmpty.
+        if (AnimName == 'ReloadEmpty')
+            ReloadAnim = 'ReloadEmpty';
+
+        // Allow the inherited resume completion logic to recognise ReloadResumeEmpty.
+        if (AnimName == 'ReloadResumeEmpty')
+            WeaponReloadResumeAnimation = 'ReloadResumeEmpty';
+
+        Super.AnimEnd(Channel);
+
+        ReloadAnim = SavedReloadAnim;
+        WeaponReloadResumeAnimation = SavedResumeAnim;
+        return;
     }
 
     Super.AnimEnd(Channel);
@@ -153,10 +197,41 @@ simulated function bool IsM46MineActionLocked()
 
 exec function ReloadMeNow()
 {
-    if (IsM46MineActionLocked())
+    local name SavedReloadAnim;
+
+    if (IsM46MineActionLocked() || bM46GrenadeReloading)
         return;
 
-    Super.ReloadMeNow();
+    if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn || bReloadPending)
+        return;
+
+    // Primary ammunition always takes priority.
+    if (MagAmmoRemaining < MagCapacity && AllowReload())
+    {
+        SavedReloadAnim = ReloadAnim;
+        bM46EmptyReload = (MagAmmoRemaining <= 0);
+
+        if (bM46EmptyReload)
+            ReloadAnim = 'ReloadEmpty';
+
+        Super.ReloadMeNow();
+
+        ReloadAnim = SavedReloadAnim;
+        return;
+    }
+
+    // If primary ammunition cannot be reloaded, try the grenade launcher.
+    StartM46GrenadeReload();
+}
+
+simulated function bool InterruptReload()
+{
+    if (MagAmmoRemaining <= 0)
+        WeaponReloadResumeAnimation = 'ReloadResumeEmpty';
+    else
+        WeaponReloadResumeAnimation = 'ReloadResume';
+
+    return Super.InterruptReload();
 }
 
 exec function ReloadAlt()
@@ -175,6 +250,107 @@ simulated function MeleeHoldImpl()
     Super.MeleeHoldImpl();
 }
 
+function InitializeM46GrenadeAmmo()
+{
+    if (Role != ROLE_Authority || bM46AmmoInitialized)
+        return;
+
+    if (AltAmmoLoaded > 0)
+    {
+        bM46AmmoInitialized = true;
+        return;
+    }
+
+    if (AmmoAmount(1) > 0 && ConsumeAmmo(1, 1))
+    {
+        AltAmmoLoaded = 1;
+        bM46AmmoInitialized = true;
+    }
+}
+
+simulated function bool StartM46GrenadeReload()
+{
+    if (AltAmmoLoaded > 0 || bM46GrenadeReloading)
+        return false;
+
+    if (bM46MinePriming || bM46MinePrimed || bM46MineLaunching)
+        return false;
+
+    if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn)
+        return false;
+
+    if (AmmoAmount(1) <= 0)
+        return false;
+
+    // Exit iron sights before starting the grenade reload.
+    if (bAimingRifle)
+    {
+        ZoomOut(true);
+
+        if (KFHumanPawn(Instigator) != None)
+            KFHumanPawn(Instigator).SetAiming(false);
+
+        bAimingRifle = false;
+    }
+
+    bM46GrenadeReloading = true;
+    PlayAnim('GrenadeReload', 1.0, 0.0);
+
+    return true;
+}
+
+simulated function Notify_OAARGrenadeOpen()
+{
+    if (GrenOpenSound != None)
+        PlaySound(GrenOpenSound,, 1.0,, 256.0);
+}
+
+simulated function Notify_OAARGrenadeIn()
+{
+    if (GrenLoadSound != None)
+        PlaySound(GrenLoadSound,, 1.0,, 256.0);
+
+    if (Role == ROLE_Authority && AltAmmoLoaded <= 0 && AmmoAmount(1) > 0)
+    {
+        if (ConsumeAmmo(1, 1))
+            AltAmmoLoaded = 1;
+    }
+}
+
+simulated function Notify_OAARGrenadeClose()
+{
+    if (GrenCloseSound != None)
+        PlaySound(GrenCloseSound,, 1.0,, 256.0);
+}
+
+simulated function int GetAltAmmoChamber()
+{
+    return AltAmmoLoaded;
+}
+
+simulated function bool PutDown()
+{
+    local bool bWasGrenadePrimed;
+
+    bWasGrenadePrimed = bM46MinePrimed;
+
+    bM46MinePriming = false;
+    bM46MinePrimed = false;
+    bM46MineLaunching = false;
+    bM46GrenadeReloading = false;
+
+    IdleAnim = default.IdleAnim;
+    IdleAimAnim = default.IdleAimAnim;
+
+    if (bWasGrenadePrimed)
+        PutDownAnim = 'PutawayGrenade';
+    else
+        PutDownAnim = default.PutDownAnim;
+
+    return Super.PutDown();
+}
+
+
 //=============================================================================
 // M46A1 Cleanup
 //=============================================================================
@@ -182,6 +358,10 @@ simulated function MeleeHoldImpl()
 simulated function BringUp(optional Weapon PrevWeapon)
 {
     Super.BringUp(PrevWeapon);
+
+    bM46GrenadeReloading = false;
+
+    InitializeM46GrenadeAmmo();
 
     if (Instigator != None && Instigator.IsLocallyControlled())
         SetBoneScale(0, 0.0, 'RDS');
@@ -194,6 +374,14 @@ simulated function BringUp(optional Weapon PrevWeapon)
 defaultproperties
 {
     M46MineLaunchSound=Sound'BWKF_M46_SN.M46.OA-AR_FireGren'
+	GrenOpenSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenOpen'
+	GrenLoadSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenLoad'
+	GrenCloseSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenClose'
+
+	bHasSecondaryAmmo=True
+	AltAmmoLoaded=1
+	bReduceMagAmmoOnSecondaryFire=False
+	bShowAltAmmoChamber=True
 	
 	FireModeClass(0)=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFire'
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFire'
@@ -232,9 +420,9 @@ defaultproperties
     PlayerViewOffset=(X=45.000000,Y=38.000000,Z=-15.000000)
 	PlayerViewPivot=(Yaw=0)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
-    PulloutSound=(Sound=Sound'BWKF_M806_SN.M806Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    //SightFXClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_SightLEDs'
+    PulloutSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    PutAwaySound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    SightFXClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_SightLEDs'
     SightFXBone="OA-AR"
     ClipHitSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipHit')
     ClipOutSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipOut')
