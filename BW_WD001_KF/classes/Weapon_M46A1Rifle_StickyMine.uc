@@ -60,6 +60,8 @@ function DetonateStickyMine()
         );
     }
 
+    SpawnMineExplosionEffects();
+
     if (StickyDamageRadius > 0)
     {
         HurtRadius(

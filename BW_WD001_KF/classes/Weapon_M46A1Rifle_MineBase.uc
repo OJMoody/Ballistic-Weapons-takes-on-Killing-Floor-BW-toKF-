@@ -3,10 +3,18 @@ class Weapon_M46A1Rifle_MineBase extends BallisticProjectile
 
 var() Sound DetonateSound;
 var float TriggerStartTime;
+var() Sound AttachSound;
 
 simulated function bool IsStationary()
 {
     return True;
+}
+
+simulated function ProcessTouch(Actor Other, Vector HitLocation)
+{
+    // Placed mines must not detonate from physical contact.
+    // Gun damage is handled separately through TakeDamage().
+    return;
 }
 
 event TakeDamage(int Damage,Pawn EventInstigator,vector HitLocation,vector Momentum,class<DamageType> DamageType,optional int HitIndex)
@@ -25,10 +33,6 @@ event TakeDamage(int Damage,Pawn EventInstigator,vector HitLocation,vector Momen
             return;
 
         ProximityMine.bDetonated = True;
-
-        if (DetonateSound != None)
-            PlaySound(DetonateSound,, 2.0,, 256.0);
-
         ProximityMine.DetonateMine();
         return;
     }
@@ -50,11 +54,18 @@ event TakeDamage(int Damage,Pawn EventInstigator,vector HitLocation,vector Momen
     Destroy();
 }
 
+function SpawnMineExplosionEffects()
+{
+    if (ImpactManager != None)
+        ImpactManager.static.StartSpawn(Location, Vector(Rotation), 0, Instigator);
+}
+
 defaultproperties
 {
     StaticMesh=StaticMesh'BWKF_M46_SM.pickups.M46_GrenadeProj_Main'
     DetonateSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenadeBeep'
 	ImpactManager=Class'BW_WD001_KF.Weapon_M46A1Rifle_ImpactManager'
+	AttachSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenadeImpact'
 
     MyRadiusDamageType=None
     MyDamageType=None
@@ -74,6 +85,8 @@ defaultproperties
     CollisionRadius=16.000000
     CollisionHeight=16.000000
     bCollideWorld=False
+	bBlockActors=False
+	bBlockPlayers=False
     bProjTarget=True
     bNetNotify=True
 }

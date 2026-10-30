@@ -55,8 +55,8 @@ function SteppedOn(Actor Other)
     if (P == None)
         return;
 
-    // Do not allow player-controlled pawns to trigger the mine.
-    if (P.Controller != None && PlayerController(P.Controller) != None)
+    // Never allow human player pawns to trigger the mine.
+    if (KFHumanPawn(P) != None)
         return;
 
     // Only Zeds may trigger the proximity mine.
@@ -101,6 +101,8 @@ function DetonateMine()
             MyDamageType
         );
     }
+
+    SpawnMineExplosionEffects();
 
     if (MDamageRadius > 0)
     {

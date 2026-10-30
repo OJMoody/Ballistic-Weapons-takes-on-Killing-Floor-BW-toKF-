@@ -37,8 +37,8 @@ defaultproperties
     bPawnRapidFireAnim=True
     bAttachSmokeEmitter=True
     TransientSoundVolume=1.8
-    FireSound=Sound'BWKF_M806_SN.M806Fire'
-    StereoFireSoundRef="BWKF_M806_SN.M806Fire"
+    FireSound=Sound'BWKF_M46_SN.M46.OA-AR_Fire1'
+    StereoFireSoundRef="BWKF_M46_SN.M46.OA-AR_Fire1"
     NoAmmoSound=Sound'KF_9MMSnd.9mm_DryFire'
     FireForce="AssaultRifleFire"
     FireRate=0.25

@@ -3,87 +3,70 @@ class Weapon_M46A1Rifle_MineProjectile extends BallisticProjectile;
 var Actor StuckActor;
 var bool bPlaced;
 
-var Vector M46LastLoggedLocation;
-var float M46LogElapsed;
+var() int ZedImpactDamage;
 
 simulated function PostNetBeginPlay()
 {
     Super.PostNetBeginPlay();
-
-    Log("M46 DEBUG: PostNetBeginPlay reached.");
-    Log("M46 DEBUG: Velocity="$Velocity);
-    Log("M46 DEBUG: Acceleration="$Acceleration);
-    Log("M46 DEBUG: Physics="$Physics);
-    Log("M46 DEBUG: Location="$Location);
-}
-
-simulated event Tick(float DeltaTime)
-{
-    Super.Tick(DeltaTime);
-
-    M46LogElapsed += DeltaTime;
-
-    if (M46LogElapsed >= 0.5)
-    {
-        M46LogElapsed = 0.0;
-
-        Log("M46 PROJECTILE: Location="$Location);
-        Log("M46 PROJECTILE: Velocity="$Velocity);
-        Log("M46 PROJECTILE: Physics="$Physics);
-    }
 }
 
 function ProcessTouch(Actor Other, Vector HitLocation)
 {
-    Log("M46 DEBUG: ProcessTouch Other="$Other);
-	Log("M46 DEBUG: ProcessTouch Location="$Location);
-	Log("M46 DEBUG: ProcessTouch Velocity="$Velocity);
-	
-	if (Role != ROLE_Authority || bPlaced)
+    local Vector HitNormal;
+    local float OriginalDamage;
+
+    if (Role != ROLE_Authority || bPlaced)
         return;
 
     if (Other == None || Other == Instigator)
         return;
 
-    // Ignore the firing player's attached actors.
     if (Other.Owner == Instigator)
         return;
 
-    // Ignore players, but allow Zeds to trigger sticky-mine placement.
-    if (Pawn(Other) != None && KFMonster(Other) == None)
-        return;
-
+    // Zeds take a small amount of impact damage before the mine bounces.
     if (KFMonster(Other) != None)
     {
-        StuckActor = Other;
-        DoDamage(Other, HitLocation);
-        PlaceMine(HitLocation, Normal(HitLocation - Other.Location));
+        if (ZedImpactDamage > 0)
+        {
+            OriginalDamage = Damage;
+            Damage = ZedImpactDamage;
+            DoDamage(Other, HitLocation);
+            Damage = OriginalDamage;
+        }
+
+        HitNormal = Normal(Location - Other.Location);
+
+        if (VSize(HitNormal) < 0.1)
+            HitNormal = Normal(-Velocity);
+
+        // Retain only 25% of the original velocity.
+        Velocity = MirrorVectorByNormal(Velocity, HitNormal) * 0.25;
+
+        SetLocation(
+            Other.Location +
+            HitNormal * (Other.CollisionRadius + CollisionRadius + 8.0)
+        );
+
+        SetRotation(Rotator(Velocity));
     }
 }
 
 simulated event HitWall(Vector HitNormal, Actor Wall)
 {
-    Log("M46 DEBUG: HitWall called. Wall="$Wall);
-    Log("M46 DEBUG: HitWall Location="$Location);
-    Log("M46 DEBUG: HitWall Velocity="$Velocity);
-    Log("M46 DEBUG: HitWall Normal="$HitNormal);
-
-    if (Role != ROLE_Authority)
+    if (Role != ROLE_Authority || bPlaced)
         return;
 
-    if (bPlaced)
+    // Never attach mines to pawns.
+    if (Pawn(Wall) != None)
         return;
 
-    // Ignore player pawns.
-    if (Pawn(Wall) != None && KFMonster(Wall) == None)
-        return;
-
-    // Only Zeds should receive sticky mines.
-    if (KFMonster(Wall) != None)
-        StuckActor = Wall;
-
-    // Preserve the original placement flow.
     PlaceMine(Location, HitNormal);
+}
+
+simulated event Landed(Vector HitNormal)
+{
+    HitWall(HitNormal, None);
 }
 
 function PlaceMine(Vector HitLocation, Vector HitNormal)
@@ -103,8 +86,6 @@ function PlaceMine(Vector HitLocation, Vector HitNormal)
 
     bPlaced = True;
 
-    Log("M46 PROJECTILE: PlaceMine called. StuckActor="$StuckActor$" HitLocation="$HitLocation);
-
     if (StuckActor == None)
     {
         TraceStart = HitLocation + Normal(HitNormal) * 16.0;
@@ -117,9 +98,6 @@ function PlaceMine(Vector HitLocation, Vector HitNormal)
             TraceStart,
             False
         );
-
-        Log("M46 PROJECTILE: Surface trace result="$HitSurface);
-        Log("M46 PROJECTILE: Surface normal="$SurfaceNormal);
 
         if (HitSurface == None)
         {
@@ -161,10 +139,10 @@ function PlaceMine(Vector HitLocation, Vector HitNormal)
             ProximityMine.Instigator = Instigator;
             ProximityMine.InstigatorController = InstigatorController;
             ProximityMine.SetBase(HitSurface);
-            Log("M46 PROJECTILE: Proximity mine spawned.");
+
+            if (ProximityMine.AttachSound != None)
+                ProximityMine.PlaySound(ProximityMine.AttachSound,, 1.0,, 256.0);
         }
-        else
-            Log("M46 PROJECTILE: Proximity mine spawn FAILED.");
     }
     else
     {
@@ -181,10 +159,10 @@ function PlaceMine(Vector HitLocation, Vector HitNormal)
             StickyMine.Instigator = Instigator;
             StickyMine.InstigatorController = InstigatorController;
             StickyMine.AttachToTarget(StuckActor, SurfaceLocation, Velocity);
-            Log("M46 PROJECTILE: Sticky mine spawned.");
+
+            if (StickyMine.AttachSound != None)
+                StickyMine.PlaySound(StickyMine.AttachSound,, 1.0,, 256.0);
         }
-        else
-            Log("M46 PROJECTILE: Sticky mine spawn FAILED.");
     }
 
     Destroy();
@@ -213,8 +191,9 @@ simulated function SpawnImpactEffect(Vector HitLocation, Vector HitNormal)
 defaultproperties
 {
     bAlwaysTick=True
-	ImpactManager=Class'BW_WD001_KF.Weapon_M46A1Rifle_Impact'
-	TrailClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_MineTrail'
+    ZedImpactDamage=10
+    ImpactManager=Class'BW_WD001_KF.Weapon_M46A1Rifle_Impact'
+    TrailClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_MineTrail'
     TrailOffset=(X=-8.000000)
     StaticMesh=StaticMesh'BWKF_M46_SM.pickups.M46_GrenadeProj_Main'
     ShakeRadius=512.000000
@@ -227,5 +206,5 @@ defaultproperties
     MaxSpeed=0.000000
     bNetTemporary=False
     Physics=PHYS_Falling
-	bTrueBallistics=False
+    bTrueBallistics=False
 }

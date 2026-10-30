@@ -3,6 +3,7 @@ class Weapon_M46A1Rifle_Main extends BallisticWeapon;
 var bool bM46MinePriming;
 var bool bM46MinePrimed;
 var bool bM46MineLaunching;
+var() Sound M46MineLaunchSound;
 
 //=============================================================================
 // Alt Grenade Firing
@@ -104,35 +105,16 @@ simulated function LaunchM46Mine()
     );
 
     if (Mine == None)
-    {
-        Log("M46 DEBUG: Projectile spawn FAILED.");
         return;
-    }
+		
+	if (M46MineLaunchSound != None)
+		PlaySound(M46MineLaunchSound,, 1.0,, 256.0);
 
     Mine.Instigator = Instigator;
     Mine.InstigatorController = Instigator.Controller;
 
-    Log("M46 DEBUG: Spawned Rotation="$Mine.Rotation);
-    Log("M46 DEBUG: Spawned Location="$Mine.Location);
-    Log("M46 DEBUG: CollisionRadius="$Mine.CollisionRadius);
-    Log("M46 DEBUG: CollisionHeight="$Mine.CollisionHeight);
-    Log("M46 DEBUG: bCollideActors="$Mine.bCollideActors);
-    Log("M46 DEBUG: bBlockActors="$Mine.bBlockActors);
-    Log("M46 DEBUG: bBlockPlayers="$Mine.bBlockPlayers);
-
     Mine.Velocity = Vector(SpawnRotation) * 2700.0;
     Mine.SetPhysics(PHYS_Falling);
-
-    Log("M46 DEBUG: Physics after SetPhysics="$Mine.Physics);
-    Log("M46 DEBUG: Velocity after SetPhysics="$Mine.Velocity);
-    Log("M46 DEBUG: BallisticCoefficient="$Mine.BallisticCoefficient);
-    Log("M46 DEBUG: bTrueBallistics="$Mine.bTrueBallistics);
-    Log("M46 DEBUG: bInitialAcceleration="$Mine.bInitialAcceleration);
-    Log("M46 DEBUG: SpeedFudgeScale="$Mine.SpeedFudgeScale);
-    Log("M46 DEBUG: MinFudgeScale="$Mine.MinFudgeScale);
-    Log("M46 DEBUG: InitialAccelerationTime="$Mine.InitialAccelerationTime);
-    Log("M46 DEBUG: MaxSpeed="$Mine.MaxSpeed);
-    Log("M46 DEBUG: Projectile spawned. Velocity="$Mine.Velocity);
 }
 
 simulated function AnimEnd(int Channel)
@@ -211,7 +193,9 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 defaultproperties
 {
-    FireModeClass(0)=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFire'
+    M46MineLaunchSound=Sound'BWKF_M46_SN.M46.OA-AR_FireGren'
+	
+	FireModeClass(0)=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFire'
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFire'
     MeleeFireClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_MeleeFire'
     PickupClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Pickup'
@@ -225,8 +209,8 @@ defaultproperties
 
     Mesh=Mesh'BWKF_M46_A.M46A1_FP_Mesh'
 
-	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000,bUnavailable=True)
-	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000,bUnavailable=True)
+	WeaponModes(0)=(ModeName="Semi",ModeID="WM_SemiAuto",Value=1.000000)
+	WeaponModes(1)=(ModeName="Burst",ModeID="WM_Burst",Value=3.000000)
 	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto")
 	CurrentWeaponMode=2
 
@@ -252,9 +236,10 @@ defaultproperties
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     //SightFXClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_SightLEDs'
     SightFXBone="OA-AR"
-    ClipHitSound=(Sound=Sound'BWKF_M806_SN.M806-ClipHit')
-    ClipOutSound=(Sound=Sound'BWKF_M806_SN.M806-ClipOut')
-    ClipInSound=(Sound=Sound'BWKF_M806_SN.M806-ClipIn')
+    ClipHitSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipHit')
+    ClipOutSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipOut')
+    ClipInSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipIn')
+	CockSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Cock')
 	
 	bScoped=True
 	ScopeTextureOverlay=Texture'BWKF_M46_T.Scope.M46ScopeView'
