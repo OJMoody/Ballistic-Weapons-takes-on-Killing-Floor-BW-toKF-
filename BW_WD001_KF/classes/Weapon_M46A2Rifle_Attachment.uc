@@ -44,11 +44,11 @@ simulated function DoFlashEmitter()
 defaultproperties
 {
     Mesh=SkeletalMesh'BWKF_M46_A.M46A1_TP_Mesh'
-	DrawScale=0.200000
+	DrawScale=0.150000
 
     mMuzFlashClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFlashEmitter'
 	mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFlashEmitter'
-	mMuzFlashScale=1.000000
+	mMuzFlashScale=0.400000
 
     mTracerClass=Class'KFMod.KFNewTracer'
     mShellCaseEmitterClass=Class'KFMod.KFShellSpewer'

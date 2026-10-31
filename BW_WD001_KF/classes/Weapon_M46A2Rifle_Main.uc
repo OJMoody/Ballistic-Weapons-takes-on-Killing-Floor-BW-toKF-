@@ -32,22 +32,25 @@ simulated function bool StartFire(int Mode)
     }
 
     if (Mode == 1)
-    {
-        if (bM46MinePriming || bM46MineLaunching || bM46GrenadeReloading)
-            return false;
+	{
+		if (MeleeState != MS_None)
+			return false;
 
-        if (AltAmmoLoaded <= 0)
-            return StartM46GrenadeReload();
+		if (bM46MinePriming || bM46MineLaunching || bM46GrenadeReloading)
+			return false;
 
-        if (Super.StartFire(Mode))
-        {
-            bM46MinePriming = true;
-            PlayAnim('GrenadePrep', 1.0, 0.0);
-            return true;
-        }
+		if (AltAmmoLoaded <= 0)
+			return StartM46GrenadeReload();
 
-        return false;
-    }
+		if (Super.StartFire(Mode))
+		{
+			bM46MinePriming = true;
+			PlayAnim('GrenadePrep', 1.0, 0.0);
+			return true;
+		}
+
+		return false;
+	}
 
     return Super.StartFire(Mode);
 }
@@ -244,7 +247,7 @@ exec function ReloadAlt()
 
 simulated function MeleeHoldImpl()
 {
-    if (IsM46MineActionLocked())
+    if (IsM46MineActionLocked() || MeleeState != MS_None)
         return;
 
     Super.MeleeHoldImpl();
@@ -272,6 +275,9 @@ simulated function bool StartM46GrenadeReload()
 {
     if (AltAmmoLoaded > 0 || bM46GrenadeReloading)
         return false;
+		
+	if (MeleeState != MS_None)
+		return false;
 
     if (bM46MinePriming || bM46MinePrimed || bM46MineLaunching)
         return false;

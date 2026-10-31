@@ -23,7 +23,7 @@ defaultproperties
 	PickupForce="AssaultRiflePickup"
 	CollisionRadius=35.000000
 	CollisionHeight=5.000000
-	EquipmentCategoryID=1
-	CorrespondingPerkIndex=1
+	EquipmentCategoryID=4
+	CorrespondingPerkIndex=3
 	DrawScale=0.500000
 }
