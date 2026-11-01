@@ -8,5 +8,5 @@ defaultproperties
      PickupMessage="You picked up 9mm Ammo"
      PickupForce="AssaultAmmoPickup"
      DrawType=DT_StaticMesh
-     //StaticMesh=StaticMesh'BWKF_M806_SM.M806_ClipPickup_SM'
+     StaticMesh=StaticMesh'BWKF_59M_SM.Pickups.UZI_ClipPickup_SM'
 }

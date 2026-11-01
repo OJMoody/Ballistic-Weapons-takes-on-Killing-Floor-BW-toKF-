@@ -7,12 +7,13 @@ class Weapon_59MachinePistol_Attachment extends BallisticAttachment;
 
 defaultproperties
 {
-    //Mesh=SkeletalMesh'BWKF_59M_A.59M_TP_Mesh'
+    Mesh=SkeletalMesh'BWKF_59M_A.59M_TP_Mesh'
+	DrawScale=0.150000
 
-    //mMuzFlashClass=Class'BW_WD001_KF.Weapon_59MachinePistol_FlashEmitter'
-    mMuzFlashScale=1.000000
+    mMuzFlashClass=Class'BW_WD002_KF.Weapon_59MachinePistol_FlashEmitter'
+    mMuzFlashScale=0.200000
 
-    mTracerClass=Class'KFMod.KFNewTracer'
+    mTracerClass=Class'BW_WD002_KF.Weapon_59MachinePistol_TraceEmitter'
     mShellCaseEmitterClass=Class'KFMod.KFShellSpewer'
     SplashEffect=Class'BulletSplashEmitter'
 

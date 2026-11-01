@@ -229,6 +229,27 @@ simulated function DoFlashEmitter()
         mMuzFlash3rd.SpawnParticle(1);
 }
 
+simulated function SpawnTracer()
+{
+    local BCTraceEmitter Tracer;
+    local vector SpawnLoc;
+    local float Dist;
+
+    if (!bDoFiringEffects)
+        return;
+
+    SpawnLoc = GetTracerStart();
+    Dist = VSize(mHitLocation - SpawnLoc);
+
+    if (Dist > mTracerMinDistance)
+    {
+        Tracer = BCTraceEmitter(Spawn(mTracerClass, self,, SpawnLoc, Rotator(mHitLocation - SpawnLoc)));
+
+        if (Tracer != None)
+            Tracer.Initialize(Dist);
+    }
+}
+
 simulated event ThirdPersonEffects()
 {
 	local PlayerController PC;

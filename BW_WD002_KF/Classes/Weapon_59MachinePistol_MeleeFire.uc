@@ -30,9 +30,10 @@ defaultproperties
 	FlankDamageMult=1.150000
 	BackDamageMult=1.300000
 
-	FireSound=Sound'BWKF_M806_SN.M806.M806MeleeFire'
-	StereoFireSoundRef="BWKF_M806_SN.M806.M806MeleeFire"
-
+	FireSound=SoundGroup'BWKF_59M_SN.UZI.UZI-Melee'
+	StereoFireSoundRef="BWKF_59M_SN.UZI.UZI-Melee"
+	MeleeHitEffectClass=class'BW_Core_KF.BallisticMeleeWeaponHitEffectsSharp'
+	
 	bFireOnRelease=True
 	bWaitForRelease=True
 	bModeExclusive=True

@@ -174,7 +174,7 @@ function PlayFiring()
 				RandPitch *= -1.0;
 		}
 
-		Weapon.PlayOwnedSound(StereoFireSound, SLOT_Interact, TransientSoundVolume * 0.85,, TransientSoundRadius, (1.0 + RandPitch), false);
+		Weapon.PlayOwnedSound(StereoFireSound, SLOT_None, TransientSoundVolume * 0.85,, TransientSoundRadius, (1.0 + RandPitch), false);
 	}
 	else
 	{
@@ -186,7 +186,7 @@ function PlayFiring()
 				RandPitch *= -1.0;
 		}
 
-		Weapon.PlayOwnedSound(FireSound, SLOT_Interact, TransientSoundVolume,, TransientSoundRadius, (1.0 + RandPitch), false);
+		Weapon.PlayOwnedSound(FireSound, SLOT_None, TransientSoundVolume,, TransientSoundRadius, (1.0 + RandPitch), false);
 	}
 
 	ClientPlayForceFeedback(FireForce);

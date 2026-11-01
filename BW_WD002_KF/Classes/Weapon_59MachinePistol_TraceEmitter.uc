@@ -1,0 +1,29 @@
+class Weapon_59MachinePistol_TraceEmitter extends BCTraceEmitter;
+
+defaultproperties
+{
+     Begin Object Class=MeshEmitter Name=MeshEmitter0
+         StaticMesh=StaticMesh'BWKF_59M_SM.MuzzleFlash.UZI-Tracer'
+         UseMeshBlendMode=False
+         RenderTwoSided=True
+         UseParticleColor=True
+         RespawnDeadParticles=False
+         SpinParticles=True
+         AutomaticInitialSpawning=False
+         TriggerDisabled=False
+         ColorMultiplierRange=(X=(Min=0.500000,Max=0.700000),Y=(Min=0.500000,Max=0.700000))
+         Opacity=1
+         CoordinateSystem=PTCS_Relative
+         MaxParticles=1
+         SpinsPerSecondRange=(Z=(Min=2.000000,Max=4.000000))
+         StartSizeRange=(X=(Min=0.500000),Y=(Min=0.175000,Max=0.200000),Z=(Min=0.175000,Max=0.20000))
+		 // offset to prevent drawing the back of the tracer through the weapon
+		 //StartLocationOffset=(X=50)
+         InitialParticlesPerSecond=50000.000000
+         SecondsBeforeInactive=0.000000
+         LifetimeRange=(Min=2.000000,Max=2.000000)
+         StartVelocityRange=(X=(Min=11000.000000,Max=11000.000000))
+     End Object
+     Emitters(0)=MeshEmitter'Weapon_59MachinePistol_TraceEmitter.MeshEmitter0'
+
+}

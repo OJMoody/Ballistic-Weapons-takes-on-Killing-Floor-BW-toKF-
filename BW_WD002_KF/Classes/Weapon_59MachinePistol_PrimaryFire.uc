@@ -10,8 +10,8 @@ defaultproperties
     bPawnRapidFireAnim=True
     bAttachSmokeEmitter=True
     TransientSoundVolume=1.8
-    FireSound=Sound'BWKF_M806_SN.M806Fire'
-    StereoFireSoundRef="BWKF_M806_SN.M806Fire"
+    FireSound=Sound'BWKF_59M_SN.UZI.UZI-Fire'
+    StereoFireSoundRef="BWKF_59M_SN.UZI.UZI-Fire"
     NoAmmoSound=Sound'KF_9MMSnd.9mm_DryFire'
     FireForce="AssaultRifleFire"
     FireRate=0.08
@@ -22,7 +22,7 @@ defaultproperties
     AmmoClass=Class'BW_WD002_KF.Weapon_59MachinePistol_Ammo'
     AmmoPerFire=1
     BotRefireRate=0.350000
-    FlashEmitterClass=Class'BW_WD001_KF.Weapon_M806Pistol_FlashEmitter'
+    FlashEmitterClass=Class'BW_WD002_KF.Weapon_59MachinePistol_FlashEmitter'
     aimerror=30.000000
     Spread=0.015000
     SpreadStyle=SS_Random
