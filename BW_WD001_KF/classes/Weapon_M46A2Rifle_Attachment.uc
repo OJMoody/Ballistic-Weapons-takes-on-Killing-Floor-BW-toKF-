@@ -50,8 +50,8 @@ defaultproperties
 	mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFlashEmitter'
 	mMuzFlashScale=0.400000
 
-    mTracerClass=Class'KFMod.KFNewTracer'
-    mShellCaseEmitterClass=Class'KFMod.KFShellSpewer'
+    mTracerClass=Class'BW_Core_KF.TraceEmitter_Default'
+    mShellCaseEmitterClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Brass'
     SplashEffect=Class'BulletSplashEmitter'
 
     LightType=LT_Pulse

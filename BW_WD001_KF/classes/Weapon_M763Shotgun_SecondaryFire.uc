@@ -124,4 +124,7 @@ defaultproperties
     ShakeRotTime=5.0
     bWaitForRelease=True
     bRandomPitchFireSound=false
+	
+	BrassClass=Class'BW_Core_KF.Brass_Shotgun'
+	bBrassOnCock=True
 }

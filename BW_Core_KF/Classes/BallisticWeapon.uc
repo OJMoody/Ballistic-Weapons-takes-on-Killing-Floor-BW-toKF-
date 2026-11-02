@@ -246,6 +246,21 @@ var ScriptedTexture ScopeScriptedTexture;
 var Combiner ScopeScriptedCombiner;
 var Shader ScopeScriptedShader;
 
+
+//=============================================================================
+// BRASS
+//=============================================================================
+
+struct FPBrassEntry
+{
+    var Actor BrassActor;
+    var float KillTime;
+    var Vector WorldOffsetCorrection;
+};
+
+var array<FPBrassEntry> FPBrassList;
+var() float FPBrassScale;
+
 replication
 {
 	reliable if (Role < ROLE_Authority)
@@ -498,6 +513,109 @@ simulated function HandleSleeveSwapping()
             Skins[1] = KFSpecies.default.SleeveTexture;
     }
 }
+
+
+//=============================================================================
+// BRASS
+//=============================================================================
+
+simulated function DrawFPBrass(Canvas Canvas)
+{
+    local int i;
+    local PlayerController PC;
+    local float BrassFOV;
+    local float TransitionAlpha;
+    local vector OriginalLocation;
+    local vector RenderLocation;
+	local float OriginalDrawScale;
+
+    if (FPBrassList.Length == 0 || Instigator == None)
+        return;
+
+    PC = PlayerController(Instigator.Controller);
+
+    if (PC == None)
+        return;
+
+    // Select the appropriate FOV for the current weapon view.
+    BrassFOV = PC.DesiredFOV;
+	
+    bDrawingFirstPerson = true;
+
+    for (i = FPBrassList.Length - 1; i >= 0; i--)
+    {
+        if (FPBrassList[i].BrassActor == None)
+        {
+            FPBrassList.Remove(i, 1);
+            continue;
+        }
+
+        OriginalLocation = FPBrassList[i].BrassActor.Location;
+
+        // Progressively apply the world-position correction.
+        TransitionAlpha = 1.0 - (
+            (FPBrassList[i].KillTime - Level.TimeSeconds) / 0.35
+        );
+
+        TransitionAlpha = FClamp(TransitionAlpha, 0.0, 1.0);
+
+        RenderLocation = OriginalLocation
+            - (FPBrassList[i].WorldOffsetCorrection * TransitionAlpha);
+
+        // Temporarily position the casing for first-person rendering.
+		OriginalDrawScale = FPBrassList[i].BrassActor.DrawScale;
+        FPBrassList[i].BrassActor.SetLocation(RenderLocation);
+
+        Canvas.DrawActor(
+            FPBrassList[i].BrassActor,
+            false,
+            false,
+            BrassFOV
+        );
+
+        if (FPBrassList[i].KillTime <= Level.TimeSeconds)
+        {
+            // Keep the final corrected position for world rendering.
+            FPBrassList[i].BrassActor.bHidden = false;
+            FPBrassList.Remove(i, 1);
+        }
+        else
+        {
+            // Restore the physical position until the next frame.
+            FPBrassList[i].BrassActor.SetLocation(OriginalLocation);
+        }
+    }
+
+    bDrawingFirstPerson = false;
+}
+
+simulated function BallisticInstantFire GetBallisticFireMode(byte Mode)
+{
+    if (Mode > 1)
+        return None;
+
+    return BallisticInstantFire(FireMode[Mode]);
+}
+
+simulated function Notify_EjectBrass()
+{
+    local BallisticInstantFire BIF;
+    local BallisticShotgunFire BSF;
+
+    BIF = BallisticInstantFire(FireMode[0]);
+
+    if (BIF != None)
+    {
+        BIF.EjectBrass();
+        return;
+    }
+
+    BSF = BallisticShotgunFire(FireMode[0]);
+
+    if (BSF != None)
+        BSF.EjectBrass();
+}
+
 
 //=============================================================================
 // FIRE MODE SWITCHING
@@ -2862,9 +2980,13 @@ simulated event RenderOverlays(Canvas Canvas)
             Skins[ScopeLensMaterialID] = ScopeFallbackMaterial;
 
         bDrawingFirstPerson = true;
+		
         Canvas.DrawActor(self, false, false, DisplayFOV);
+		
         bDrawingFirstPerson = false;
     }
+
+    DrawFPBrass(Canvas);
 }
 
 
@@ -3192,4 +3314,6 @@ defaultproperties
 	ScopeViewOffsetHigh=(X=0.0,Y=0.0,Z=0.0)
 	ScopeTextureSize=512
 	ScopeTextureSizeHigh=1024
+	
+	FPBrassScale=1.100000
 }

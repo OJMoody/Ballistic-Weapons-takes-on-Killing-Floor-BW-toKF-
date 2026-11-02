@@ -42,6 +42,52 @@ simulated function PostNetReceive()
     }
 }
 
+simulated function EjectBrass()
+{
+    local BallisticWeapon BW;
+    local BallisticInstantFire BIF;
+    local PlayerController PC;
+    local Coords C;
+    local Actor BrassActor;
+    local vector Start;
+    local vector X, Y, Z;
+
+    if (Instigator == None)
+        return;
+
+    BW = BallisticWeapon(Instigator.Weapon);
+
+    if (BW == None)
+    return;
+
+	BIF = BW.GetBallisticFireMode(FiringMode);
+
+    if (BIF == None || BIF.BrassClass == None)
+        return;
+
+    if (Level.DetailMode < DM_High)
+        return;
+
+    // The local first-person weapon handles its own brass.
+    PC = Level.GetLocalPlayerController();
+
+	if (PC != None && Instigator.Controller == PC && Instigator.IsFirstPerson() && PC.ViewTarget == Instigator)
+		return;
+
+    C = GetBoneCoords(BIF.BrassBone);
+
+    Start = C.Origin;
+
+    // Apply the same configurable offset used by first-person brass.
+    GetAxes(GetBoneRotation(BIF.BrassBone), X, Y, Z);
+
+    Start += X * BIF.BrassOffset.X;
+    Start += Y * BIF.BrassOffset.Y;
+    Start += Z * BIF.BrassOffset.Z;
+
+    BrassActor = Spawn(BIF.BrassClass,,, Start, GetBoneRotation(BIF.BrassBone));
+}
+
 simulated function SetDualMesh(bool bOffHand)
 {
 }
@@ -298,16 +344,7 @@ simulated event ThirdPersonEffects()
 
 			DoFlashEmitter();
 
-			if ((mShellCaseEmitter == None) && (Level.DetailMode != DM_Low) && !Level.bDropDetail)
-			{
-				mShellCaseEmitter = Spawn(mShellCaseEmitterClass);
-
-				if (mShellCaseEmitter != None)
-					AttachToBone(mShellCaseEmitter, ShellEjectBoneName);
-			}
-
-			if (mShellCaseEmitter != None)
-				mShellCaseEmitter.mStartParticles++;
+			EjectBrass();
 		}
 	}
 	else

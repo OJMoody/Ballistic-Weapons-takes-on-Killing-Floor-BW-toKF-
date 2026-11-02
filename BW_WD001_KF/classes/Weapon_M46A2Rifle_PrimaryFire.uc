@@ -60,6 +60,7 @@ defaultproperties
     ShakeRotMag=(X=75.0,Y=75.0,Z=250.0)
     ShakeRotRate=(X=10000.0,Y=10000.0,Z=10000.0)
     ShakeRotTime=3.0
-    ShellEjectClass=class'ROEffects.KFShellEjectAK'
     bRandomPitchFireSound=false
+	
+	BrassClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Brass'
 }

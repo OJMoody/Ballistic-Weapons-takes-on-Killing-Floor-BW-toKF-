@@ -11,8 +11,8 @@ defaultproperties
     mMuzFlashClass=Class'BW_WD001_KF.Weapon_M763Shotgun_FlashEmitter'
     mMuzFlashScale=1.000000
 
-    mTracerClass=Class'KFMod.KFNewTracer'
-    mShellCaseEmitterClass=Class'KFMod.KFShellSpewer'
+    mTracerClass=Class'BW_Core_KF.TraceEmitter_Shotgun'
+    mShellCaseEmitterClass=Class'BW_Core_KF.Brass_Shotgun'
     SplashEffect=Class'BulletSplashEmitter'
 
     LightType=LT_Pulse

@@ -35,6 +35,16 @@ var int NumShotsInBurst;
 var() float MaxSpread;
 var() bool bAccuracyBonusForSemiAuto;
 
+//=============================================================================
+// BRASS EJECTION
+//=============================================================================
+
+var() class<Actor> BrassClass;
+var() name BrassBone;
+var() name BrassBoneLeft;
+var() bool bBrassOnCock;
+var() vector BrassOffset;
+
 
 //=============================================================================
 // BERSERK
@@ -60,6 +70,75 @@ function PostSpawnProjectile(Projectile P)
 
 	if (bBerserk && P != None)
 		P.Damage *= 1.33;
+}
+
+
+//=============================================================================
+// BRASS EJECTION
+//=============================================================================
+
+function EjectBrass()
+{
+    local vector Start, X, Y, Z;
+    local vector ViewOffset;
+    local Coords C;
+    local Actor BrassActor;
+    local BallisticWeapon BW;
+    local name EjectorBone;
+    local int i;
+
+    if (Level.NetMode == NM_DedicatedServer)
+        return;
+
+    BW = BallisticWeapon(Weapon);
+
+    if (BW == None || Instigator == None || BrassClass == None)
+        return;
+
+    if (Level.DetailMode < DM_High)
+        return;
+
+    if (!Instigator.IsFirstPerson())
+        return;
+
+    if (PlayerController(Instigator.Controller) == None)
+        return;
+
+    if (PlayerController(Instigator.Controller).ViewTarget != Instigator)
+        return;
+
+    // Select the appropriate ejector bone.
+    EjectorBone = BrassBone;
+
+    if (BW.bDualWeapon && bLastDualFireLeft)
+        EjectorBone = BrassBoneLeft;
+
+    C = Weapon.GetBoneCoords(EjectorBone);
+
+    ViewOffset = (0.9 / Weapon.DisplayFOV * 100
+        * vect(1,0,0) * Instigator.ModifiedPlayerViewOffset(Weapon).X)
+        >> Instigator.GetViewRotation();
+
+    Weapon.GetViewAxes(X, Y, Z);
+
+    Start = C.Origin
+        + X * BrassOffset.X
+        + Y * BrassOffset.Y
+        + Z * BrassOffset.Z;
+
+    BrassActor = Weapon.Spawn(BrassClass,,, Start, Rotator(C.XAxis));
+
+    if (BrassActor == None)
+        return;
+
+    BrassActor.bHidden = true;
+
+    i = BW.FPBrassList.Length;
+    BW.FPBrassList.Length = i + 1;
+
+    BW.FPBrassList[i].BrassActor = BrassActor;
+    BW.FPBrassList[i].KillTime = Level.TimeSeconds + 0.35;
+    BW.FPBrassList[i].WorldOffsetCorrection = ViewOffset;
 }
 
 
@@ -200,6 +279,9 @@ function PlayFiring()
 	local name DualFireAnim;
 
 	BW = BallisticWeapon(Weapon);
+	
+	if (BW != None && BW.bDualWeapon && !bAltFire)
+		bLastDualFireLeft = bDualFireLeft;
 
 	if (BW != None && BW.bDualWeapon)
 	{
@@ -479,32 +561,43 @@ simulated function InitEffects()
 
 function FlashMuzzleFlash()
 {
-	local BallisticWeapon BW;
+    local BallisticWeapon BW;
 
-	BW = BallisticWeapon(Weapon);
+    BW = BallisticWeapon(Weapon);
 
-	if (BW == None)
-	{
-		Super.FlashMuzzleFlash();
-		return;
-	}
+    if (BW == None)
+    {
+        Super.FlashMuzzleFlash();
 
-	if (!BW.bDualWeapon)
-	{
-		Super.FlashMuzzleFlash();
-		return;
-	}
+        if (!bBrassOnCock)
+            EjectBrass();
 
-	if (bLastDualFireLeft)
-	{
-		if (FlashEmitterLeft != None)
-			FlashEmitterLeft.Trigger(Weapon, Instigator);
-	}
-	else
-	{
-		if (FlashEmitter != None)
-			FlashEmitter.Trigger(Weapon, Instigator);
-	}
+        return;
+    }
+
+    if (!BW.bDualWeapon)
+    {
+        Super.FlashMuzzleFlash();
+
+        if (!bBrassOnCock)
+            EjectBrass();
+
+        return;
+    }
+
+    if (bLastDualFireLeft)
+    {
+        if (FlashEmitterLeft != None)
+            FlashEmitterLeft.Trigger(Weapon, Instigator);
+    }
+    else
+    {
+        if (FlashEmitter != None)
+            FlashEmitter.Trigger(Weapon, Instigator);
+    }
+
+    if (!bBrassOnCock)
+        EjectBrass();
 }
 
 simulated function DestroyEffects()
@@ -570,4 +663,9 @@ defaultproperties
 {
 	BurstFireRateFactor=0.75
 	MaxSpread=0.12
+	
+	BrassBone="ejector"
+	BrassBoneLeft="ejector-2"
+	bBrassOnCock=False
+	BrassOffset=(X=0,Y=0,Z=0)
 }
