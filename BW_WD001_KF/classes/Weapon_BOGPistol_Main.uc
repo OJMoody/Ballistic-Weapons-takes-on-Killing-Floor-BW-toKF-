@@ -631,9 +631,4 @@ defaultproperties
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	SightFXClass=Class'BW_WD001_KF.Weapon_BOGPistol_SightLEDs'
     SightFXBone="GrenadePistolBarrel"
-
-	SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-	SkinRefs(2)=Texture'BWKF_BOGP_T.Weapon.BOGP_Main'
-	SkinRefs(3)=Texture'BWKF_BOGP_T.Weapon.BOGP_Main'
 }

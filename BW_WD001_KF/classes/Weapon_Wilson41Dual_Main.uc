@@ -265,9 +265,4 @@ defaultproperties
     SightFXBone="Front"
 	LeftSightFXClass=Class'BW_WD001_KF.Weapon_Wilson41_SightLEDs'
     LeftSightFXBone="Front-2"
-    SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(2)=Shader'BWKF_Wilson_T.Weapon.leMat_Shine'
-    SkinRefs(3)=Texture'BWKF_Wilson_T.Weapon.leMat_Shield'
-    SkinRefs(4)=Texture'BWKF_Wilson_T.Weapon.leMat_Speed'
 }

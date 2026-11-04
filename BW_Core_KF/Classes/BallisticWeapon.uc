@@ -3316,4 +3316,7 @@ defaultproperties
 	ScopeTextureSizeHigh=1024
 	
 	FPBrassScale=1.100000
+	
+	SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
+    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
 }

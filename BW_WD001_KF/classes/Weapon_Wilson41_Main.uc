@@ -82,9 +82,4 @@ defaultproperties
     PutAwaySound=(Sound=Sound'BWKF_M806_SN.M806Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     SightFXClass=Class'BW_WD001_KF.Weapon_Wilson41_SightLEDs'
     SightFXBone="Front"
-    SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(2)=Shader'BWKF_Wilson_T.Weapon.leMat_Shine'
-    SkinRefs(3)=Texture'BWKF_Wilson_T.Weapon.leMat_Shield'
-    SkinRefs(4)=Texture'BWKF_Wilson_T.Weapon.leMat_Speed'
 }

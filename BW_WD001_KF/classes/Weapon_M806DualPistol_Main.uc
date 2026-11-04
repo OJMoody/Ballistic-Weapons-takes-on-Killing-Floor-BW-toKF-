@@ -1028,8 +1028,4 @@ defaultproperties
     ClipHitSound=(Sound=Sound'BWKF_M806_SN.M806-ClipHit')
     ClipOutSound=(Sound=Sound'BWKF_M806_SN.M806-ClipOut')
     ClipInSound=(Sound=Sound'BWKF_M806_SN.M806-ClipIn')
-    SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(2)=Shader'BWKF_M806_T.Weapon.M806Weapon-Shine'
-    SkinRefs(3)=Texture'BWKF_M806_T.Weapon.M806-Laser-Tex'
 }

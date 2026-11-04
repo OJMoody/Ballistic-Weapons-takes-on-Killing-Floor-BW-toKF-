@@ -240,9 +240,4 @@ defaultproperties
     ClipOutSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6ClipOut')
     ClipInSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6ClipHit')
 	CockSound=(Sound=Sound'BWKF_MRT6_SN.MRT6.MRT6Cock')
-	
-    SkinRefs(0)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(1)=Texture'BWKF_Core_T.Misc.Invisible-Tex'
-    SkinRefs(2)=Texture'BWKF_Core_T.Ammo.MRT6Skin'
-    SkinRefs(3)=Texture'BWKF_Core_T.Ammo.MRT6Small'
 }
