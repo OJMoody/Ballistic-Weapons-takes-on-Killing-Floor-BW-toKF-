@@ -6,37 +6,10 @@ class Weapon_M806DualPistol_Main extends BallisticWeapon;
 // LASER POINTER
 //=============================================================================
 
-var() bool bHasLaser;
-var() bool bLaserOn;
-
-var() Sound LaserOnSound;
-var() Sound LaserOffSound;
-
 var() BallisticLaserActor_FPStandard Laser;
 var() Emitter LaserDot;
 
-var() bool bLaserBatteryProxy;
-
-var bool bLaserToggleInProgress;
-
-var() name LaserToggleAnim;
-
 var bool bNextFireLeft;
-
-var name LaserToggleActiveAnim;
-
-//=============================================================================
-// REPLICATION
-//=============================================================================
-
-replication
-{
-    reliable if (Role == ROLE_Authority)
-        bLaserOn;
-
-    reliable if (Role < ROLE_Authority)
-        ServerStartLaserToggle;
-}
 
 simulated function ZoomIn(bool bAnimateTransition)
 {
@@ -537,18 +510,8 @@ simulated function RequestLaserToggle()
 
 simulated function StartLaserToggleAnimation()
 {
-    if (ClientState == WS_Hidden)
-        return;
-
-    if (bLaserToggleInProgress)
-        return;
-
     UpdateM806AnimationSet();
-
-    bLaserToggleInProgress = true;
-    LaserToggleActiveAnim = LaserToggleAnim;
-
-    PlayAnim(LaserToggleAnim, 1.000000, 0.000000);
+    Super.StartLaserToggleAnimation();
 }
 
 simulated function MeleeHoldImpl()
@@ -579,50 +542,6 @@ simulated function AnimEnd(int Channel)
     Super.AnimEnd(Channel);
 }
 
-//=============================================================================
-// ANIMATION NOTIFIER
-//=============================================================================
-
-simulated function Notify_LaserToggle()
-{
-    if (Level.NetMode == NM_DedicatedServer)
-        return;
-
-    bLaserOn = !bLaserOn;
-
-    EnsureLaserBatteryProxy();
-
-    if (FlashLight != None)
-        FlashLight.bHasLight = bLaserOn;
-
-    if (ThirdPersonActor != None)
-        Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
-
-    ClientSwitchLaser();
-
-    PlaySound(Sound'BWKF_M806_SN.M806.M806LSight',, 0.7,, 32);
-}
-
-
-//=============================================================================
-// NETWORK LASER UPDATE
-//=============================================================================
-
-simulated event PostNetReceive()
-{
-    if (Level.NetMode == NM_Client)
-    {
-        if (bLaserOn != default.bLaserOn)
-        {
-            default.bLaserOn = bLaserOn;
-
-            ClientSwitchLaser();
-        }
-    }
-
-    Super.PostNetReceive();
-}
-
 
 //=============================================================================
 // CLIENT LASER SWITCH
@@ -630,70 +549,24 @@ simulated event PostNetReceive()
 
 simulated function ClientSwitchLaser()
 {
+    if (ThirdPersonActor != None)
+        Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
+
     if (bLaserOn)
-    {
         SpawnLaserDot();
-    }
     else
-    {
         KillLaserDot();
-    }
 }
 
-simulated function EnsureLaserBatteryProxy()
+simulated function bool HandleFlashlightToggle()
 {
-    if (FlashLight == None)
-    {
-        FlashLight = Spawn(
-            class'Weapon_M806Pistol_LaserBattery',
-            Instigator
-        );
-    }
+    LightFire();
+    return true;
 }
 
 function LightFire()
 {
     RequestLaserToggle();
-}
-
-
-//=============================================================================
-// LASER BATTERY
-//=============================================================================
-
-simulated function CheckLaserBattery()
-{
-    local KFHumanPawn KFPawn;
-
-    if (!bLaserOn)
-        return;
-
-    KFPawn = KFHumanPawn(Instigator);
-
-    if (KFPawn == None)
-        return;
-
-    if (KFPawn.TorchBatteryLife <= 0)
-    {
-        bLaserOn = false;
-
-        if (FlashLight != None)
-            FlashLight.bHasLight = false;
-
-        if (ThirdPersonActor != None)
-            Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = false;
-
-        ClientSwitchLaser();
-
-        PlaySound(LaserOffSound,, 0.7,, 32);
-    }
-}
-
-simulated event Tick(float DeltaTime)
-{
-    Super.Tick(DeltaTime);
-
-    CheckLaserBattery();
 }
 
 
@@ -733,25 +606,7 @@ simulated function bool PutDown()
 {
     UpdateM806AnimationSet();
 
-    if (Super.PutDown())
-    {
-        bLaserToggleInProgress = false;
-        bLaserOn = false;
-
-        if (FlashLight != None)
-            FlashLight.bHasLight = false;
-
-        KillLaserDot();
-
-        if (ThirdPersonActor != None)
-        {
-            Weapon_M806DualPistol_Attachment(ThirdPersonActor).bLaserOn = false;
-        }
-
-        return true;
-    }
-
-    return false;
+    return Super.PutDown();
 }
 
 
@@ -975,7 +830,7 @@ simulated function Destroyed()
 defaultproperties
 {
     bHasLaser=True
-
+	LaserBatteryClass=class'Weapon_M806Pistol_LaserBattery'
     LaserOnSound=Sound'BWKF_M806_SN.M806.M806LSight'
     LaserOffSound=Sound'BWKF_M806_SN.M806.M806LSight'
 
@@ -992,7 +847,6 @@ defaultproperties
 	//altTPAnim="DualiesAttackLeft"
     MagCapacity=16
     bShowChargingBar=True
-    bTorchEnabled=True
 
     Mesh=Mesh'BWKF_M806_A.M806Dual_FP_Mesh'
 

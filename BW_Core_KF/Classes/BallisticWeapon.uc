@@ -45,6 +45,8 @@ var() Texture AmmoIcon;
 var() Texture ReserveAmmoIcon;
 var() Texture AltAmmoIcon;
 
+var() bool bIgnoreFlashlightToggle;
+
 //=============================================================================
 // MELEE
 //=============================================================================
@@ -142,6 +144,24 @@ var bool bReloadPending;
 
 var() bool bShowAmmoAsRounds;
 var bool bSkipPutAwaySound;
+
+
+//=============================================================================
+// SHARED LASER
+//=============================================================================
+
+var() bool bHasLaser;
+var bool bLaserOn;
+var bool bLaserToggleInProgress;
+
+var() name LaserToggleAnim;
+var name LaserToggleActiveAnim;
+
+var() Sound LaserOnSound;
+var() Sound LaserOffSound;
+
+// Weapon-specific battery proxy
+var() class<Actor> LaserBatteryClass;
 
 //=============================================================================
 // Dual Weapons
@@ -263,11 +283,11 @@ var() float FPBrassScale;
 
 replication
 {
-	reliable if (Role < ROLE_Authority)
-		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerSetAltLoaded;
+    reliable if (Role < ROLE_Authority)
+        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerSetAltLoaded, ServerToggleLaser;
 
-	reliable if (Role == ROLE_Authority)
-		ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded;
+    reliable if (Role == ROLE_Authority)
+        ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -399,6 +419,20 @@ simulated event PostBeginPlay()
 simulated event PostNetReceive()
 {
     Super.PostNetReceive();
+
+    //=============================================================================
+    // LASER STATE
+    //=============================================================================
+
+    if (bHasLaser && bLaserOn != default.bLaserOn)
+    {
+        default.bLaserOn = bLaserOn;
+        ClientSwitchLaser();
+    }
+
+    //=============================================================================
+    // MELEE THIRD-PERSON ANIMATION
+    //=============================================================================
 
     if (MeleeTPAnimCount != LastMeleeTPAnimCount)
     {
@@ -1082,7 +1116,157 @@ simulated final function bool IsHoldingMelee()
 
 simulated function bool IsActionLocked()
 {
-	return bBallisticAltReload || bAltLoadPlaying;
+    return bLaserToggleInProgress || bBallisticAltReload || bAltLoadPlaying;
+}
+
+
+//=============================================================================
+// SHARED LASER
+//=============================================================================
+
+simulated function bool HandleFlashlightToggle()
+{
+    if (!bHasLaser)
+        return false;
+
+    RequestLaserToggle();
+    return true;
+}
+
+simulated function LightFire()
+{
+    if (bHasLaser)
+        RequestLaserToggle();
+    else
+        Super.LightFire();
+}
+
+simulated function RequestLaserToggle()
+{
+    if (!bHasLaser)
+        return;
+
+    // Prevent laser activation during weapon bring-up
+    if (ClientState == WS_BringUp)
+        return;
+
+    if (bIsReloading || IsActionLocked())
+        return;
+
+    if (bLaserToggleInProgress)
+        return;
+
+    if (KFHumanPawn(Instigator) != None)
+    {
+        if (KFHumanPawn(Instigator).TorchBatteryLife <= 0)
+            return;
+    }
+
+    StartLaserToggleAnimation();
+}
+
+simulated function StartLaserToggleAnimation()
+{
+    if (ClientState == WS_Hidden || ClientState == WS_BringUp || bLaserToggleInProgress)
+        return;
+
+    if (LaserToggleAnim == '')
+        return;
+
+    bLaserToggleInProgress = true;
+    LaserToggleActiveAnim = LaserToggleAnim;
+
+    PlayAnim(LaserToggleAnim, 1.0, 0.0);
+}
+
+function EnsureLaserBatteryProxy()
+{
+    if (!bHasLaser || LaserBatteryClass == None)
+        return;
+
+    if (FlashLight == None)
+    {
+        FlashLight = Effect_TacLightProjector(Spawn(LaserBatteryClass, Instigator));
+    }
+}
+
+function ServerToggleLaser()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    if (!bHasLaser)
+        return;
+
+    // Do not use IsActionLocked() here.
+    // The laser toggle animation deliberately holds that lock.
+    if (bIsReloading || bBallisticAltReload || bAltLoadPlaying)
+        return;
+
+    if (!bLaserOn && KFHumanPawn(Instigator) != None)
+    {
+        if (KFHumanPawn(Instigator).TorchBatteryLife <= 0)
+            return;
+    }
+
+    EnsureLaserBatteryProxy();
+
+    if (FlashLight == None)
+        return;
+
+    bLaserOn = !bLaserOn;
+    FlashLight.bHasLight = bLaserOn;
+
+    if (Level.NetMode != NM_DedicatedServer)
+        ClientSwitchLaser();
+
+    if (bLaserOn)
+        PlaySound(LaserOnSound,, 0.7,, 32);
+    else
+        PlaySound(LaserOffSound,, 0.7,, 32);
+}
+
+simulated function ClientSwitchLaser()
+{
+    // Weapon-specific visual implementation.
+}
+
+simulated function CheckLaserBattery()
+{
+    if (Role != ROLE_Authority || !bLaserOn)
+        return;
+
+    if (Instigator == None)
+        return;
+
+    if (KFHumanPawn(Instigator) == None)
+        return;
+
+    if (KFHumanPawn(Instigator).TorchBatteryLife <= 0)
+    {
+        bLaserOn = false;
+
+        if (FlashLight != None)
+            FlashLight.bHasLight = false;
+
+        if (Level.NetMode != NM_DedicatedServer)
+            ClientSwitchLaser();
+
+        PlaySound(LaserOffSound,, 0.7,, 32);
+    }
+}
+
+
+//=============================================================================
+// ANIMATION NOTIFIER
+//=============================================================================
+
+simulated function Notify_LaserToggle()
+{
+    if (Level.NetMode == NM_DedicatedServer)
+        return;
+
+    ServerToggleLaser();
 }
 
 
@@ -1307,6 +1491,8 @@ simulated function PlayAltReloadAnimation()
 simulated function WeaponTick(float dt)
 {
 	local float LastSeenSeconds, ReloadMulti;
+	
+	CheckLaserBattery();
 
 	if (bHasAimingMode)
 	{
@@ -1347,7 +1533,7 @@ simulated function WeaponTick(float dt)
 	if ((Level.NetMode == NM_Client) || Instigator == None || KFFriendlyAI(Instigator.Controller) == none && Instigator.PlayerReplicationInfo == None)
 		return;
 
-	if (FlashLight != none)
+	if (!bHasLaser && FlashLight != none)
 	{
 		AdjustLightGraphic();
 
@@ -2364,6 +2550,9 @@ simulated function BringUp(optional Weapon PrevWeapon)
 	local KFPlayerController Player;
 
 	HandleSleeveSwapping();
+	
+	if (bHasLaser)
+		EnsureLaserBatteryProxy();
 
 	Player = KFPlayerController(Instigator.Controller);
 
@@ -2717,6 +2906,18 @@ simulated function bool PutDown()
 	}
 
 	bResult = Super.PutDown();
+	
+	if (bResult && bHasLaser)
+	{
+		bLaserOn = false;
+		bLaserToggleInProgress = false;
+		LaserToggleActiveAnim = '';
+
+		if (FlashLight != None)
+			FlashLight.bHasLight = false;
+
+		ClientSwitchLaser();
+	}
 
 	if (bResult && !bSkipPutAwaySound)
 		class'BUtil'.static.PlayFullSound(self, PutAwaySound);
@@ -3026,6 +3227,19 @@ simulated function AnimEnd(int Channel)
 	if (Channel == 0)
 	{
 		GetAnimParams(0, AnimName, Frame, Rate);
+		
+		//=============================================================================
+		// Laser Toggle
+		//=============================================================================
+
+		if (bLaserToggleInProgress && AnimName == LaserToggleActiveAnim)
+		{
+			bLaserToggleInProgress = false;
+			LaserToggleActiveAnim = '';
+
+			PlayIdle();
+			return;
+		}
 
 		//=============================================================================
 		// Alternate Shell Load

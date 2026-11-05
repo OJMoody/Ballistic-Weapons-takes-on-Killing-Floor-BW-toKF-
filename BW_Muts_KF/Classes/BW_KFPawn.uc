@@ -9,6 +9,21 @@ replication
         ServerSelectGrenadeClass;
 }
 
+simulated exec function ToggleFlashlight()
+{
+    local BallisticWeapon BWWeap;
+
+    if (Controller == None)
+        return;
+
+    BWWeap = BallisticWeapon(Weapon);
+
+    if (BWWeap != None && BWWeap.HandleFlashlightToggle())
+        return;
+
+    Super.ToggleFlashlight();
+}
+
 //=============================================================================
 // SERVER BUY WEAPON
 //=============================================================================
@@ -259,6 +274,24 @@ simulated exec function QuickHeal()
 		bIsQuickHealing = 0;
 		S.HackClientStartFire();
 	}
+}
+
+simulated function ChangedWeapon()
+{
+    local BallisticWeapon BWWeap;
+    local BallisticWeapon PreviousBWWeap;
+
+    PreviousBWWeap = BallisticWeapon(Weapon);
+
+    Super.ChangedWeapon();
+
+    if (PreviousBWWeap != None)
+        PreviousBWWeap.bTorchEnabled = false;
+
+    BWWeap = BallisticWeapon(Weapon);
+
+    if (BWWeap != None && BWWeap.bHasLaser)
+        BWWeap.bTorchEnabled = true;
 }
 
 

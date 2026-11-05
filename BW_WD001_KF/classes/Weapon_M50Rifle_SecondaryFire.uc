@@ -22,7 +22,7 @@ simulated function TriggerGrenadeFlash()
 
 simulated event ModeDoFire()
 {
-    // Mine input and animation are handled by Weapon_M46A2Rifle_Main.
+    // Mine input and animation are handled by Weapon_M50Rifle_Main.
 }
 
 simulated function StopFiring()

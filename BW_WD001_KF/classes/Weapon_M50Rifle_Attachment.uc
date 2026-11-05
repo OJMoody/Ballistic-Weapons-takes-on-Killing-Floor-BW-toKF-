@@ -1,11 +1,123 @@
 class Weapon_M50Rifle_Attachment extends BallisticAttachment;
 
 //=============================================================================
-// DEFAULT PROPERTIES
+// LASER
 //=============================================================================
+
+var bool bLaserOn;
+var bool bOldLaserOn;
+
+var BallisticLaserActor_TPStandard Laser;
+var Rotator LaserRot;
 
 var class<Emitter> mMuzFlashClassSecondary;
 var Emitter mMuzFlash3rdSecondary;
+
+//=============================================================================
+// LASER REPLICATION
+//=============================================================================
+
+replication
+{
+    reliable if (Role == ROLE_Authority)
+        bLaserOn;
+
+    unreliable if (Role == ROLE_Authority)
+        LaserRot;
+}
+
+
+//=============================================================================
+// THIRD PERSON LASER
+//=============================================================================
+
+simulated function Tick(float DT)
+{
+    local Vector HitLocation;
+    local Vector Start;
+    local Vector End;
+    local Vector HitNormal;
+    local Vector Scale3D;
+    local Vector Loc;
+
+    local Rotator X;
+    local Actor Other;
+
+    Super.Tick(DT);
+
+    // Server maintains the player's aim direction.
+    if (bLaserOn &&
+        Role == ROLE_Authority &&
+        Instigator != None)
+    {
+        LaserRot = Instigator.GetViewRotation();
+    }
+
+    if (Level.NetMode == NM_DedicatedServer)
+        return;
+
+    // Create the third-person laser actor.
+    if (Laser == None)
+    {
+        Laser = Spawn(
+            class'BallisticLaserActor_TPStandard',
+            ,
+            ,
+            Location
+        );
+    }
+
+    if (bLaserOn != bOldLaserOn)
+        bOldLaserOn = bLaserOn;
+
+    // Hide the beam when it should not be visible.
+    if (!bLaserOn ||
+        Instigator == None ||
+        Instigator.IsFirstPerson() ||
+        Instigator.DrivenVehicle != None)
+    {
+        if (Laser != None)
+            Laser.bHidden = true;
+
+        return;
+    }
+
+    if (Laser == None)
+        return;
+
+    if (Laser.bHidden)
+        Laser.bHidden = false;
+
+    // Trace direction follows the player's view.
+    Start = Instigator.Location + Instigator.EyePosition();
+    X = LaserRot;
+
+    // Laser origin on the M50 third-person mesh.
+    Loc = GetBoneCoords('lasertip').Origin;
+
+    End = Start + Vector(X) * 5000;
+
+    Other = Trace(
+        HitLocation,
+        HitNormal,
+        End,
+        Start,
+        true
+    );
+
+    if (Other == None)
+        HitLocation = End;
+
+    // Position and scale the third-person beam.
+    Laser.SetLocation(Loc);
+    Laser.SetRotation(Rotator(HitLocation - Loc));
+
+    Scale3D.X = VSize(HitLocation - Loc) / 128;
+    Scale3D.Y = 1.0;
+    Scale3D.Z = 1.0;
+
+    Laser.SetDrawScale3D(Scale3D);
+}
 
 simulated function DoFlashEmitter()
 {
@@ -31,6 +143,18 @@ simulated function DoFlashEmitter()
     }
 
     Super.DoFlashEmitter();
+}
+
+//=============================================================================
+// CLEANUP
+//=============================================================================
+
+simulated function Destroyed()
+{
+    if (Laser != None)
+        Laser.Destroy();
+
+    Super.Destroyed();
 }
 
 defaultproperties

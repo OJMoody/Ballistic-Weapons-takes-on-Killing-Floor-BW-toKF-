@@ -41,7 +41,7 @@ defaultproperties
     StereoFireSoundRef="BWKF_M46_SN.M46.OA-AR_Fire1"
     NoAmmoSound=Sound'KF_9MMSnd.9mm_DryFire'
     FireForce="AssaultRifleFire"
-    FireRate=0.15
+    FireRate=0.1
     RecoilRate=0.1
     maxVerticalRecoilAngle=300
     maxHorizontalRecoilAngle=50

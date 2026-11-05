@@ -76,247 +76,321 @@ simulated function DrawWeaponName(Canvas C)
 
 simulated function DrawHudPassA(Canvas C)
 {
-	local BallisticWeapon BW;
-	local NumericWidget AltAmmoReserveDigits;
-	local Material OldAmmoIcon;
-	local Material OldReserveAmmoIcon;
-	local Material OldAltAmmoIcon;
-	local byte OldAlpha0;
-	local byte OldAlpha1;
-	local byte OldClipsBGAlpha0;
-	local byte OldClipsBGAlpha1;
-	local byte OldClipsIconAlpha0;
-	local byte OldClipsIconAlpha1;
-	local byte OldClipsDigitsAlpha0;
-	local byte OldClipsDigitsAlpha1;
-	local byte OldBulletsBGAlpha0;
-	local byte OldBulletsBGAlpha1;
-	local byte OldBulletsIconAlpha0;
-	local byte OldBulletsIconAlpha1;
-	local byte OldBulletsDigitsAlpha0;
-	local byte OldBulletsDigitsAlpha1;
-	local byte OldSecondaryBGAlpha0;
-	local byte OldSecondaryBGAlpha1;
-	local byte OldSecondaryIconAlpha0;
-	local byte OldSecondaryIconAlpha1;
-	local byte OldSecondaryDigitsAlpha0;
-	local byte OldSecondaryDigitsAlpha1;
-	local BallisticHandGrenade Grenade;
-	local byte OldGrenadeClipBGAlpha0, OldGrenadeClipBGAlpha1;
-	local byte OldGrenadeClipIconAlpha0, OldGrenadeClipIconAlpha1;
-	local byte OldGrenadeClipDigitsAlpha0, OldGrenadeClipDigitsAlpha1;
-	local byte OldGrenadeReserveBGAlpha0, OldGrenadeReserveBGAlpha1;
-	local byte OldGrenadeReserveIconAlpha0, OldGrenadeReserveIconAlpha1;
-	local byte OldGrenadeReserveDigitsAlpha0, OldGrenadeReserveDigitsAlpha1;
+    local BallisticWeapon BW;
+    local NumericWidget AltAmmoReserveDigits;
+    local Material OldAmmoIcon;
+    local Material OldReserveAmmoIcon;
+    local Material OldAltAmmoIcon;
+    local byte OldAlpha0;
+    local byte OldAlpha1;
+    local byte OldClipsBGAlpha0;
+    local byte OldClipsBGAlpha1;
+    local byte OldClipsIconAlpha0;
+    local byte OldClipsIconAlpha1;
+    local byte OldClipsDigitsAlpha0;
+    local byte OldClipsDigitsAlpha1;
+    local byte OldBulletsBGAlpha0;
+    local byte OldBulletsBGAlpha1;
+    local byte OldBulletsIconAlpha0;
+    local byte OldBulletsIconAlpha1;
+    local byte OldBulletsDigitsAlpha0;
+    local byte OldBulletsDigitsAlpha1;
+    local byte OldSecondaryBGAlpha0;
+    local byte OldSecondaryBGAlpha1;
+    local byte OldSecondaryIconAlpha0;
+    local byte OldSecondaryIconAlpha1;
+    local byte OldSecondaryDigitsAlpha0;
+    local byte OldSecondaryDigitsAlpha1;
+    local BallisticHandGrenade Grenade;
+    local byte OldGrenadeClipBGAlpha0, OldGrenadeClipBGAlpha1;
+    local byte OldGrenadeClipIconAlpha0, OldGrenadeClipIconAlpha1;
+    local byte OldGrenadeClipDigitsAlpha0, OldGrenadeClipDigitsAlpha1;
+    local byte OldGrenadeReserveBGAlpha0, OldGrenadeReserveBGAlpha1;
+    local byte OldGrenadeReserveIconAlpha0, OldGrenadeReserveIconAlpha1;
+    local byte OldGrenadeReserveDigitsAlpha0, OldGrenadeReserveDigitsAlpha1;
+    local bool bOldTorchEnabled;
+    local bool bMoveLaserHUD;
 
-	Grenade = None;
+    Grenade = None;
+    bMoveLaserHUD = false;
 
-	if (PawnOwner != None && PawnOwner.Weapon != None)
-	{
-		BW = BallisticWeapon(PawnOwner.Weapon);
-		Grenade = BallisticHandGrenade(PawnOwner.Weapon);
-	}
-	
-	if (Grenade != None)
-	{
-		OldGrenadeClipBGAlpha0 = BulletsInClipBG.Tints[0].A;
-		OldGrenadeClipBGAlpha1 = BulletsInClipBG.Tints[1].A;
-		OldGrenadeClipIconAlpha0 = BulletsInClipIcon.Tints[0].A;
-		OldGrenadeClipIconAlpha1 = BulletsInClipIcon.Tints[1].A;
-		OldGrenadeClipDigitsAlpha0 = BulletsInClipDigits.Tints[0].A;
-		OldGrenadeClipDigitsAlpha1 = BulletsInClipDigits.Tints[1].A;
+    if (PawnOwner != None && PawnOwner.Weapon != None)
+    {
+        BW = BallisticWeapon(PawnOwner.Weapon);
+        Grenade = BallisticHandGrenade(PawnOwner.Weapon);
+    }
 
-		OldGrenadeReserveBGAlpha0 = ClipsBG.Tints[0].A;
-		OldGrenadeReserveBGAlpha1 = ClipsBG.Tints[1].A;
-		OldGrenadeReserveIconAlpha0 = ClipsIcon.Tints[0].A;
-		OldGrenadeReserveIconAlpha1 = ClipsIcon.Tints[1].A;
-		OldGrenadeReserveDigitsAlpha0 = ClipsDigits.Tints[0].A;
-		OldGrenadeReserveDigitsAlpha1 = ClipsDigits.Tints[1].A;
+    if (Grenade != None)
+    {
+        OldGrenadeClipBGAlpha0 = BulletsInClipBG.Tints[0].A;
+        OldGrenadeClipBGAlpha1 = BulletsInClipBG.Tints[1].A;
+        OldGrenadeClipIconAlpha0 = BulletsInClipIcon.Tints[0].A;
+        OldGrenadeClipIconAlpha1 = BulletsInClipIcon.Tints[1].A;
+        OldGrenadeClipDigitsAlpha0 = BulletsInClipDigits.Tints[0].A;
+        OldGrenadeClipDigitsAlpha1 = BulletsInClipDigits.Tints[1].A;
 
-		BulletsInClipBG.Tints[0].A = 0;
-		BulletsInClipBG.Tints[1].A = 0;
-		BulletsInClipIcon.Tints[0].A = 0;
-		BulletsInClipIcon.Tints[1].A = 0;
-		BulletsInClipDigits.Tints[0].A = 0;
-		BulletsInClipDigits.Tints[1].A = 0;
+        OldGrenadeReserveBGAlpha0 = ClipsBG.Tints[0].A;
+        OldGrenadeReserveBGAlpha1 = ClipsBG.Tints[1].A;
+        OldGrenadeReserveIconAlpha0 = ClipsIcon.Tints[0].A;
+        OldGrenadeReserveIconAlpha1 = ClipsIcon.Tints[1].A;
+        OldGrenadeReserveDigitsAlpha0 = ClipsDigits.Tints[0].A;
+        OldGrenadeReserveDigitsAlpha1 = ClipsDigits.Tints[1].A;
 
-		ClipsBG.Tints[0].A = 0;
-		ClipsBG.Tints[1].A = 0;
-		ClipsIcon.Tints[0].A = 0;
-		ClipsIcon.Tints[1].A = 0;
-		ClipsDigits.Tints[0].A = 0;
-		ClipsDigits.Tints[1].A = 0;
+        BulletsInClipBG.Tints[0].A = 0;
+        BulletsInClipBG.Tints[1].A = 0;
+        BulletsInClipIcon.Tints[0].A = 0;
+        BulletsInClipIcon.Tints[1].A = 0;
+        BulletsInClipDigits.Tints[0].A = 0;
+        BulletsInClipDigits.Tints[1].A = 0;
 
-		Super.DrawHudPassA(C);
+        ClipsBG.Tints[0].A = 0;
+        ClipsBG.Tints[1].A = 0;
+        ClipsIcon.Tints[0].A = 0;
+        ClipsIcon.Tints[1].A = 0;
+        ClipsDigits.Tints[0].A = 0;
+        ClipsDigits.Tints[1].A = 0;
 
-		BulletsInClipBG.Tints[0].A = OldGrenadeClipBGAlpha0;
-		BulletsInClipBG.Tints[1].A = OldGrenadeClipBGAlpha1;
-		BulletsInClipIcon.Tints[0].A = OldGrenadeClipIconAlpha0;
-		BulletsInClipIcon.Tints[1].A = OldGrenadeClipIconAlpha1;
-		BulletsInClipDigits.Tints[0].A = OldGrenadeClipDigitsAlpha0;
-		BulletsInClipDigits.Tints[1].A = OldGrenadeClipDigitsAlpha1;
+        Super.DrawHudPassA(C);
 
-		ClipsBG.Tints[0].A = OldGrenadeReserveBGAlpha0;
-		ClipsBG.Tints[1].A = OldGrenadeReserveBGAlpha1;
-		ClipsIcon.Tints[0].A = OldGrenadeReserveIconAlpha0;
-		ClipsIcon.Tints[1].A = OldGrenadeReserveIconAlpha1;
-		ClipsDigits.Tints[0].A = OldGrenadeReserveDigitsAlpha0;
-		ClipsDigits.Tints[1].A = OldGrenadeReserveDigitsAlpha1;
+        BulletsInClipBG.Tints[0].A = OldGrenadeClipBGAlpha0;
+        BulletsInClipBG.Tints[1].A = OldGrenadeClipBGAlpha1;
+        BulletsInClipIcon.Tints[0].A = OldGrenadeClipIconAlpha0;
+        BulletsInClipIcon.Tints[1].A = OldGrenadeClipIconAlpha1;
+        BulletsInClipDigits.Tints[0].A = OldGrenadeClipDigitsAlpha0;
+        BulletsInClipDigits.Tints[1].A = OldGrenadeClipDigitsAlpha1;
 
-		return;
-	}
+        ClipsBG.Tints[0].A = OldGrenadeReserveBGAlpha0;
+        ClipsBG.Tints[1].A = OldGrenadeReserveBGAlpha1;
+        ClipsIcon.Tints[0].A = OldGrenadeReserveIconAlpha0;
+        ClipsIcon.Tints[1].A = OldGrenadeReserveIconAlpha1;
+        ClipsDigits.Tints[0].A = OldGrenadeReserveDigitsAlpha0;
+        ClipsDigits.Tints[1].A = OldGrenadeReserveDigitsAlpha1;
 
-	if (BW == None)
-	{
-		Super.DrawHudPassA(C);
-		return;
-	}
+        return;
+    }
 
-	OldAmmoIcon = BulletsInClipIcon.WidgetTexture;
-	OldReserveAmmoIcon = ClipsIcon.WidgetTexture;
-	OldAltAmmoIcon = SecondaryClipsIcon.WidgetTexture;
+    if (BW == None)
+    {
+        Super.DrawHudPassA(C);
+        return;
+    }
 
-	if (BW.AmmoIcon != None)
-		BulletsInClipIcon.WidgetTexture = BW.AmmoIcon;
+    OldAmmoIcon = BulletsInClipIcon.WidgetTexture;
+    OldReserveAmmoIcon = ClipsIcon.WidgetTexture;
+    OldAltAmmoIcon = SecondaryClipsIcon.WidgetTexture;
 
-	if (BW.ReserveAmmoIcon != None)
-		ClipsIcon.WidgetTexture = BW.ReserveAmmoIcon;
+    if (BW.AmmoIcon != None)
+        BulletsInClipIcon.WidgetTexture = BW.AmmoIcon;
 
-	if (BW.AltAmmoIcon != None)
-		SecondaryClipsIcon.WidgetTexture = BW.AltAmmoIcon;
+    if (BW.ReserveAmmoIcon != None)
+        ClipsIcon.WidgetTexture = BW.ReserveAmmoIcon;
 
-	if (BW.bAmmoHUDAsBar)
-	{
-		OldClipsBGAlpha0 = ClipsBG.Tints[0].A;
-		OldClipsBGAlpha1 = ClipsBG.Tints[1].A;
-		OldClipsIconAlpha0 = ClipsIcon.Tints[0].A;
-		OldClipsIconAlpha1 = ClipsIcon.Tints[1].A;
-		OldClipsDigitsAlpha0 = ClipsDigits.Tints[0].A;
-		OldClipsDigitsAlpha1 = ClipsDigits.Tints[1].A;
+    if (BW.AltAmmoIcon != None)
+        SecondaryClipsIcon.WidgetTexture = BW.AltAmmoIcon;
 
-		OldBulletsBGAlpha0 = BulletsInClipBG.Tints[0].A;
-		OldBulletsBGAlpha1 = BulletsInClipBG.Tints[1].A;
-		OldBulletsIconAlpha0 = BulletsInClipIcon.Tints[0].A;
-		OldBulletsIconAlpha1 = BulletsInClipIcon.Tints[1].A;
-		OldBulletsDigitsAlpha0 = BulletsInClipDigits.Tints[0].A;
-		OldBulletsDigitsAlpha1 = BulletsInClipDigits.Tints[1].A;
+    bMoveLaserHUD = (BW.bHasLaser && BW.bShowAltAmmoChamber);
 
-		OldSecondaryBGAlpha0 = SecondaryClipsBG.Tints[0].A;
-		OldSecondaryBGAlpha1 = SecondaryClipsBG.Tints[1].A;
-		OldSecondaryIconAlpha0 = SecondaryClipsIcon.Tints[0].A;
-		OldSecondaryIconAlpha1 = SecondaryClipsIcon.Tints[1].A;
-		OldSecondaryDigitsAlpha0 = SecondaryClipsDigits.Tints[0].A;
-		OldSecondaryDigitsAlpha1 = SecondaryClipsDigits.Tints[1].A;
+    if (BW.bAmmoHUDAsBar)
+    {
+        OldClipsBGAlpha0 = ClipsBG.Tints[0].A;
+        OldClipsBGAlpha1 = ClipsBG.Tints[1].A;
+        OldClipsIconAlpha0 = ClipsIcon.Tints[0].A;
+        OldClipsIconAlpha1 = ClipsIcon.Tints[1].A;
+        OldClipsDigitsAlpha0 = ClipsDigits.Tints[0].A;
+        OldClipsDigitsAlpha1 = ClipsDigits.Tints[1].A;
 
-		ClipsBG.Tints[0].A = 0;
-		ClipsBG.Tints[1].A = 0;
-		ClipsIcon.Tints[0].A = 0;
-		ClipsIcon.Tints[1].A = 0;
-		ClipsDigits.Tints[0].A = 0;
-		ClipsDigits.Tints[1].A = 0;
+        OldBulletsBGAlpha0 = BulletsInClipBG.Tints[0].A;
+        OldBulletsBGAlpha1 = BulletsInClipBG.Tints[1].A;
+        OldBulletsIconAlpha0 = BulletsInClipIcon.Tints[0].A;
+        OldBulletsIconAlpha1 = BulletsInClipIcon.Tints[1].A;
+        OldBulletsDigitsAlpha0 = BulletsInClipDigits.Tints[0].A;
+        OldBulletsDigitsAlpha1 = BulletsInClipDigits.Tints[1].A;
 
-		BulletsInClipBG.Tints[0].A = 0;
-		BulletsInClipBG.Tints[1].A = 0;
-		BulletsInClipIcon.Tints[0].A = 0;
-		BulletsInClipIcon.Tints[1].A = 0;
-		BulletsInClipDigits.Tints[0].A = 0;
-		BulletsInClipDigits.Tints[1].A = 0;
+        OldSecondaryBGAlpha0 = SecondaryClipsBG.Tints[0].A;
+        OldSecondaryBGAlpha1 = SecondaryClipsBG.Tints[1].A;
+        OldSecondaryIconAlpha0 = SecondaryClipsIcon.Tints[0].A;
+        OldSecondaryIconAlpha1 = SecondaryClipsIcon.Tints[1].A;
+        OldSecondaryDigitsAlpha0 = SecondaryClipsDigits.Tints[0].A;
+        OldSecondaryDigitsAlpha1 = SecondaryClipsDigits.Tints[1].A;
 
-		SecondaryClipsBG.Tints[0].A = 0;
-		SecondaryClipsBG.Tints[1].A = 0;
-		SecondaryClipsIcon.Tints[0].A = 0;
-		SecondaryClipsIcon.Tints[1].A = 0;
-		SecondaryClipsDigits.Tints[0].A = 0;
-		SecondaryClipsDigits.Tints[1].A = 0;
+        ClipsBG.Tints[0].A = 0;
+        ClipsBG.Tints[1].A = 0;
+        ClipsIcon.Tints[0].A = 0;
+        ClipsIcon.Tints[1].A = 0;
+        ClipsDigits.Tints[0].A = 0;
+        ClipsDigits.Tints[1].A = 0;
 
-		Super.DrawHudPassA(C);
+        BulletsInClipBG.Tints[0].A = 0;
+        BulletsInClipBG.Tints[1].A = 0;
+        BulletsInClipIcon.Tints[0].A = 0;
+        BulletsInClipIcon.Tints[1].A = 0;
+        BulletsInClipDigits.Tints[0].A = 0;
+        BulletsInClipDigits.Tints[1].A = 0;
 
-		ClipsBG.Tints[0].A = OldClipsBGAlpha0;
-		ClipsBG.Tints[1].A = OldClipsBGAlpha1;
-		ClipsIcon.Tints[0].A = OldClipsIconAlpha0;
-		ClipsIcon.Tints[1].A = OldClipsIconAlpha1;
-		ClipsDigits.Tints[0].A = OldClipsDigitsAlpha0;
-		ClipsDigits.Tints[1].A = OldClipsDigitsAlpha1;
+        SecondaryClipsBG.Tints[0].A = 0;
+        SecondaryClipsBG.Tints[1].A = 0;
+        SecondaryClipsIcon.Tints[0].A = 0;
+        SecondaryClipsIcon.Tints[1].A = 0;
+        SecondaryClipsDigits.Tints[0].A = 0;
+        SecondaryClipsDigits.Tints[1].A = 0;
 
-		BulletsInClipBG.Tints[0].A = OldBulletsBGAlpha0;
-		BulletsInClipBG.Tints[1].A = OldBulletsBGAlpha1;
-		BulletsInClipIcon.Tints[0].A = OldBulletsIconAlpha0;
-		BulletsInClipIcon.Tints[1].A = OldBulletsIconAlpha1;
-		BulletsInClipDigits.Tints[0].A = OldBulletsDigitsAlpha0;
-		BulletsInClipDigits.Tints[1].A = OldBulletsDigitsAlpha1;
+        if (bMoveLaserHUD)
+        {
+            FlashlightBG.PosX -= 0.07;
+            FlashlightIcon.PosX -= 0.07;
+            FlashlightOffIcon.PosX -= 0.07;
+            FlashlightDigits.PosX -= 0.07;
+        }
 
-		SecondaryClipsBG.Tints[0].A = OldSecondaryBGAlpha0;
-		SecondaryClipsBG.Tints[1].A = OldSecondaryBGAlpha1;
-		SecondaryClipsIcon.Tints[0].A = OldSecondaryIconAlpha0;
-		SecondaryClipsIcon.Tints[1].A = OldSecondaryIconAlpha1;
-		SecondaryClipsDigits.Tints[0].A = OldSecondaryDigitsAlpha0;
-		SecondaryClipsDigits.Tints[1].A = OldSecondaryDigitsAlpha1;
+        bOldTorchEnabled = BW.bTorchEnabled;
 
-		if (!bLightHud)
-			DrawSpriteWidget(C, WelderBG);
+        if (BW.bHasLaser && BW.FlashLight != None)
+            BW.bTorchEnabled = true;
 
-		DrawSpriteWidget(C, WelderIcon);
-		DrawNumericWidget(C, WelderDigits, DigitsSmall);
+        Super.DrawHudPassA(C);
 
-		BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
-		ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
-		SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+        BW.bTorchEnabled = bOldTorchEnabled;
 
-		return;
-	}
+        if (bMoveLaserHUD)
+        {
+            FlashlightBG.PosX += 0.07;
+            FlashlightIcon.PosX += 0.07;
+            FlashlightOffIcon.PosX += 0.07;
+            FlashlightDigits.PosX += 0.07;
+        }
 
-	if (!BW.bShowAltAmmoChamber)
-	{
-		Super.DrawHudPassA(C);
+        ClipsBG.Tints[0].A = OldClipsBGAlpha0;
+        ClipsBG.Tints[1].A = OldClipsBGAlpha1;
+        ClipsIcon.Tints[0].A = OldClipsIconAlpha0;
+        ClipsIcon.Tints[1].A = OldClipsIconAlpha1;
+        ClipsDigits.Tints[0].A = OldClipsDigitsAlpha0;
+        ClipsDigits.Tints[1].A = OldClipsDigitsAlpha1;
 
-		BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
-		ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
-		SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+        BulletsInClipBG.Tints[0].A = OldBulletsBGAlpha0;
+        BulletsInClipBG.Tints[1].A = OldBulletsBGAlpha1;
+        BulletsInClipIcon.Tints[0].A = OldBulletsIconAlpha0;
+        BulletsInClipIcon.Tints[1].A = OldBulletsIconAlpha1;
+        BulletsInClipDigits.Tints[0].A = OldBulletsDigitsAlpha0;
+        BulletsInClipDigits.Tints[1].A = OldBulletsDigitsAlpha1;
 
-		return;
-	}
+        SecondaryClipsBG.Tints[0].A = OldSecondaryBGAlpha0;
+        SecondaryClipsBG.Tints[1].A = OldSecondaryBGAlpha1;
+        SecondaryClipsIcon.Tints[0].A = OldSecondaryIconAlpha0;
+        SecondaryClipsIcon.Tints[1].A = OldSecondaryIconAlpha1;
+        SecondaryClipsDigits.Tints[0].A = OldSecondaryDigitsAlpha0;
+        SecondaryClipsDigits.Tints[1].A = OldSecondaryDigitsAlpha1;
 
-	OldAlpha0 = SecondaryClipsDigits.Tints[0].A;
-	OldAlpha1 = SecondaryClipsDigits.Tints[1].A;
+        if (!bLightHud)
+            DrawSpriteWidget(C, WelderBG);
 
-	SecondaryClipsDigits.Tints[0].A = 0;
-	SecondaryClipsDigits.Tints[1].A = 0;
+        DrawSpriteWidget(C, WelderIcon);
+        DrawNumericWidget(C, WelderDigits, DigitsSmall);
 
-	Super.DrawHudPassA(C);
+        BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
+        ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
+        SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
 
-	SecondaryClipsDigits.Tints[0].A = OldAlpha0;
-	SecondaryClipsDigits.Tints[1].A = OldAlpha1;
+        return;
+    }
 
-	BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
-	ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
-	SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+    if (!BW.bShowAltAmmoChamber)
+    {
+        if (bMoveLaserHUD)
+        {
+            FlashlightBG.PosX -= 0.07;
+            FlashlightIcon.PosX -= 0.07;
+            FlashlightOffIcon.PosX -= 0.07;
+            FlashlightDigits.PosX -= 0.07;
+        }
 
-	AltAmmoChamberDigits = SecondaryClipsDigits;
-	AltAmmoChamberDigits.Value = BW.GetAltAmmoChamber();
-	AltAmmoChamberDigits.OffsetX += AltAmmoChamberOffsetX;
-	DrawNumericWidget(C, AltAmmoChamberDigits, DigitsSmall);
+        bOldTorchEnabled = BW.bTorchEnabled;
 
-	AltAmmoReserveDigits = SecondaryClipsDigits;
-	AltAmmoReserveDigits.Value = BW.AmmoAmount(1);
-	AltAmmoReserveDigits.OffsetX += AltAmmoReserveOffsetX;
-	DrawNumericWidget(C, AltAmmoReserveDigits, DigitsSmall);
+        if (BW.bHasLaser && BW.FlashLight != None)
+            BW.bTorchEnabled = true;
 
-	AltAmmoDivider.WidgetTexture = Texture'BWKF_Core_T.Icons.HUDBW';
-	AltAmmoDivider.RenderStyle = SecondaryClipsDigits.RenderStyle;
-	AltAmmoDivider.TextureScale = SecondaryClipsDigits.TextureScale;
-	AltAmmoDivider.DrawPivot = DP_MiddleMiddle;
-	AltAmmoDivider.PosX = SecondaryClipsDigits.PosX;
-	AltAmmoDivider.PosY = SecondaryClipsDigits.PosY;
-	AltAmmoDivider.OffsetX = SecondaryClipsDigits.OffsetX + AltAmmoDividerOffsetX;
-	AltAmmoDivider.OffsetY = SecondaryClipsDigits.OffsetY + AltAmmoDividerOffsetY;
-	AltAmmoDivider.TextureCoords.X1 = 0;
-	AltAmmoDivider.TextureCoords.Y1 = 0;
-	AltAmmoDivider.TextureCoords.X2 = 64;
-	AltAmmoDivider.TextureCoords.Y2 = 64;
-	AltAmmoDivider.Tints[0] = SecondaryClipsDigits.Tints[0];
-	AltAmmoDivider.Tints[1] = SecondaryClipsDigits.Tints[1];
+        Super.DrawHudPassA(C);
 
-	DrawSpriteWidget(C, AltAmmoDivider);
+        BW.bTorchEnabled = bOldTorchEnabled;
+
+        if (bMoveLaserHUD)
+        {
+            FlashlightBG.PosX += 0.07;
+            FlashlightIcon.PosX += 0.07;
+            FlashlightOffIcon.PosX += 0.07;
+            FlashlightDigits.PosX += 0.07;
+        }
+
+        BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
+        ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
+        SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+
+        return;
+    }
+
+    OldAlpha0 = SecondaryClipsDigits.Tints[0].A;
+    OldAlpha1 = SecondaryClipsDigits.Tints[1].A;
+
+    SecondaryClipsDigits.Tints[0].A = 0;
+    SecondaryClipsDigits.Tints[1].A = 0;
+
+    if (bMoveLaserHUD)
+    {
+        FlashlightBG.PosX -= 0.07;
+        FlashlightIcon.PosX -= 0.07;
+        FlashlightOffIcon.PosX -= 0.07;
+        FlashlightDigits.PosX -= 0.07;
+    }
+
+    bOldTorchEnabled = BW.bTorchEnabled;
+
+    if (BW.bHasLaser && BW.FlashLight != None)
+        BW.bTorchEnabled = true;
+
+    Super.DrawHudPassA(C);
+
+    BW.bTorchEnabled = bOldTorchEnabled;
+
+    if (bMoveLaserHUD)
+    {
+        FlashlightBG.PosX += 0.07;
+        FlashlightIcon.PosX += 0.07;
+        FlashlightOffIcon.PosX += 0.07;
+        FlashlightDigits.PosX += 0.07;
+    }
+
+    SecondaryClipsDigits.Tints[0].A = OldAlpha0;
+    SecondaryClipsDigits.Tints[1].A = OldAlpha1;
+
+    BulletsInClipIcon.WidgetTexture = OldAmmoIcon;
+    ClipsIcon.WidgetTexture = OldReserveAmmoIcon;
+    SecondaryClipsIcon.WidgetTexture = OldAltAmmoIcon;
+
+    AltAmmoChamberDigits = SecondaryClipsDigits;
+    AltAmmoChamberDigits.Value = BW.GetAltAmmoChamber();
+    AltAmmoChamberDigits.OffsetX += AltAmmoChamberOffsetX;
+    DrawNumericWidget(C, AltAmmoChamberDigits, DigitsSmall);
+
+    AltAmmoReserveDigits = SecondaryClipsDigits;
+    AltAmmoReserveDigits.Value = BW.AmmoAmount(1);
+    AltAmmoReserveDigits.OffsetX += AltAmmoReserveOffsetX;
+    DrawNumericWidget(C, AltAmmoReserveDigits, DigitsSmall);
+
+    AltAmmoDivider.WidgetTexture = Texture'BWKF_Core_T.Icons.HUDBW';
+    AltAmmoDivider.RenderStyle = SecondaryClipsDigits.RenderStyle;
+    AltAmmoDivider.TextureScale = SecondaryClipsDigits.TextureScale;
+    AltAmmoDivider.DrawPivot = DP_MiddleMiddle;
+    AltAmmoDivider.PosX = SecondaryClipsDigits.PosX;
+    AltAmmoDivider.PosY = SecondaryClipsDigits.PosY;
+    AltAmmoDivider.OffsetX = SecondaryClipsDigits.OffsetX + AltAmmoDividerOffsetX;
+    AltAmmoDivider.OffsetY = SecondaryClipsDigits.OffsetY + AltAmmoDividerOffsetY;
+    AltAmmoDivider.TextureCoords.X1 = 0;
+    AltAmmoDivider.TextureCoords.Y1 = 0;
+    AltAmmoDivider.TextureCoords.X2 = 64;
+    AltAmmoDivider.TextureCoords.Y2 = 64;
+    AltAmmoDivider.Tints[0] = SecondaryClipsDigits.Tints[0];
+    AltAmmoDivider.Tints[1] = SecondaryClipsDigits.Tints[1];
+
+    DrawSpriteWidget(C, AltAmmoDivider);
 }
 
 //=============================================================================
@@ -567,6 +641,14 @@ simulated function CalculateAmmo()
 
     if (CurClipsPrimary < 0)
         CurClipsPrimary = 0;
+}
+
+simulated function AdjustLaserHUDPosition(float Offset)
+{
+    FlashlightBG.PosX += Offset;
+    FlashlightIcon.PosX += Offset;
+    FlashlightOffIcon.PosX += Offset;
+    FlashlightDigits.PosX += Offset;
 }
 
 //=============================================================================

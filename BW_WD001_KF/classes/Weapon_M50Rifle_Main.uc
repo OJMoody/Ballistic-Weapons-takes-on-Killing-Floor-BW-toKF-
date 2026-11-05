@@ -1,5 +1,9 @@
 class Weapon_M50Rifle_Main extends BallisticWeapon;
 
+//=============================================================================
+// Grenade
+//=============================================================================
+
 var bool bM50GrenadePriming;
 var bool bM50GrenadePrimed;
 var bool bM50GrenadeLaunching;
@@ -13,13 +17,25 @@ var() Sound GrenOpenSound;
 var() Sound GrenLoadSound;
 var() Sound GrenCloseSound;
 
+
+//=============================================================================
+// LASER POINTER
+//=============================================================================
+
+var() BallisticLaserActor_FPStandard Laser;
+var() Emitter LaserDot;
+
+
 //=============================================================================
 // Alt Grenade Firing
 //=============================================================================
 
 simulated function bool StartFire(int Mode)
 {
-    if (bM50GrenadePrimed)
+	if (bLaserToggleInProgress)
+		return false;
+	
+	if (bM50GrenadePrimed)
     {
         if (bM50GrenadeLaunching)
             return false;
@@ -40,7 +56,7 @@ simulated function bool StartFire(int Mode)
 			return false;
 
 		if (AltAmmoLoaded <= 0)
-			return StartM46GrenadeReload();
+			return StartM50GrenadeReload();
 
 		if (Super.StartFire(Mode))
 		{
@@ -63,7 +79,7 @@ simulated function StopFire(int Mode)
 
 simulated function LaunchM50Grenade()
 {
-    local Weapon_M46A2Rifle_MineProjectile Mine;
+    local Weapon_M50Rifle_Grenade Mine;
     local Vector SpawnLocation;
     local Rotator SpawnRotation;
 
@@ -108,7 +124,7 @@ simulated function LaunchM50Grenade()
         + vect(0,0,1) * Instigator.EyeHeight
         + Vector(SpawnRotation) * (Instigator.CollisionRadius + 32.0);
 
-    Mine = Spawn(class'Weapon_M46A2Rifle_MineProjectile', Instigator,, SpawnLocation, SpawnRotation);
+    Mine = Spawn(class'Weapon_M50Rifle_Grenade', Instigator,, SpawnLocation, SpawnRotation);
 
     if (Mine == None)
         return;
@@ -193,7 +209,7 @@ simulated function AnimEnd(int Channel)
     Super.AnimEnd(Channel);
 }
 
-simulated function bool IsM46GrenadeActionLocked()
+simulated function bool IsM50GrenadeActionLocked()
 {
     return bM50GrenadePriming || bM50GrenadePrimed || bM50GrenadeLaunching;
 }
@@ -202,7 +218,7 @@ exec function ReloadMeNow()
 {
     local name SavedReloadAnim;
 
-    if (IsM46GrenadeActionLocked() || bM50GrenadeReloading)
+    if (IsM50GrenadeActionLocked() || bM50GrenadeReloading)
         return;
 
     if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn || bReloadPending)
@@ -224,7 +240,7 @@ exec function ReloadMeNow()
     }
 
     // If primary ammunition cannot be reloaded, try the grenade launcher.
-    StartM46GrenadeReload();
+    StartM50GrenadeReload();
 }
 
 simulated function bool InterruptReload()
@@ -239,18 +255,10 @@ simulated function bool InterruptReload()
 
 exec function ReloadAlt()
 {
-    if (IsM46GrenadeActionLocked())
+    if (IsM50GrenadeActionLocked())
         return;
 
     Super.ReloadAlt();
-}
-
-simulated function MeleeHoldImpl()
-{
-    if (IsM46GrenadeActionLocked() || MeleeState != MS_None)
-        return;
-
-    Super.MeleeHoldImpl();
 }
 
 function InitializeM50GrenadeAmmo()
@@ -271,7 +279,7 @@ function InitializeM50GrenadeAmmo()
     }
 }
 
-simulated function bool StartM46GrenadeReload()
+simulated function bool StartM50GrenadeReload()
 {
     if (AltAmmoLoaded > 0 || bM50GrenadeReloading)
         return false;
@@ -358,6 +366,246 @@ simulated function bool PutDown()
 
 
 //=============================================================================
+// LASER TOGGLE
+//=============================================================================
+
+simulated function RequestLaserToggle()
+{
+    if (!bHasLaser ||
+        bM50GrenadeReloading ||
+        IsM50GrenadeActionLocked())
+        return;
+
+    Super.RequestLaserToggle();
+}
+
+simulated function PlayIdle()
+{
+    if (bLaserToggleInProgress)
+        return;
+
+    Super.PlayIdle();
+}
+
+simulated function ClientReload()
+{
+    if (bLaserToggleInProgress)
+        return;
+
+    Super.ClientReload();
+}
+
+simulated function MeleeHoldImpl()
+{
+    if (bLaserToggleInProgress || IsM50GrenadeActionLocked() || MeleeState != MS_None)
+        return;
+
+    Super.MeleeHoldImpl();
+}
+
+function ServerToggleLaser()
+{
+    if (bM50GrenadeReloading || IsM50GrenadeActionLocked())
+        return;
+
+    Super.ServerToggleLaser();
+}
+
+
+//=============================================================================
+// CLIENT LASER SWITCH
+//=============================================================================
+
+simulated function ClientSwitchLaser()
+{
+    if (ThirdPersonActor != None)
+        Weapon_M50Rifle_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
+
+    if (bLaserOn)
+        SpawnLaserDot();
+    else
+        KillLaserDot();
+}
+
+//=============================================================================
+// LASER DOT
+//=============================================================================
+
+simulated function SpawnLaserDot(optional Vector Loc)
+{
+    if (LaserDot == None)
+    {
+        LaserDot = Spawn(
+            class'Weapon_M806Pistol_LaserDot',
+            ,
+            ,
+            Loc
+        );
+    }
+}
+
+simulated function KillLaserDot()
+{
+    if (LaserDot != None)
+    {
+        LaserDot.Kill();
+        LaserDot = None;
+    }
+}
+
+
+//=============================================================================
+// FOV CONVERSION
+//=============================================================================
+
+simulated function Vector ConvertFOVs(
+    Vector InVec,
+    float InFOV,
+    float OutFOV,
+    float Distance
+)
+{
+    local Vector ViewLoc;
+    local Vector OutVec;
+    local Vector Dir;
+    local Vector X;
+    local Vector Y;
+    local Vector Z;
+    local Rotator ViewRot;
+
+    ViewLoc = Instigator.Location + Instigator.EyePosition();
+    ViewRot = Instigator.GetViewRotation();
+
+    Dir = InVec - ViewLoc;
+
+    GetAxes(ViewRot, X, Y, Z);
+
+    OutVec.X = Distance / Tan(OutFOV * PI / 360);
+
+    OutVec.Y =
+        (Dir dot Y) *
+        (Distance / Tan(InFOV * PI / 360)) /
+        (Dir dot X);
+
+    OutVec.Z =
+        (Dir dot Z) *
+        (Distance / Tan(InFOV * PI / 360)) /
+        (Dir dot X);
+
+    OutVec = OutVec >> ViewRot;
+
+    return OutVec + ViewLoc;
+}
+
+
+//=============================================================================
+// FIRST PERSON LASER
+//=============================================================================
+
+simulated function DrawLaserSight(Canvas Canvas)
+{
+    local Vector HitLocation;
+    local Vector Start;
+    local Vector End;
+    local Vector HitNormal;
+    local Vector Scale3D;
+    local Vector Loc;
+
+    local Coords LaserCoords;
+    local Actor Other;
+
+    if (ClientState == WS_Hidden ||
+        !bLaserOn ||
+        Instigator == None ||
+        Instigator.Controller == None ||
+        Laser == None)
+        return;
+
+    // Laser origin on the M50 first-person mesh.
+    LaserCoords = GetBoneCoords('lasertip');
+
+    Loc = LaserCoords.Origin;
+    Start = Loc;
+
+    End = Start + Normal(LaserCoords.XAxis) * 5000;
+
+    Other = FireMode[0].Trace(
+        HitLocation,
+        HitNormal,
+        End,
+        Start,
+        true
+    );
+
+    if (Other == None)
+        HitLocation = End;
+
+    if (LaserDot == None)
+        SpawnLaserDot(HitLocation);
+
+    if (LaserDot != None)
+    {
+        LaserDot.SetLocation(HitLocation);
+
+        Canvas.DrawActor(
+            LaserDot,
+            false,
+            false,
+            Instigator.Controller.FovAngle
+        );
+    }
+
+    Laser.SetLocation(Loc);
+
+    HitLocation = ConvertFOVs(
+        HitLocation,
+        Instigator.Controller.FovAngle,
+        DisplayFOV,
+        400
+    );
+
+    Laser.SetRotation(Rotator(HitLocation - Loc));
+
+    Scale3D.X = VSize(HitLocation - Loc) / 128;
+    Scale3D.Y = 1.0;
+    Scale3D.Z = 1.0;
+
+    Laser.SetDrawScale3D(Scale3D);
+
+    Canvas.DrawActor(
+        Laser,
+        false,
+        false,
+        DisplayFOV
+    );
+}
+
+simulated event RenderOverlays(Canvas Canvas)
+{
+    Super.RenderOverlays(Canvas);
+
+    if (!IsInState('Lowered'))
+        DrawLaserSight(Canvas);
+}
+
+
+//=============================================================================
+// LASER CLEANUP
+//=============================================================================
+
+simulated function Destroyed()
+{
+    if (Laser != None)
+        Laser.Destroy();
+
+    if (LaserDot != None)
+        LaserDot.Destroy();
+
+    Super.Destroyed();
+}
+
+
+//=============================================================================
 // M50 Cleanup
 //=============================================================================
 
@@ -368,7 +616,18 @@ simulated function BringUp(optional Weapon PrevWeapon)
     bM50GrenadeReloading = false;
 
     InitializeM50GrenadeAmmo();
+
+    if (Instigator != None &&
+        Laser == None &&
+        PlayerController(Instigator.Controller) != None)
+    {
+        Laser = Spawn(class'BallisticLaserActor_FPStandard');
+    }
+
+    if (ThirdPersonActor != None)
+        Weapon_M50Rifle_Attachment(ThirdPersonActor).bLaserOn = bLaserOn;
 }
+
 
 //=============================================================================
 // DEFAULT PROPERTIES
@@ -376,7 +635,13 @@ simulated function BringUp(optional Weapon PrevWeapon)
 
 defaultproperties
 {
-    M50GrenadeLaunchSound=Sound'BWKF_M46_SN.M46.OA-AR_FireGren'
+	bHasLaser=True
+	LaserBatteryClass=class'Weapon_M806Pistol_LaserBattery'
+    LaserToggleAnim=LightOnOff
+    LaserOnSound=Sound'BWKF_M806_SN.M806.M806LSight'
+    LaserOffSound=Sound'BWKF_M806_SN.M806.M806LSight'
+	
+	M50GrenadeLaunchSound=Sound'BWKF_M46_SN.M46.OA-AR_FireGren'
 	GrenOpenSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenOpen'
 	GrenLoadSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenLoad'
 	GrenCloseSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenClose'
