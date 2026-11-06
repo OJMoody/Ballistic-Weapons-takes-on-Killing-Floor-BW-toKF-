@@ -121,7 +121,7 @@ simulated function Tick(float DT)
 
 simulated function DoFlashEmitter()
 {
-    if (FiringMode == 1)
+	if (FiringMode == 1)
     {
         if (mMuzFlash3rdSecondary == None)
         {
@@ -145,6 +145,7 @@ simulated function DoFlashEmitter()
     Super.DoFlashEmitter();
 }
 
+
 //=============================================================================
 // CLEANUP
 //=============================================================================
@@ -159,15 +160,15 @@ simulated function Destroyed()
 
 defaultproperties
 {
-    Mesh=SkeletalMesh'BWKF_M46_A.M46A1_TP_Mesh'
-	DrawScale=0.150000
+    Mesh=SkeletalMesh'BWKF_M50_A.M50_TP_Mesh'
+	DrawScale=0.500000
 
-    mMuzFlashClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFlashEmitter'
-	mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFlashEmitter'
-	mMuzFlashScale=0.400000
+    mMuzFlashClass=Class'BW_WD001_KF.Weapon_M50Rifle_PrimaryFlashEmitter'
+	mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M50Rifle_SecondaryFlashEmitter'
+	mMuzFlashScale=0.500000
 
     mTracerClass=Class'BW_Core_KF.TraceEmitter_Default'
-    mShellCaseEmitterClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Brass'
+    mShellCaseEmitterClass=Class'BW_WD001_KF.Weapon_M50Rifle_Brass'
     SplashEffect=Class'BulletSplashEmitter'
 
     LightType=LT_Pulse

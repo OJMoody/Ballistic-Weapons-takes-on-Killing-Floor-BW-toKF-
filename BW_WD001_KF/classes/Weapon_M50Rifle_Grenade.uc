@@ -237,11 +237,12 @@ defaultproperties
     DetonateDelay=1.000000
 
     ImpactManager=Class'BW_WD001_KF.Weapon_M50Rifle_GrenadeImpact'
-    TrailClass=Class'BW_WD001_KF.Weapon_M46A2Rifle_MineTrail'
+    TrailClass=Class'BW_WD001_KF.Weapon_M50Rifle_GrenadeTrail'
 
     TrailOffset=(X=-8.000000)
 
     StaticMesh=StaticMesh'BWKF_M50_SM.pickups.M50_GrenadeProj_SM'
+	DrawScale=2.000000
 
     Speed=2700.000000
     MaxSpeed=0.000000

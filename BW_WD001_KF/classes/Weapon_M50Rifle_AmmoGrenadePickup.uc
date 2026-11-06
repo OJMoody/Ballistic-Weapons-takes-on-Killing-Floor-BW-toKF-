@@ -8,6 +8,6 @@ defaultproperties
      PickupMessage="You picked up M900 HE Grenades"
      PickupForce="AssaultAmmoPickup"
      DrawType=DT_StaticMesh
-     StaticMesh=StaticMesh'BWKF_M46_SM.Pickups.M46_ClipPickup_Main'
-	 DrawScale=0.500000
+     StaticMesh=StaticMesh'BWKF_M50_SM.Pickups.M50_ClipPickup_SM'
+	 DrawScale=0.100000
 }

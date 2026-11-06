@@ -36,5 +36,5 @@ defaultproperties
     AmmoPerFire=0
     bWaitForRelease=True
     FireRate=1.000000
-    FlashEmitterClass=Class'BW_WD001_KF.Weapon_M46A2Rifle_SecondaryFlashEmitter'
+    FlashEmitterClass=Class'BW_WD001_KF.Weapon_M50Rifle_SecondaryFlashEmitter'
 }

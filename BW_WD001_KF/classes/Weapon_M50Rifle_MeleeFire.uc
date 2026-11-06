@@ -29,8 +29,8 @@ defaultproperties
 	FlankDamageMult=1.150000
 	BackDamageMult=1.300000
 
-	FireSound=Sound'BWKF_M806_SN.M806.M806MeleeFire'
-	StereoFireSoundRef="BWKF_M806_SN.M806.M806MeleeFire"
+	FireSound=Sound'BWKF_M50_SN.M50.M50Swing'
+	StereoFireSoundRef="BWKF_M50_SN.M50.M50Swing"
 
 	bFireOnRelease=True
 	bWaitForRelease=True

@@ -85,6 +85,8 @@ simulated function LaunchM46Mine()
     bM46MinePriming = false;
     bM46MinePrimed = false;
     bM46MineLaunching = true;
+	
+	IncrementFlashCount(1);
 
     IdleAimAnim = default.IdleAimAnim;
 

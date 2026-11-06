@@ -101,6 +101,8 @@ simulated function LaunchM50Grenade()
     bM50GrenadePriming = false;
     bM50GrenadePrimed = false;
     bM50GrenadeLaunching = true;
+	
+	IncrementFlashCount(1);
 
     IdleAimAnim = default.IdleAimAnim;
 
@@ -641,10 +643,10 @@ defaultproperties
     LaserOnSound=Sound'BWKF_M806_SN.M806.M806LSight'
     LaserOffSound=Sound'BWKF_M806_SN.M806.M806LSight'
 	
-	M50GrenadeLaunchSound=Sound'BWKF_M46_SN.M46.OA-AR_FireGren'
-	GrenOpenSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenOpen'
-	GrenLoadSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenLoad'
-	GrenCloseSound=Sound'BWKF_M46_SN.M46.OA-AR_GrenClose'
+	M50GrenadeLaunchSound=Sound'BWKF_M50_SN.M50.M50GrenFire'
+	GrenOpenSound=Sound'BWKF_M50_SN.M50.M50GrenOpen'
+	GrenLoadSound=Sound'BWKF_M50_SN.M50.M50GrenLoad'
+	GrenCloseSound=Sound'BWKF_M50_SN.M50.M50GrenClose'
 
 	bHasSecondaryAmmo=True
 	AltAmmoLoaded=1
@@ -673,7 +675,7 @@ defaultproperties
     Priority=3
     InventoryGroup=3
     GroupOffset=2
-    Weight=8.000000
+    Weight=7.000000
 
     PlayerIronSightFOV=65
     ZoomTime=0.25
@@ -681,18 +683,18 @@ defaultproperties
     bHasAimingMode=True
 	bModeZeroCanDryFire=True
 
-	HudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Unselected'
-    SelectedHudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Selected'
-	TraderInfoTexture=Texture'BWKF_M46_T.Icons.MedIcon_M46A2'
+	HudImage=Texture'BWKF_M50_T.Icons.MedIcon_M50_Unselected'
+    SelectedHudImage=Texture'BWKF_M50_T.Icons.MedIcon_M50_Selected'
+	TraderInfoTexture=Texture'BWKF_M50_T.Icons.MedIcon_M50'
 
     PlayerViewOffset=(X=2.000000,Y=13.000000,Z=-5.000000)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
-    PulloutSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    PutAwaySound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-    //SightFXClass=Class'BW_WD001_KF.Weapon_M46A2Rifle_SightLEDs'
+    PulloutSound=(Sound=Sound'BWKF_M50_SN.M50.M50Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    PutAwaySound=(Sound=Sound'BWKF_M50_SN.M50.M50Putaway',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    SightFXClass=Class'BW_WD001_KF.Weapon_M50Rifle_SightLEDS'
     SightFXBone="M50"
-    ClipHitSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipHit')
-    ClipOutSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipOut')
-    ClipInSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_ClipIn')
-	CockSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Cock')
+    ClipHitSound=(Sound=Sound'BWKF_M50_SN.M50.M50ClipHit')
+    ClipOutSound=(Sound=Sound'BWKF_M50_SN.M50.M50ClipOut')
+    ClipInSound=(Sound=Sound'BWKF_M50_SN.M50.M50ClipIn')
+	CockSound=(Sound=Sound'BWKF_M50_SN.M50.M50Cock')
 }
