@@ -163,6 +163,8 @@ var() Sound LaserOffSound;
 // Weapon-specific battery proxy
 var() class<Actor> LaserBatteryClass;
 
+var bool bPendingLaserToggle;
+
 //=============================================================================
 // Dual Weapons
 //=============================================================================
@@ -1163,6 +1165,18 @@ simulated function RequestLaserToggle()
     }
 
     StartLaserToggleAnimation();
+}
+
+simulated function TryPendingLaserToggle()
+{
+    if (!bPendingLaserToggle || !bHasLaser)
+        return;
+
+    if (ClientState != WS_ReadyToFire)
+        return;
+
+    bPendingLaserToggle = false;
+    RequestLaserToggle();
 }
 
 simulated function StartLaserToggleAnimation()
@@ -2663,7 +2677,9 @@ simulated function BringUp(optional Weapon PrevWeapon)
 		{
 			AttachToBone(LeftSightFX, LeftSightFXBone);
 		}
-	}
+	}	
+	
+	TryPendingLaserToggle();
 }
 
 simulated function Timer()
@@ -3346,19 +3362,21 @@ simulated function AnimEnd(int Channel)
 			return;
 
 		if (ClientState == WS_BringUp &&
-			(AnimName == SelectAnim ||
-				AnimName == WeaponReloadResumeAnimation ||
-				AnimName == WeaponReloadResumeAnimation2 ||
-				AnimName == WeaponReloadAltResumeAnimation))
-		{
-			for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
-				FireMode[Mode].InitEffects();
+            (AnimName == SelectAnim ||
+                AnimName == WeaponReloadResumeAnimation ||
+                AnimName == WeaponReloadResumeAnimation2 ||
+                AnimName == WeaponReloadAltResumeAnimation))
+        {
+            for (Mode = 0; Mode < NUM_FIRE_MODES; Mode++)
+                FireMode[Mode].InitEffects();
 
-			PlayIdle();
-			ClientState = WS_ReadyToFire;
+            PlayIdle();
+            ClientState = WS_ReadyToFire;
 
-			return;
-		}
+            TryPendingLaserToggle();
+
+            return;
+        }
 	}
 
 	if (bIsReloading)

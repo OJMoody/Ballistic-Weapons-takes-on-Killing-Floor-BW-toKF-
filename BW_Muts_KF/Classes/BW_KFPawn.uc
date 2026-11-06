@@ -11,17 +11,47 @@ replication
 
 simulated exec function ToggleFlashlight()
 {
+    local Inventory Inv;
     local BallisticWeapon BWWeap;
+	local int BestPriority;
 
-    if (Controller == None)
+    if (Controller == None || PendingWeapon != None)
         return;
 
+    // If the current weapon has a laser, toggle it normally.
     BWWeap = BallisticWeapon(Weapon);
 
     if (BWWeap != None && BWWeap.HandleFlashlightToggle())
         return;
 
-    Super.ToggleFlashlight();
+    // Find another owned weapon with a laser.
+    BestPriority = -1;
+    BWWeap = None;
+
+    for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        if (BallisticWeapon(Inv) != None &&
+            BallisticWeapon(Inv) != Weapon &&
+            BallisticWeapon(Inv).bHasLaser &&
+            BallisticWeapon(Inv).Priority > BestPriority)
+        {
+            BWWeap = BallisticWeapon(Inv);
+            BestPriority = BWWeap.Priority;
+        }
+    }
+
+    if (BWWeap == None || !BWWeap.bHasLaser)
+        return;
+
+    // Activate the laser after the weapon finishes bringing up.
+    BWWeap.bPendingLaserToggle = true;
+
+    PendingWeapon = BWWeap;
+
+    if (Weapon != None)
+        Weapon.PutDown();
+    else
+        ChangedWeapon();
 }
 
 //=============================================================================
@@ -714,6 +744,12 @@ function bool ServerBuyAmmo(Class<Ammunition> AClass, bool bOnlyClip)
     local int AmmoToBuy;
     local int AmmoMissing;
     local int AffordableAmmo;
+	local KFWeapon SecondaryWeapon;
+	local Ammunition SecondaryAmmo;
+	local class<KFWeaponPickup> SecondaryPickupClass;
+	local class<BallisticPickup> SecondaryBallisticPickup;
+	local int RequestedAmmo;
+	local int AmmoPrice;
 
     // Find the player's existing ballistic hand grenade.
     if (AClass == class'FragAmmo' || Class<BallisticHandGrenadeAmmo>(AClass) != None)
@@ -787,13 +823,7 @@ function bool ServerBuyAmmo(Class<Ammunition> AClass, bool bOnlyClip)
                 return false;
             }
 
-            // Deduct payment and replenish the existing ammo object.
-			log("Grenade Purchase: Pickup="$GrenadePickupClass@"AmmoCost="$GrenadePickupClass.default.AmmoCost@"UnitCost="$UnitCost);
-			log("Grenade Purchase: AmmoToBuy="$AmmoToBuy@"CashBefore="$PlayerReplicationInfo.Score);
-
 			PlayerReplicationInfo.Score -= float(AmmoToBuy) * UnitCost;
-
-			log("Grenade Purchase: CashAfter="$PlayerReplicationInfo.Score);
 
 			GrenadeAmmo.AddAmmo(AmmoToBuy);
 
@@ -801,6 +831,138 @@ function bool ServerBuyAmmo(Class<Ammunition> AClass, bool bOnlyClip)
 
             return true;
         }
+    }
+
+	//=========================================================================
+    // BALLISTIC WEAPON SECONDARY AMMUNITION
+    //=========================================================================
+
+    SecondaryWeapon = None;
+    SecondaryAmmo = None;
+
+    // Find the weapon and its secondary ammunition instance.
+    for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        if (Inv.Class == AClass)
+            SecondaryAmmo = Ammunition(Inv);
+
+        if (SecondaryWeapon == None && KFWeapon(Inv) != None
+            && KFWeapon(Inv).bHasSecondaryAmmo
+            && KFWeapon(Inv).FireModeClass[1] != None
+            && KFWeapon(Inv).FireModeClass[1].default.AmmoClass == AClass)
+        {
+            SecondaryWeapon = KFWeapon(Inv);
+        }
+    }
+
+    if (SecondaryWeapon != None)
+    {
+        if (!CanBuyNow())
+        {
+            SetTraderUpdate();
+            return false;
+        }
+
+        SecondaryPickupClass = Class<KFWeaponPickup>(SecondaryWeapon.PickupClass);
+        SecondaryBallisticPickup = Class<BallisticPickup>(SecondaryPickupClass);
+        KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
+
+        if (SecondaryAmmo == None || SecondaryPickupClass == None)
+        {
+            SetTraderUpdate();
+            return false;
+        }
+
+        // Apply the player's ammunition capacity bonus.
+        SecondaryAmmo.MaxAmmo = SecondaryAmmo.default.MaxAmmo;
+
+        if (KFPRI != None && KFPRI.ClientVeteranSkill != None)
+        {
+            SecondaryAmmo.MaxAmmo = int(
+                float(SecondaryAmmo.MaxAmmo)
+                * KFPRI.ClientVeteranSkill.static.AddExtraAmmoFor(KFPRI, AClass)
+            );
+        }
+
+        AmmoMissing = SecondaryAmmo.MaxAmmo - SecondaryAmmo.AmmoAmount;
+
+        if (AmmoMissing <= 0)
+        {
+            SetTraderUpdate();
+            return false;
+        }
+
+        // SecondaryAmmoCost overrides the weapon's normal AmmoCost.
+        UnitCost = SecondaryPickupClass.default.AmmoCost;
+
+        if (SecondaryBallisticPickup != None
+            && SecondaryBallisticPickup.default.SecondaryAmmoCost > 0)
+        {
+            UnitCost = SecondaryBallisticPickup.default.SecondaryAmmoCost;
+        }
+
+        if (KFPRI != None && KFPRI.ClientVeteranSkill != None)
+        {
+            UnitCost *= KFPRI.ClientVeteranSkill.static.GetAmmoCostScaling(
+                KFPRI,
+                SecondaryPickupClass
+            );
+        }
+
+        // Mag buys one secondary round; Fill buys all remaining rounds.
+        if (bOnlyClip)
+        {
+            if (KFPRI != None && KFPRI.ClientVeteranSkill != None)
+            {
+                AmmoToBuy = int(
+                    KFPRI.ClientVeteranSkill.static.GetMagCapacityMod(
+                        KFPRI,
+                        SecondaryWeapon
+                    )
+                );
+            }
+            else
+                AmmoToBuy = 1;
+        }
+        else
+            AmmoToBuy = AmmoMissing;
+
+        AmmoToBuy = Min(AmmoToBuy, AmmoMissing);
+        RequestedAmmo = AmmoToBuy;
+
+        if (AmmoToBuy <= 0)
+        {
+            SetTraderUpdate();
+            return false;
+        }
+
+        // Calculate the purchase price.
+        // Match KF1's integer price calculation.
+        AffordableAmmo = AmmoToBuy;
+        AmmoPrice = int(float(AffordableAmmo) * UnitCost);
+
+        // Allow partial purchases when the player cannot afford everything.
+        while (AffordableAmmo > 0 && PlayerReplicationInfo.Score < AmmoPrice)
+        {
+            AffordableAmmo--;
+            AmmoPrice = int(float(AffordableAmmo) * UnitCost);
+        }
+
+        AmmoToBuy = AffordableAmmo;
+
+        if (AmmoToBuy <= 0)
+        {
+            SetTraderUpdate();
+            return false;
+        }
+
+        // Pay and replenish the existing ammunition instance.
+        PlayerReplicationInfo.Score -= AmmoPrice;
+        SecondaryAmmo.AddAmmo(AmmoToBuy);
+
+        SetTraderUpdate();
+
+        return true;
     }
 
     // Preserve the normal KF1 purchase path for every other ammunition type.

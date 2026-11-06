@@ -254,6 +254,79 @@ function InitComponent(GUIController MyController, GUIComponent MyOwner)
         GrenadeInfoPanel.BuyMenuTab = Self;
 }
 
+function GetUpdatedBuyable(optional bool bSetInvIndex)
+{
+    local int i;
+
+    if (LastBuyable == None)
+        return;
+
+    InvSelect.List.UpdateMyBuyables();
+
+    for (i = 0; i < InvSelect.List.MyBuyables.Length; i++)
+    {
+        if (InvSelect.List.MyBuyables[i] == None)
+            continue;
+
+        if (InvSelect.List.MyBuyables[i].ItemWeaponClass == LastBuyable.ItemWeaponClass
+            && InvSelect.List.MyBuyables[i].ItemAmmoClass == LastBuyable.ItemAmmoClass
+            && InvSelect.List.MyBuyables[i].bIsVest == LastBuyable.bIsVest)
+        {
+            TheBuyable = InvSelect.List.MyBuyables[i];
+            break;
+        }
+    }
+
+    if (i >= InvSelect.List.MyBuyables.Length)
+    {
+        i = -1;
+        TheBuyable = None;
+    }
+
+    if (bSetInvIndex)
+        InvSelect.List.Index = i;
+}
+
+function int FindAmmoCost(Class<Ammunition> AClass)
+{
+    local Inventory CurInv;
+    local KFWeapon MyWeapon;
+    local class<KFWeaponPickup> MyPickup;
+    local class<BallisticPickup> MyBallisticPickup;
+    local float AmmoCost;
+
+    for (CurInv = PlayerOwner().Pawn.Inventory; CurInv != None; CurInv = CurInv.Inventory)
+    {
+        if (MyWeapon == None && KFWeapon(CurInv) != None
+            && (KFWeapon(CurInv).AmmoClass[0] == AClass
+            || KFWeapon(CurInv).AmmoClass[1] == AClass))
+        {
+            MyWeapon = KFWeapon(CurInv);
+        }
+    }
+
+    if (MyWeapon == None)
+        return 99999;
+
+    MyPickup = Class<KFWeaponPickup>(MyWeapon.PickupClass);
+
+    if (MyPickup == None)
+        return 99999;
+
+    AmmoCost = MyPickup.default.AmmoCost;
+
+    // Use the configured secondary ammunition price.
+    if (MyWeapon.bHasSecondaryAmmo && MyWeapon.AmmoClass[1] == AClass)
+    {
+        MyBallisticPickup = Class<BallisticPickup>(MyPickup);
+
+        if (MyBallisticPickup != None && MyBallisticPickup.default.SecondaryAmmoCost > 0)
+            AmmoCost = MyBallisticPickup.default.SecondaryAmmoCost;
+    }
+
+    return int(AmmoCost);
+}
+
 defaultproperties
 {
     Begin Object Class=BW_GUIBuyWeaponInfoPanel Name=ItemInf

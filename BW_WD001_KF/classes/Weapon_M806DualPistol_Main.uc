@@ -855,7 +855,7 @@ defaultproperties
 	WeaponModes(2)=(ModeName="Auto",ModeID="WM_FullAuto",bUnavailable=True)
 	CurrentWeaponMode=0
 	
-    Priority=3
+    Priority=2
     InventoryGroup=2
     GroupOffset=2
     Weight=4.000000

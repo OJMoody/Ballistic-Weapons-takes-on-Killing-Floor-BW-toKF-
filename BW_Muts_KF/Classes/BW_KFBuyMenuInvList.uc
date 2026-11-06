@@ -7,7 +7,7 @@ function UpdateMyBuyables()
 {
 	local class<KFVeterancyTypes> PlayerVeterancy;
 	local KFPlayerReplicationInfo KFPRI;
-	local GUIBuyable MyBuyable, KnifeBuyable, FragBuyable, SecondaryAmmoBuyable;
+	local GUIBuyable MyBuyable, KnifeBuyable, FragBuyable;
 	local GUIBuyable GrenadeBuyable;
 	local BallisticHandGrenade HandGrenade;
 	local Ammunition GrenadeAmmo;
@@ -271,10 +271,13 @@ function UpdateMyBuyables()
 				}
 			}
 
-			if ( KFWeapon(CurInv).bHasSecondaryAmmo )
+			if (KFWeapon(CurInv).bHasSecondaryAmmo)
 			{
-				MyBuyable.bSellable	= false;
-				SecondaryAmmoBuyable = MyBuyable;
+				MyBuyable.bSellable = false;
+
+				// Insert secondary ammo immediately after its weapon.
+				MyBuyables.Insert(1, 1);
+				MyBuyables[1] = MyBuyable;
 			}
 			else if ( CurInv.IsA('Knife') || CurInv.IsA('Weapon_A909Blades_Main') )
 			{
@@ -320,22 +323,31 @@ function UpdateMyBuyables()
 	MyBuyable.bSellable			= false;
 	MyBuyable.ItemPerkIndex		= class'BuyableVest'.default.CorrespondingPerkIndex;
 
-	MyBuyables[7] = None;
+	//=============================================================================
+	// EQUIPMENT SECTION
+	//=============================================================================
 
-	if (SecondaryAmmoBuyable != None)
+	// Preserve the seven standard weapon slots.
+	while (MyBuyables.Length < 7)
 	{
-		MyBuyables[8] = SecondaryAmmoBuyable;
+		MyBuyables.Length = MyBuyables.Length + 1;
+		MyBuyables[MyBuyables.Length - 1] = None;
 	}
-	else
+
+	// None after the weapon section displays the Equipment header.
+	MyBuyables.Length = MyBuyables.Length + 1;
+	MyBuyables[MyBuyables.Length - 1] = None;
+
+	// Knife / A909.
+	if (KnifeBuyable != None)
 	{
-		MyBuyables[8] = KnifeBuyable;
+		MyBuyables.Length = MyBuyables.Length + 1;
+		MyBuyables[MyBuyables.Length - 1] = KnifeBuyable;
 	}
 
 	// Ballistic hand grenade: free equipment entry, paid ammo replenishment.
 	if (GrenadeBuyable != None)
 	{
-		MyBuyables[9] = GrenadeBuyable;
-
 		HandGrenade = BallisticHandGrenade(
 			PlayerOwner().Pawn.FindInventoryType(GrenadeBuyable.ItemWeaponClass)
 		);
@@ -356,13 +368,19 @@ function UpdateMyBuyables()
 					* GrenadePickup.default.AmmoCost;
 			}
 		}
+
+		MyBuyables.Length = MyBuyables.Length + 1;
+		MyBuyables[MyBuyables.Length - 1] = GrenadeBuyable;
 	}
-	else
+	else if (FragBuyable != None)
 	{
-		MyBuyables[9] = FragBuyable;
+		MyBuyables.Length = MyBuyables.Length + 1;
+		MyBuyables[MyBuyables.Length - 1] = FragBuyable;
 	}
 
-	MyBuyables[10] = MyBuyable;
+	// Armor.
+	MyBuyables.Length = MyBuyables.Length + 1;
+	MyBuyables[MyBuyables.Length - 1] = MyBuyable;
 
 	UpdateList();
 }

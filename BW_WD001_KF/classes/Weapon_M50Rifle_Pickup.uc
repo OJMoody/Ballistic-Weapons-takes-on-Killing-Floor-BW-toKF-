@@ -15,7 +15,7 @@ defaultproperties
 	SpeedValue=40
 	RangeValue=40
 	Description="M50 Assault Rifle"
-	ItemName="M50 Assault Riflee"
+	ItemName="M50 Assault Rifle"
 	ItemShortName="M50 Assault Rifle"
 	AmmoItemName="5.56mm Ammo"
 	SecondaryAmmoShortName="M900 HE Grenades"

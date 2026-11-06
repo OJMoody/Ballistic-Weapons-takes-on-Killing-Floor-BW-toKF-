@@ -4,9 +4,6 @@ class BallisticAttachment extends KFWeaponAttachment;
 
 var() float mMuzFlashScale;
 
-var class<Emitter> mMuzFlashClassSecondary;
-var Emitter mMuzFlash3rdSecondary;
-
 var class<Actor> BallisticHitEffectClass;
 
 var Pawn LinkedAnimPawn;

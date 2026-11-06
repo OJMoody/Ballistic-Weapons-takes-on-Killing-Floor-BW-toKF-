@@ -638,7 +638,7 @@ simulated function BringUp(optional Weapon PrevWeapon)
 defaultproperties
 {
 	bHasLaser=True
-	LaserBatteryClass=class'Weapon_M806Pistol_LaserBattery'
+	LaserBatteryClass=class'Weapon_M50Rifle_LaserBattery'
     LaserToggleAnim=LightOnOff
     LaserOnSound=Sound'BWKF_M806_SN.M806.M806LSight'
     LaserOffSound=Sound'BWKF_M806_SN.M806.M806LSight'
