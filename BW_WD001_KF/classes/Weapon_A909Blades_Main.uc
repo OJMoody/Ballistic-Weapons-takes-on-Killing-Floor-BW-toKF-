@@ -1,5 +1,5 @@
 //=============================================================================
-// Knife Inventory class
+// A909 Skrith Blades
 //=============================================================================
 class Weapon_A909Blades_Main extends BallisticMeleeWeapon;
 

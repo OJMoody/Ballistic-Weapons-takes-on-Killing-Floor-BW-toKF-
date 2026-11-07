@@ -20,6 +20,9 @@ var() name MeleeThirdPersonAnim;
 var() name MeleePrepAnim;
 var() name MeleeFireAnim;
 
+var() bool bCanLunge;
+var() float LungeSpeed;
+
 //=============================================================================
 // SWIPE DATA
 //=============================================================================
@@ -496,6 +499,43 @@ function ApplyMeleeDamage(Actor Victim,Vector HitLocation,Vector TraceStart,Vect
 
 
 //=============================================================================
+// MELEE LUNGE
+//=============================================================================
+
+function DoMeleeLunge()
+{
+    local Vector LungeDirection;
+    local float ChargeTime;
+    local float LungeAmount;
+
+    if (!bCanLunge)
+        return;
+
+    if (Instigator == None)
+        return;
+
+    if (Instigator.Physics != PHYS_Walking)
+        return;
+
+    if (MaxBonusHoldTime <= 0.0 || HoldStartTime == 0.0)
+        return;
+
+    ChargeTime = Level.TimeSeconds - HoldStartTime;
+
+    LungeAmount = FClamp(ChargeTime / MaxBonusHoldTime, 0.0, 1.0) * LungeSpeed;
+
+    if (LungeAmount <= 0.0)
+        return;
+
+    LungeDirection = Vector(Instigator.Rotation);
+    LungeDirection.Z = 0.0;
+    LungeDirection = Normal(LungeDirection);
+
+    Instigator.AddVelocity(LungeDirection * LungeAmount);
+}
+
+
+//=============================================================================
 // RELEASE / STRIKE
 //=============================================================================
 
@@ -515,6 +555,8 @@ simulated event ModeDoFire()
 			return;
 
 		Instigator.DeactivateSpawnProtection();
+
+		DoMeleeLunge();
 	}
 
 	Super(BallisticInstantFire).ModeDoFire();
@@ -651,6 +693,9 @@ defaultproperties
 	bFiringDoesntAffectMovement=True
 	MeleeHitSounds(0)=Sound'KF_AxeSnd.Axe_HitFlesh'
     MeleeHitVolume=1.000000
+	
+	bCanLunge=False
+	LungeSpeed=250.000000
 
     SwipePoints(0)=(Weight=3,Offset=(Yaw=1280),Delay=0.00)
 	SwipePoints(1)=(Weight=5,Offset=(Yaw=-1280),Delay=0.00)

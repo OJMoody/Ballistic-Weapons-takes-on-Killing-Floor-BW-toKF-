@@ -211,8 +211,9 @@ function UpdateMyBuyables()
 				MyBuyable.ItemAmmoMax		= MaxAmmo;
 				MyBuyable.bMelee			= (KFMeleeGun(CurInv) != none);
 				MyBuyable.bSaleList			= false;
-				MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
-
+				//MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
+				MyBuyable.ItemPerkIndex = -1;
+				
 				if ( KFWeapon(CurInv) != none && KFWeapon(CurInv).SellValue != -1 )
 				{
 					MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;

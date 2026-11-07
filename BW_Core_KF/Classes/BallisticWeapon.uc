@@ -122,6 +122,8 @@ var bool bShovelReloadEndRequested;
 var bool bShovelReloadStopRequested;
 var bool bShovelReloadEmpty;
 var bool bShovelReloadLooping;
+var bool bShovelReloadEmptyStart;
+var int ShovelReloadNormalCapacity;
 
 var byte ShovelReloadMode;
 var bool bPuttingDown;
@@ -290,7 +292,7 @@ var() float FPBrassScale;
 replication
 {
     reliable if (Role < ROLE_Authority)
-        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerSetAltLoaded, ServerToggleLaser;
+        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerSetAltLoaded, ServerToggleLaser;
 
     reliable if (Role == ROLE_Authority)
         ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn;
@@ -1078,6 +1080,8 @@ final function ServerMeleeRelease()
         return;
 
     MeleeFireMode.Instigator = Instigator;
+	
+	MeleeFireMode.DoMeleeLunge();
 
     MeleeTPAnimState = 2;
     MeleeTPAnimCount++;
@@ -1385,8 +1389,6 @@ exec function ReloadMeNow()
 	//=========================================================================
 	// FULL PRIMARY MAGAZINE
 	//=========================================================================
-	// A full primary magazine must never enter the normal reload queue.
-	// If an alternate reload is available, allow Reload to perform it instead.
 	if (MagAmmoRemaining >= MagCapacity)
 	{
 		bReloadPending = false;
@@ -1704,10 +1706,17 @@ function BeginBallisticShovelReload()
     bShovelReloadStopRequested = false;
     bShovelReloadLooping = false;
 
+    bShovelReloadEmptyStart = (ShovelReloadMode == 0 && MagAmmoRemaining <= 0);
+
+    ShovelReloadNormalCapacity = MagCapacity;
+
     if (ShovelReloadMode == 0)
         bShovelReloadEmpty = MagAmmoRemaining <= 0;
     else
         bShovelReloadEmpty = AltAmmoLoaded <= 0;
+
+    if (Role < ROLE_Authority)
+        ServerBeginShovelReload(bShovelReloadEmptyStart, ShovelReloadNormalCapacity, ShovelReloadMode);
 
     PlayShovelReloadStartAnimation();
 }
@@ -2330,6 +2339,19 @@ simulated function Notify_ShellLoopCheck()
 // SHOVEL HANDLERS
 //=============================================================================
 
+function ServerBeginShovelReload(bool bEmptyStart, int NormalCapacity, byte ReloadMode)
+{
+    bShovelReload = true;
+    bShovelReloadEmptyStart = bEmptyStart;
+    ShovelReloadNormalCapacity = NormalCapacity;
+    ShovelReloadMode = ReloadMode;
+
+    bShovelReloadCancelRequested = false;
+    bShovelReloadEndRequested = false;
+    bShovelReloadStopRequested = false;
+    bShovelReloadLooping = false;
+}
+
 simulated function HandleShovelShellIn(int LoadAmount)
 {
     if (!bShovelReload)
@@ -2352,7 +2374,7 @@ simulated function HandleShovelShellIn(int LoadAmount)
 
 function ServerShovelShellIn(int LoadAmount)
 {
-    if (!bShovelReload)
+	if (!bShovelReload)
         return;
 
     if (LoadAmount <= 0)
@@ -2366,7 +2388,7 @@ function ServerShovelShellIn(int LoadAmount)
 
 simulated function AddShovelPrimaryAmmo(int LoadAmount)
 {
-    if (Role != ROLE_Authority)
+	if (Role != ROLE_Authority)
         return;
 
     if (!bShovelReload)
@@ -2375,7 +2397,12 @@ simulated function AddShovelPrimaryAmmo(int LoadAmount)
     if (LoadAmount <= 0)
         return;
 
-    if (MagAmmoRemaining >= MagCapacity)
+    if (bShovelReloadEmptyStart && bPlusOne)
+    {
+        if (MagAmmoRemaining >= ShovelReloadNormalCapacity)
+            return;
+    }
+    else if (MagAmmoRemaining >= MagCapacity)
         return;
 
     MagAmmoRemaining = MagAmmoRemaining + LoadAmount;
@@ -3105,9 +3132,6 @@ simulated function AdjustIngameScope()
             }
             break;
     }
-
-    if (PC != None)
-        log("BOG SCOPE DEBUG: Detail="$KFScopeDetail$" Desired="$PC.DesiredFOV$" Display="$DisplayFOV);
 }
 
 simulated event OnZoomInFinished()
@@ -3271,6 +3295,7 @@ simulated function AnimEnd(int Channel)
 	local float Frame;
 	local float Rate;
 	local int Mode;
+	local int ShovelReloadTargetCapacity;
 
 	//=============================================================================
 	// Dual Fire Animation Channels
@@ -3347,7 +3372,13 @@ simulated function AnimEnd(int Channel)
 
 			if (AnimName == GetShovelReloadLoopAnimation())
 			{
-				if (bShovelReloadEndRequested)
+				ShovelReloadTargetCapacity = MagCapacity;
+
+				if (ShovelReloadMode == 0 && bShovelReloadEmptyStart)
+					ShovelReloadTargetCapacity = ShovelReloadNormalCapacity;
+
+				if (bShovelReloadEndRequested ||
+					(ShovelReloadMode == 0 && MagAmmoRemaining >= ShovelReloadTargetCapacity))
 				{
 					bShovelReloadEndRequested = false;
 					bShovelReloadLooping = false;
@@ -3371,6 +3402,8 @@ simulated function AnimEnd(int Channel)
 				bBallisticReload = false;
 				bBallisticReloadClipIn = false;
 				bReloadResumePending = false;
+
+				UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
 				PlayIdle();
 				return;

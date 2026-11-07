@@ -10,6 +10,7 @@ defaultproperties
 	MeleeHitEffectClass=class'Weapon_A909Blades_HitEffects'
 	WallHitPoint=2
 	NumSwipePoints=5
+	bCanLunge=True
 
 	TraceExtent=(X=0.000000,Y=15.000000,Z=15.000000)
 	TraceRange=140.000000

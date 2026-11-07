@@ -70,6 +70,9 @@ function BeginBallisticShovelReload()
     bShovelReloadStopRequested = false;
     bShovelReloadLooping = false;
 
+    bShovelReloadEmptyStart = (ShovelReloadMode == 0 && MagAmmoRemaining <= 0);
+    ShovelReloadNormalCapacity = MagCapacity;
+
     bM763PulloutPending = false;
     bM763StartedEmptyAtReload = (ShovelReloadMode == 0 && MagAmmoRemaining <= 0);
 
@@ -83,6 +86,9 @@ function BeginBallisticShovelReload()
         bShovelReloadEmpty = AltAmmoLoaded <= 0;
         bM763UseEmptyReloadEnd = false;
     }
+
+    if (Role < ROLE_Authority)
+        ServerBeginShovelReload(bShovelReloadEmptyStart, ShovelReloadNormalCapacity, ShovelReloadMode);
 
     PlayShovelReloadStartAnimation();
 }
