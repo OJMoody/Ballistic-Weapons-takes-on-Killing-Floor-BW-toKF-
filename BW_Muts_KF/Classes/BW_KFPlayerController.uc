@@ -12,14 +12,33 @@ enum EThirdPersonCameraMode
 };
 
 var EThirdPersonCameraMode ThirdPersonCameraMode;
+var byte CameraPerspective;
 
 var() config float ThirdPersonDistance;
 var() config float ThirdPersonHeight;
 var() config float ThirdPersonShoulderOffset;
 var() config float ThirdPersonCameraCollisionRadius;
+var() config float ThirdPersonTransitionTime;
+
 var Pawn ThirdPersonVisibilityPawn;
 var bool bOriginalOwnerNoSee;
 var bool bHasSavedOwnerNoSee;
+
+// Camera transition
+var bool bThirdPersonCameraTransitioning;
+var float ThirdPersonTransitionStartTime;
+var vector ThirdPersonTransitionStartLocation;
+var bool bKeepThirdPersonVisualsDuringTransition;
+var() config float ThirdPersonTransitionInvisiblePercent;
+var float ThirdPersonTransitionInvisibleTime;
+var bool bHideThirdPersonAtEndOfTransition;
+
+replication
+{
+    reliable if (bNetOwner && Role == ROLE_Authority)
+        CameraPerspective;
+}
+
 
 //=============================================================================
 // BUY MENU
@@ -31,6 +50,7 @@ function ShowBuyMenu(string wlTag, float maxweight)
 
     ClientOpenMenu("BW_Muts_KF.BW_GUIBuyMenu",,wlTag,string(maxweight));
 }
+
 
 //=============================================================================
 // CAMERA MODE CYCLING
@@ -44,17 +64,65 @@ exec function ToggleBehindView()
 function CycleThirdPersonCamera()
 {
     local BallisticWeapon BW;
+    local bool bWasThirdPerson;
 
-    if (ThirdPersonCameraMode == TPCM_FirstPerson)
-        ThirdPersonCameraMode = TPCM_RightShoulder;
-    else if (ThirdPersonCameraMode == TPCM_RightShoulder)
-        ThirdPersonCameraMode = TPCM_LeftShoulder;
+    // First Person Only: prevent all perspective switching.
+    if (CameraPerspective == 0)
+        return;
+
+    bWasThirdPerson = (ThirdPersonCameraMode != TPCM_FirstPerson);
+
+    // Capture the current camera position before changing modes.
+    if (Pawn != None && CalcViewActor != None)
+    {
+        ThirdPersonTransitionStartLocation = CalcViewLocation;
+        ThirdPersonTransitionStartTime = Level.TimeSeconds;
+        bThirdPersonCameraTransitioning = true;
+
+        ThirdPersonTransitionInvisibleTime =
+            ThirdPersonTransitionTime *
+            (ThirdPersonTransitionInvisiblePercent / 100.0);
+    }
+
+    // Third Person Only: alternate between left and right shoulder.
+    if (CameraPerspective == 1)
+    {
+        if (ThirdPersonCameraMode == TPCM_RightShoulder)
+            ThirdPersonCameraMode = TPCM_LeftShoulder;
+        else
+            ThirdPersonCameraMode = TPCM_RightShoulder;
+    }
+    // First and Third Person: retain the original camera cycle.
     else
-        ThirdPersonCameraMode = TPCM_FirstPerson;
+    {
+        if (ThirdPersonCameraMode == TPCM_FirstPerson)
+            ThirdPersonCameraMode = TPCM_RightShoulder;
+        else if (ThirdPersonCameraMode == TPCM_RightShoulder)
+            ThirdPersonCameraMode = TPCM_LeftShoulder;
+        else
+            ThirdPersonCameraMode = TPCM_FirstPerson;
+    }
+
+    // Only apply the invisible period when crossing between FP and TP.
+    if (!bWasThirdPerson && ThirdPersonCameraMode != TPCM_FirstPerson)
+    {
+        bHideThirdPersonAtEndOfTransition = false;
+    }
+    else if (bWasThirdPerson && ThirdPersonCameraMode == TPCM_FirstPerson)
+    {
+        bHideThirdPersonAtEndOfTransition = true;
+    }
+    else
+    {
+        ThirdPersonTransitionInvisibleTime = 0.0;
+        bHideThirdPersonAtEndOfTransition = false;
+    }
+
+    bKeepThirdPersonVisualsDuringTransition =
+        bWasThirdPerson && ThirdPersonCameraMode == TPCM_FirstPerson;
 
     UpdateThirdPersonPawnVisibility();
 
-    // Update player FOV if already aiming with a model scope.
     if (Pawn == None)
     {
         LastPlayerCalcView = -1.0;
@@ -66,13 +134,34 @@ function CycleThirdPersonCamera()
     if (BW != None && BW.bAimingRifle && BW.UsesModelScope())
     {
         if (ThirdPersonCameraMode == TPCM_FirstPerson)
-			TransitionFOV(DefaultFOV, BW.ZoomTime);
-		else
-			TransitionFOV(BW.PlayerIronSightFOV, BW.ZoomTime);
+            TransitionFOV(DefaultFOV, BW.ZoomTime);
+        else
+            TransitionFOV(BW.PlayerIronSightFOV, BW.ZoomTime);
     }
 
     LastPlayerCalcView = -1.0;
 }
+
+function SetCameraPerspective(byte NewPerspective)
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    CameraPerspective = Min(NewPerspective, 2);
+
+    ApplyCameraPerspective();
+}
+
+simulated function ApplyCameraPerspective()
+{
+    if (CameraPerspective == 1)
+        ThirdPersonCameraMode = TPCM_RightShoulder;
+    else
+        ThirdPersonCameraMode = TPCM_FirstPerson;
+
+    LastPlayerCalcView = -1.0;
+}
+
 
 //=============================================================================
 // THIRD-PERSON CAMERA CALCULATION
@@ -127,6 +216,7 @@ function UpdateThirdPersonPawnVisibility()
 {
     local Pawn P;
     local BallisticWeapon BW;
+    local float TransitionElapsed;
 
     P = Pawn;
 
@@ -150,7 +240,45 @@ function UpdateThirdPersonPawnVisibility()
         bHasSavedOwnerNoSee = true;
     }
 
-    if (ThirdPersonCameraMode == TPCM_FirstPerson)
+    TransitionElapsed = Level.TimeSeconds - ThirdPersonTransitionStartTime;
+
+    // Handle the invisible period during FP/TP transitions.
+    if (bThirdPersonCameraTransitioning &&
+        ThirdPersonTransitionInvisibleTime > 0.0)
+    {
+        if (!bHideThirdPersonAtEndOfTransition &&
+            TransitionElapsed < ThirdPersonTransitionInvisibleTime)
+        {
+            // FP -> TP: hide at the beginning.
+            P.bOwnerNoSee = true;
+        }
+        else if (bHideThirdPersonAtEndOfTransition &&
+            TransitionElapsed >= ThirdPersonTransitionTime -
+            ThirdPersonTransitionInvisibleTime)
+        {
+            // TP -> FP: hide at the end.
+            P.bOwnerNoSee = true;
+        }
+        else if (ThirdPersonCameraMode == TPCM_FirstPerson &&
+            bKeepThirdPersonVisualsDuringTransition)
+        {
+            P.bOwnerNoSee = false;
+        }
+        else if (ThirdPersonCameraMode == TPCM_FirstPerson)
+        {
+            P.bOwnerNoSee = bOriginalOwnerNoSee;
+        }
+        else
+        {
+            P.bOwnerNoSee = false;
+        }
+    }
+    else if (ThirdPersonCameraMode == TPCM_FirstPerson &&
+        bKeepThirdPersonVisualsDuringTransition)
+    {
+        P.bOwnerNoSee = false;
+    }
+    else if (ThirdPersonCameraMode == TPCM_FirstPerson)
     {
         P.bOwnerNoSee = bOriginalOwnerNoSee;
     }
@@ -159,15 +287,23 @@ function UpdateThirdPersonPawnVisibility()
         P.bOwnerNoSee = false;
     }
 
-    // Synchronise the equipped Ballistic weapon's first-person rendering.
+    // Synchronise the equipped Ballistic weapon's rendering.
     BW = BallisticWeapon(P.Weapon);
 
     if (BW != None)
-        BW.bBWThirdPersonCamera = (ThirdPersonCameraMode != TPCM_FirstPerson);
+    {
+        BW.bBWThirdPersonCamera =
+            (ThirdPersonCameraMode != TPCM_FirstPerson ||
+            bKeepThirdPersonVisualsDuringTransition);
+    }
 
     // Release the saved visibility state after restoring first person.
-    if (ThirdPersonCameraMode == TPCM_FirstPerson)
+    if (ThirdPersonCameraMode == TPCM_FirstPerson &&
+        !bKeepThirdPersonVisualsDuringTransition &&
+        !bThirdPersonCameraTransitioning)
+    {
         bHasSavedOwnerNoSee = false;
+    }
 }
 
 
@@ -177,11 +313,24 @@ function UpdateThirdPersonPawnVisibility()
 
 event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator CameraRotation)
 {
+    local vector CameraOrigin;
+    local vector DesiredCameraLocation;
+    local vector HitLocation;
+    local vector HitNormal;
+    local float TransitionAlpha;
+
     // Dedicated server does not need a rendered camera.
     if (Level.NetMode == NM_DedicatedServer)
     {
         Global.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
         return;
+    }
+
+    // Enforce Third Person Only.
+    if (CameraPerspective == 1 &&
+        ThirdPersonCameraMode == TPCM_FirstPerson)
+    {
+        ApplyCameraPerspective();
     }
 
     UpdateThirdPersonPawnVisibility();
@@ -214,23 +363,79 @@ event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator
         return;
     }
 
-    // First-person mode uses the normal KF camera calculation.
+    // Calculate the normal first-person camera position.
     ViewActor = ViewTarget;
     CameraLocation = ViewTarget.Location;
 
     CalcFirstPersonView(CameraLocation, CameraRotation);
 
-    // Replace the normal camera position with our shoulder camera.
+    // Remember the camera origin for collision detection.
+    CameraOrigin = CameraLocation;
+
+    // Calculate the destination camera position.
     if (ThirdPersonCameraMode != TPCM_FirstPerson)
         CalcBWThirdPersonView(CameraLocation, CameraRotation);
 
+    // Smoothly transition between the previous and destination positions.
+    if (bThirdPersonCameraTransitioning)
+    {
+        if (ThirdPersonTransitionTime <= 0.0)
+        {
+            bThirdPersonCameraTransitioning = false;
+        }
+        else
+        {
+            TransitionAlpha = FClamp(
+                (Level.TimeSeconds - ThirdPersonTransitionStartTime)
+                / ThirdPersonTransitionTime,
+                0.0,
+                1.0);
+
+            // Smoothstep easing.
+            TransitionAlpha = TransitionAlpha * TransitionAlpha
+                * (3.0 - 2.0 * TransitionAlpha);
+
+            DesiredCameraLocation = ThirdPersonTransitionStartLocation
+                + (CameraLocation - ThirdPersonTransitionStartLocation)
+                * TransitionAlpha;
+
+            // Maintain camera collision during the transition.
+            if (Trace(
+                HitLocation,
+                HitNormal,
+                DesiredCameraLocation,
+                CameraOrigin,
+                false,
+                vect(10,10,10)) != None)
+            {
+                CameraLocation = HitLocation
+                    + HitNormal * ThirdPersonCameraCollisionRadius;
+            }
+            else
+            {
+                CameraLocation = DesiredCameraLocation;
+            }
+
+            // Finish the transition.
+            if (TransitionAlpha >= 1.0)
+            {
+                bThirdPersonCameraTransitioning = false;
+                bKeepThirdPersonVisualsDuringTransition = false;
+
+                UpdateThirdPersonPawnVisibility();
+            }
+        }
+    }
+
     CacheCalcView(ViewActor, CameraLocation, CameraRotation);
 }
+
 
 function bool IsBWThirdPersonCameraActive()
 {
     return ThirdPersonCameraMode != TPCM_FirstPerson;
 }
+
 
 //=============================================================================
 
@@ -242,4 +447,9 @@ defaultproperties
     ThirdPersonHeight=12.000000
     ThirdPersonShoulderOffset=35.000000
     ThirdPersonCameraCollisionRadius=6.000000
+
+    ThirdPersonTransitionTime=0.300000
+	ThirdPersonTransitionInvisiblePercent=15.000000
+	
+	CameraPerspective=2
 }

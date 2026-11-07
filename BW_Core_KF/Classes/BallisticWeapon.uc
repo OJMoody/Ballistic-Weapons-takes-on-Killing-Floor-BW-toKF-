@@ -1952,6 +1952,7 @@ function ServerClipIn()
     bBallisticReload = false;
     bReloadEffectDone = false;
     bReloadResumePending = false;
+    bIsReloading = false;
     BallisticReloadStage = 0;
 }
 
@@ -2945,7 +2946,11 @@ simulated function bool PutDown()
 	}
 	else if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
 	{
-		bReloadResumePending = true;
+		if (bBallisticClipOut)
+			bReloadResumePending = true;
+		else
+			bReloadResumePending = false;
+
 		bBallisticReload = false;
 		bBallisticReloadClipIn = false;
 		bIsReloading = false;

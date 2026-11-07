@@ -2,6 +2,7 @@ class Mut_BallisticWeapons extends Mutator
     config(BW_Core_KF);
 
 var() config bool bUseBWHands;
+var() config byte CameraPerspective;
 
 struct BWTraderWeapon
 {
@@ -10,13 +11,22 @@ struct BWTraderWeapon
 };
 
 var array<BWTraderWeapon> BWTraderWeapons;
+var() config bool bDisableStandardTraderWeapons;
+var array<class<Pickup> > DisabledTraderWeapons;
 
 function ModifyPlayer(Pawn Other)
 {
-	if (BW_KFPawn(Other) != None)
-		GiveBWWelder(Other);
+    local BW_KFPlayerController BWPC;
 
-	Super.ModifyPlayer(Other);
+    if (BW_KFPawn(Other) != None)
+        GiveBWWelder(Other);
+
+    Super.ModifyPlayer(Other);
+
+    BWPC = BW_KFPlayerController(Other.Controller);
+
+    if (BWPC != None)
+        BWPC.SetCameraPerspective(CameraPerspective);
 }
 
 function string GetInventoryClassOverride(string InventoryClassName)
@@ -66,9 +76,22 @@ function PreBeginPlay()
 {
 	Super.PreBeginPlay();
 
-	class'KFRandomItemSpawn'.default.PickupClasses[7] = class'BWArmorPickup';
+	// Random item pickups
+	class'KFRandomItemSpawn'.default.PickupClasses[0] = class'BW_WD001_KF.Weapon_M806DualPistol_Pickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[1] = class'BW_WD001_KF.Weapon_MRT6Shotgun_Pickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[2] = class'BW_WD001_KF.Weapon_M50Rifle_Pickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[3] = class'BW_WD001_KF.Weapon_Wilson41_Pickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[7] = class'BW_Core_KF.BWArmorPickup';
+
+	// TODO: Replace remaining vanilla random weapon pickups when suitable BW alternatives become available.
+	// Index 4: Winchester (Weight 2) class'KFRandomItemSpawn'.default.PickupClasses[4] = class'BW_WD001_KF.Weapon_XK2Submachinegun_Pickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[5] = class'BW_WD001_KF.Weapon_BOGPistol_Pickup';
+	class'KFRandomItemSpawn'.default.PickupClasses[6] = class'BW_WD002_KF.Weapon_59MachinePistol_Pickup';
+
+	// Player equipment
 	class'BW_KFPawn'.default.RequiredEquipment[3] = "BW_WD000_KF.Tool_ICIS25_Main";
 	class'BW_KFPawn'.default.RequiredEquipment[4] = "";
+
 }
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
@@ -103,27 +126,51 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant)
 
 static function FillPlayInfo(PlayInfo PlayInfo)
 {
-    Super.FillPlayInfo(PlayInfo);
+	Super.FillPlayInfo(PlayInfo);
 
-    PlayInfo.AddSetting(
-        "BW Hands",
-        "bUseBWHands",
-        "Use Ballistic Weapons hands",
-        0,
-        0,
-        "Check"
-    );
+	PlayInfo.AddSetting(
+		"BW Hands",
+		"bUseBWHands",
+		"Use Ballistic Weapons hands",
+		0,
+		0,
+		"Check"
+	);
+
+	PlayInfo.AddSetting(
+		"BW Trader",
+		"bDisableStandardTraderWeapons",
+		"Disable standard KF trader weapons",
+		0,
+		0,
+		"Check"
+	);
+	PlayInfo.AddSetting(
+		"Camera",
+		"CameraPerspective",
+		"Camera Perspective",
+		0,
+		1,
+		"Select",
+		"0;First Person Only;1;Third Person Only;2;First and Third Person"
+);
 }
 
 static function string GetDescriptionText(string SettingName)
 {
-    switch (SettingName)
-    {
-        case "bUseBWHands":
-            return "Use the Ballistic Weapons hand and sleeve system instead of the standard Killing Floor hands.";
-    }
+	switch (SettingName)
+	{
+		case "bUseBWHands":
+			return "Use the Ballistic Weapons hand and sleeve system instead of the standard Killing Floor hands.";
 
-    return Super.GetDescriptionText(SettingName);
+		case "bDisableStandardTraderWeapons":
+			return "Removes the configured standard Killing Floor weapons from the trader.";
+		
+		case "CameraPerspective":
+			return "Controls which camera perspectives players can use. First Person Only disables third person, Third Person Only forces third person, and First and Third Person allows both.";
+	}
+
+	return Super.GetDescriptionText(SettingName);
 }
 
 function PostBeginPlay()
@@ -162,12 +209,56 @@ simulated function Timer()
     }
 }
 
+simulated function bool IsTraderWeaponDisabled(class<Pickup> PickupClass)
+{
+	local int i;
+
+	if (PickupClass == None)
+		return false;
+
+	for (i = 0; i < DisabledTraderWeapons.Length; i++)
+	{
+		if (DisabledTraderWeapons[i] == PickupClass)
+			return true;
+	}
+
+	return false;
+}
+
+simulated function RemoveDisabledTraderWeapons(KFLevelRules KFLRules)
+{
+	if (!bDisableStandardTraderWeapons || KFLRules == None)
+		return;
+
+	RemoveDisabledTraderWeaponsFromList(KFLRules.MediItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.SuppItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.ShrpItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.CommItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.BersItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.FireItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.DemoItemForSale);
+	RemoveDisabledTraderWeaponsFromList(KFLRules.NeutItemForSale);
+}
+
+simulated function RemoveDisabledTraderWeaponsFromList(out array<class<Pickup> > TraderItems)
+{
+	local int i;
+
+	for (i = TraderItems.Length - 1; i >= 0; i--)
+	{
+		if (IsTraderWeaponDisabled(TraderItems[i]))
+			TraderItems.Remove(i, 1);
+	}
+}
+
 simulated function SetupBWTrader(KFLevelRules KFLRules)
 {
 	local int i;
 
 	if (KFLRules == None)
 		return;
+
+	RemoveDisabledTraderWeapons(KFLRules);
 
 	for (i = 0; i < BWTraderWeapons.Length; i++)
 		AddBWTraderWeapon(KFLRules, BWTraderWeapons[i].PickupClass, BWTraderWeapons[i].TraderList);
@@ -311,6 +402,101 @@ defaultproperties
 	bNetNotify=True
 
 	bUseBWHands=True
+	bDisableStandardTraderWeapons=True
+	CameraPerspective=2
+
+	// Medic
+	DisabledTraderWeapons(0)=Class'KFMod.MP7MPickup'
+	DisabledTraderWeapons(1)=Class'KFMod.BlowerThrowerPickup'
+	DisabledTraderWeapons(2)=Class'KFMod.MP5MPickup'
+	DisabledTraderWeapons(3)=Class'KFMod.CamoMP5MPickup'
+	DisabledTraderWeapons(4)=Class'KFMod.M7A3MPickup'
+	DisabledTraderWeapons(5)=Class'KFMod.KrissMPickup'
+	DisabledTraderWeapons(6)=Class'KFMod.NeonKrissMPickup'
+
+	// Support
+	DisabledTraderWeapons(7)=Class'KFMod.ShotgunPickup'
+	DisabledTraderWeapons(8)=Class'KFMod.CamoShotgunPickup'
+	DisabledTraderWeapons(9)=Class'KFMod.BoomStickPickup'
+	DisabledTraderWeapons(10)=Class'KFMod.KSGPickup'
+	DisabledTraderWeapons(11)=Class'KFMod.NeonKSGPickup'
+	DisabledTraderWeapons(12)=Class'KFMod.NailGunPickup'
+	DisabledTraderWeapons(13)=Class'KFMod.SPShotGunPickup'
+	DisabledTraderWeapons(14)=Class'KFMod.BenelliPickup'
+	DisabledTraderWeapons(15)=Class'KFMod.GoldenBenelliPickup'
+	DisabledTraderWeapons(16)=Class'KFMod.AA12Pickup'
+	DisabledTraderWeapons(17)=Class'KFMod.GoldenAA12Pickup'
+
+	// Sharpshooter
+	DisabledTraderWeapons(18)=Class'KFMod.SinglePickup'
+	DisabledTraderWeapons(19)=Class'KFMod.DualiesPickup'
+	DisabledTraderWeapons(20)=Class'KFMod.WinchesterPickup'
+	DisabledTraderWeapons(21)=Class'KFMod.Magnum44Pickup'
+	DisabledTraderWeapons(22)=Class'KFMod.DeaglePickup'
+	DisabledTraderWeapons(23)=Class'KFMod.GoldenDeaglePickup'
+	DisabledTraderWeapons(24)=Class'KFMod.MK23Pickup'
+	DisabledTraderWeapons(25)=Class'KFMod.CrossbowPickup'
+	DisabledTraderWeapons(26)=Class'KFMod.Dual44MagnumPickup'
+	DisabledTraderWeapons(27)=Class'KFMod.DualMK23Pickup'
+	DisabledTraderWeapons(28)=Class'KFMod.DualDeaglePickup'
+	DisabledTraderWeapons(29)=Class'KFMod.GoldenDualDeaglePickup'
+	DisabledTraderWeapons(30)=Class'KFMod.SPSniperPickup'
+	DisabledTraderWeapons(31)=Class'KFMod.M14EBRPickup'
+	DisabledTraderWeapons(32)=Class'KFMod.M99Pickup'
+
+	// Commando
+	DisabledTraderWeapons(33)=Class'KFMod.BullpupPickup'
+	DisabledTraderWeapons(34)=Class'KFMod.ThompsonPickup'
+	DisabledTraderWeapons(35)=Class'KFMod.SPThompsonPickup'
+	DisabledTraderWeapons(36)=Class'KFMod.ThompsonDrumPickup'
+	DisabledTraderWeapons(37)=Class'KFMod.AK47Pickup'
+	DisabledTraderWeapons(38)=Class'KFMod.GoldenAK47Pickup'
+	DisabledTraderWeapons(39)=Class'KFMod.NeonAK47Pickup'
+	DisabledTraderWeapons(40)=Class'KFMod.M4Pickup'
+	DisabledTraderWeapons(41)=Class'KFMod.CamoM4Pickup'
+	DisabledTraderWeapons(42)=Class'KFMod.MKb42Pickup'
+	DisabledTraderWeapons(43)=Class'KFMod.SCARMK17Pickup'
+	DisabledTraderWeapons(44)=Class'KFMod.NeonSCARMK17Pickup'
+	DisabledTraderWeapons(45)=Class'KFMod.FNFAL_ACOG_Pickup'
+
+	// Berserker
+	DisabledTraderWeapons(46)=Class'KFMod.KnifePickup'
+	DisabledTraderWeapons(47)=Class'KFMod.MachetePickup'
+	DisabledTraderWeapons(48)=Class'KFMod.AxePickup'
+	DisabledTraderWeapons(49)=Class'KFMod.KatanaPickup'
+	DisabledTraderWeapons(50)=Class'KFMod.GoldenKatanaPickup'
+	DisabledTraderWeapons(51)=Class'KFMod.ScythePickup'
+	DisabledTraderWeapons(52)=Class'KFMod.ChainsawPickup'
+	DisabledTraderWeapons(53)=Class'KFMod.GoldenChainsawPickup'
+	DisabledTraderWeapons(54)=Class'KFMod.DwarfAxePickup'
+	DisabledTraderWeapons(55)=Class'KFMod.ClaymoreSwordPickup'
+	DisabledTraderWeapons(56)=Class'KFMod.CrossbuzzsawPickup'
+
+	// Firebug
+	DisabledTraderWeapons(57)=Class'KFMod.MAC10Pickup'
+	DisabledTraderWeapons(58)=Class'KFMod.FlareRevolverPickup'
+	DisabledTraderWeapons(59)=Class'KFMod.FlameThrowerPickup'
+	DisabledTraderWeapons(60)=Class'KFMod.GoldenFTPickup'
+	DisabledTraderWeapons(61)=Class'KFMod.DualFlareRevolverPickup'
+	DisabledTraderWeapons(62)=Class'KFMod.TrenchgunPickup'
+	DisabledTraderWeapons(63)=Class'KFMod.HuskGunPickup'
+
+	// Demolition
+	DisabledTraderWeapons(64)=Class'KFMod.M79Pickup'
+	DisabledTraderWeapons(65)=Class'KFMod.GoldenM79Pickup'
+	DisabledTraderWeapons(66)=Class'KFMod.SPGrenadePickup'
+	DisabledTraderWeapons(67)=Class'KFMod.PipeBombPickup'
+	DisabledTraderWeapons(68)=Class'KFMod.SealSquealPickup'
+	DisabledTraderWeapons(69)=Class'KFMod.SeekerSixPickup'
+	DisabledTraderWeapons(70)=Class'KFMod.M4203Pickup'
+	DisabledTraderWeapons(71)=Class'KFMod.LAWPickup'
+	DisabledTraderWeapons(72)=Class'KFMod.M32Pickup'
+	DisabledTraderWeapons(73)=Class'KFMod.CamoM32Pickup'
+
+	// Neutral
+	DisabledTraderWeapons(74)=Class'KFMod.ZEDMKIIPickup'
+	DisabledTraderWeapons(75)=Class'KFMod.ZEDGunPickup'
+	DisabledTraderWeapons(76)=Class'KFMod.Potato'
 
 	BWTraderWeapons(0)=(PickupClass=Class'BW_WD001_KF.Weapon_M806DualPistol_Pickup',TraderList=2)
 	BWTraderWeapons(1)=(PickupClass=Class'BW_WD001_KF.Weapon_BOGPistol_Pickup',TraderList=0)

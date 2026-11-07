@@ -3,6 +3,8 @@
 //=============================================================================
 class BW_KFBuyMenuInvList extends KFBuyMenuInvList;
 
+#exec OBJ LOAD FILE=BWKF_Core_T.utx
+
 function UpdateMyBuyables()
 {
 	local class<KFVeterancyTypes> PlayerVeterancy;
@@ -309,10 +311,10 @@ function UpdateMyBuyables()
 
 	MyBuyable = new class'GUIBuyable';
 
-	MyBuyable.ItemName 			= class'BuyableVest'.default.ItemName;
+	MyBuyable.ItemName 			= "Ballistic Vest and Helmet";
 	MyBuyable.ItemDescription 	= class'BuyableVest'.default.ItemDescription;
 	MyBuyable.ItemCategorie		= "";
-	MyBuyable.ItemImage			= class'BuyableVest'.default.ItemImage;
+	MyBuyable.ItemImage			= Texture'BWKF_Core_T.Armor.BallisticVestandHelmetIcon';
 	MyBuyable.ItemAmmoCurrent	= PlayerOwner().Pawn.ShieldStrength;
 	MyBuyable.ItemAmmoMax		= 100;
 	MyBuyable.ItemCost			= int(class'BuyableVest'.default.ItemCost * PlayerVeterancy.static.GetCostScaling(KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo), class'Vest'));

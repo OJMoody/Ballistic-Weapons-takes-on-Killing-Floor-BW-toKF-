@@ -20,6 +20,8 @@ var bool bMeleePrepPlaying;
 var bool bMeleeFirePlaying;
 var bool bMeleePrepIdle;
 
+var() name TPBrassBone;
+
 simulated event PostNetBeginPlay()
 {
     Super.PostNetBeginPlay();
@@ -28,6 +30,8 @@ simulated event PostNetBeginPlay()
     {
         LinkedAnimPawn = Instigator;
         Instigator.LinkSkelAnim(MeshAnimation'BWKF_Third_A.BWRig_TP_Anims');
+        Instigator.BoneRefresh();
+        Instigator.bForceSkelUpdate = True;
     }
 }
 
@@ -39,6 +43,7 @@ simulated function PostNetReceive()
     {
         LinkedAnimPawn = Instigator;
         Instigator.LinkSkelAnim(MeshAnimation'BWKF_Third_A.BWRig_TP_Anims');
+        Instigator.bForceSkelUpdate = True;
     }
 }
 
@@ -51,17 +56,16 @@ simulated function EjectBrass()
     local Actor BrassActor;
     local vector Start;
     local vector X, Y, Z;
+    local rotator BrassRotation;
 
     if (Instigator == None)
         return;
 
     BW = BallisticWeapon(Instigator.Weapon);
-
     if (BW == None)
-    return;
+        return;
 
-	BIF = BW.GetBallisticFireMode(FiringMode);
-
+    BIF = BW.GetBallisticFireMode(FiringMode);
     if (BIF == None || BIF.BrassClass == None)
         return;
 
@@ -70,22 +74,21 @@ simulated function EjectBrass()
 
     // The local first-person weapon handles its own brass.
     PC = Level.GetLocalPlayerController();
+    if (PC != None && Instigator.Controller == PC && Instigator.IsFirstPerson() && PC.ViewTarget == Instigator)
+        return;
 
-	if (PC != None && Instigator.Controller == PC && Instigator.IsFirstPerson() && PC.ViewTarget == Instigator)
-		return;
-
-    C = GetBoneCoords(BIF.BrassBone);
-
+    // Get the brass-ejection transform from the third-person attachment.
+    BrassRotation = GetBoneRotation(TPBrassBone);
+    C = GetBoneCoords(TPBrassBone);
     Start = C.Origin;
 
-    // Apply the same configurable offset used by first-person brass.
-    GetAxes(GetBoneRotation(BIF.BrassBone), X, Y, Z);
-
+    // Apply the weapon's configurable brass offset in bone-local axes.
+    GetAxes(BrassRotation, X, Y, Z);
     Start += X * BIF.BrassOffset.X;
     Start += Y * BIF.BrassOffset.Y;
     Start += Z * BIF.BrassOffset.Z;
 
-    BrassActor = Spawn(BIF.BrassClass,,, Start, GetBoneRotation(BIF.BrassBone));
+    BrassActor = Spawn(BIF.BrassClass,,, Start, BrassRotation);
 }
 
 simulated function SetDualMesh(bool bOffHand)
@@ -296,6 +299,24 @@ simulated function SpawnTracer()
     }
 }
 
+simulated function vector GetTracerStart()
+{
+    local Pawn P;
+
+    P = Pawn(Owner);
+
+    // Preserve the original first-person muzzle position.
+    if ((P != None) && P.IsFirstPerson() && P.Weapon != None)
+        return P.Weapon.GetEffectStart();
+
+    // Preserve vanilla handling for attachments that haven't been rendered.
+    if (Instigator != None && (Level.TimeSeconds - LastRenderTime) > 2)
+        return Instigator.Location;
+
+    // Use the actual third-person weapon muzzle bone.
+    return GetBoneCoords('tip').Origin;
+}
+
 simulated event ThirdPersonEffects()
 {
 	local PlayerController PC;
@@ -368,4 +389,6 @@ defaultproperties
     MeleePrepCrouchAnim="Pistols_BW_CHMeleePrep1"
     MeleePrepIdleCrouchAnim="Pistols_BW_CHMeleePrepIdle1"
     MeleeFireCrouchAnim="Pistols_BW_CHMeleeFire1"
+	TPBrassBone="Ejector"
+	bForceSkelUpdate=True
 }
