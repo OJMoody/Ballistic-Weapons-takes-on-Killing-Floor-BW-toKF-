@@ -197,6 +197,7 @@ defaultproperties
     ShovelReloadEndAnimation=ReloadEnd
     ShovelReloadEmptyEndAnimation=ReloadEndEmpty
     bShovelLoadEmptyEnd=True
+	bPlusOne=True
 
 	HudImage=Texture'BWKF_M763_T.Icons.MedIcon_M763_Unselected'
     SelectedHudImage=Texture'BWKF_M763_T.Icons.MedIcon_M763_Selected'

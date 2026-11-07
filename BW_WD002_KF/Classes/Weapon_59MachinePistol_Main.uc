@@ -282,6 +282,7 @@ defaultproperties
     Weight=4.000000
     bModeZeroCanDryFire=True
     SellValue=200
+	bPlusOne=True
 
     PlayerIronSightFOV=65
     ZoomTime=0.25

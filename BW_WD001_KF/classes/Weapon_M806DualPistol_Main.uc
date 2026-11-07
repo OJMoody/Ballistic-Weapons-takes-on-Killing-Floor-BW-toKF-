@@ -162,11 +162,16 @@ function GiveTo(pawn Other, optional Pickup Pickup)
     }
 
     if (KFWeaponPickup(Pickup) != None && Pickup.bDropped)
-        MagAmmoRemaining = Clamp(MagAmmoRemaining + KFWeaponPickup(Pickup).MagAmmoRemaining, 0, MagCapacity);
-    else
-        MagAmmoRemaining = Clamp(MagAmmoRemaining + Class'Weapon_M806Pistol_Main'.Default.MagCapacity, 0, MagCapacity);
+    MagAmmoRemaining += KFWeaponPickup(Pickup).MagAmmoRemaining;
+	else
+		MagAmmoRemaining += Class'Weapon_M806Pistol_Main'.Default.MagCapacity;
 
-    Super(Weapon).GiveTo(Other, Pickup);
+	// Recalculate magazine capacity with the dual Plus One bonus.
+	UpdateMagCapacity(Other.PlayerReplicationInfo);
+
+	MagAmmoRemaining = Clamp(MagAmmoRemaining, 0, MagCapacity);
+
+	Super(Weapon).GiveTo(Other, Pickup);
 
     if (bNoPickup)
     {
@@ -249,7 +254,7 @@ simulated function UpdateM806AnimationSet()
 	// RELOAD
 	//=========================================================================
 
-	if (MagAmmoRemaining >= 15)
+	if (MagAmmoRemaining >= 17)
 		ReloadAnim = 'ReloadRight';
 	else if (MagAmmoRemaining >= 2)
 		ReloadAnim = 'Reload';
@@ -540,6 +545,25 @@ simulated function AnimEnd(int Channel)
     }
 
     Super.AnimEnd(Channel);
+	
+	//=========================================================================
+    // DUAL FIRE IDLE UPDATE
+    //=========================================================================
+
+    if (Channel == DualFireLeftChannel || Channel == DualFireRightChannel)
+    {
+        if (!bDualFireLeftPlaying &&
+            !bDualFireRightPlaying &&
+            !bIsReloading &&
+            !bBallisticReload &&
+            !bBallisticReloadClipIn &&
+            !bLaserToggleInProgress)
+        {
+            PlayIdle();
+        }
+
+        return;
+    }
 }
 
 
@@ -800,7 +824,7 @@ simulated event RenderOverlays(Canvas Canvas)
 {
     Super.RenderOverlays(Canvas);
 
-    if (!IsInState('Lowered'))
+    if (!IsInState('Lowered') && !bBWThirdPersonCamera)
         DrawLaserSight(Canvas);
 }
 
@@ -865,6 +889,7 @@ defaultproperties
     ZoomTime=0.25
     FastZoomOutTime=0.2
     bHasAimingMode=True
+	bPlusOne=True
 
 	HudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806Dual_Unselected'
     SelectedHudImage=Texture'BWKF_M806_T.Icons.MedIcon_M806Dual_Selected'

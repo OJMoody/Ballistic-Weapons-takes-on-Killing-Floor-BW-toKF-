@@ -414,6 +414,7 @@ defaultproperties
     InventoryGroup=3
     GroupOffset=2
     Weight=8.000000
+	bPlusOne=True
 
     PlayerIronSightFOV=65
     ZoomTime=0.25

@@ -420,6 +420,7 @@ defaultproperties
     FastZoomOutTime=0.2
     bHasAimingMode=True
 	bModeZeroCanDryFire=True
+	bPlusOne=True
 
 	HudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Unselected'
     SelectedHudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Selected'

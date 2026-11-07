@@ -167,10 +167,7 @@ simulated function Tick(float DT)
     // HIDE LASER WHEN NOT REQUIRED
     //=========================================================================
 
-    if (!bLaserOn ||
-        Instigator == None ||
-        Instigator.IsFirstPerson() ||
-        Instigator.DrivenVehicle != None)
+    if (!bLaserOn || Instigator == None || (Instigator.IsFirstPerson() && (myWeap == None || !myWeap.bBWThirdPersonCamera)) || Instigator.DrivenVehicle != None)
     {
         if (Laser != None)
             Laser.bHidden = true;

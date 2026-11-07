@@ -586,7 +586,7 @@ simulated event RenderOverlays(Canvas Canvas)
 {
     Super.RenderOverlays(Canvas);
 
-    if (!IsInState('Lowered'))
+    if (!IsInState('Lowered') && !bBWThirdPersonCamera)
         DrawLaserSight(Canvas);
 }
 
@@ -652,6 +652,7 @@ defaultproperties
 	AltAmmoLoaded=1
 	bReduceMagAmmoOnSecondaryFire=False
 	bShowAltAmmoChamber=True
+	bPlusOne=True
 	
 	FireModeClass(0)=Class'BW_WD001_KF.Weapon_M50Rifle_PrimaryFire'
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_M50Rifle_SecondaryFire'

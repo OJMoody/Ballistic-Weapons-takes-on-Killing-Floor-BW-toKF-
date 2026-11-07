@@ -71,10 +71,7 @@ simulated function Tick(float DT)
         bOldLaserOn = bLaserOn;
 
     // Hide the beam when it should not be visible.
-    if (!bLaserOn ||
-        Instigator == None ||
-        Instigator.IsFirstPerson() ||
-        Instigator.DrivenVehicle != None)
+    if (!bLaserOn || Instigator == None || (Instigator.IsFirstPerson() && (BallisticWeapon(Instigator.Weapon) == None || !BallisticWeapon(Instigator.Weapon).bBWThirdPersonCamera)) || Instigator.DrivenVehicle != None)
     {
         if (Laser != None)
             Laser.bHidden = true;

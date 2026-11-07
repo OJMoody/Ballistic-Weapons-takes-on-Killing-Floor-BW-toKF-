@@ -420,7 +420,7 @@ simulated event RenderOverlays(Canvas Canvas)
 {
     Super.RenderOverlays(Canvas);
 
-    if (!IsInState('Lowered'))
+    if (!IsInState('Lowered') && !bBWThirdPersonCamera)
         DrawLaserSight(Canvas);
 }
 
@@ -482,6 +482,7 @@ defaultproperties
     Weight=0.000000
     bModeZeroCanDryFire=True
     SellValue=-1
+	bPlusOne=True
 
     PlayerIronSightFOV=65
     ZoomTime=0.25

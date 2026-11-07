@@ -93,6 +93,8 @@ var() name LeftSightFXBone;
 var() name SightHipAnim;
 var() name SightIronsAnim;
 
+var bool bBWThirdPersonCamera;
+
 
 //=============================================================================
 // RELOAD
@@ -144,6 +146,8 @@ var bool bReloadPending;
 
 var() bool bShowAmmoAsRounds;
 var bool bSkipPutAwaySound;
+
+var() bool bPlusOne;
 
 
 //=============================================================================
@@ -504,6 +508,9 @@ simulated function ZoomIn(bool bAnimateTransition)
 
             if (Level.NetMode != NM_DedicatedServer && KFPC != None && AimInSound != None)
                 PlayOwnedSound(AimInSound, SLOT_Misc,,,,, false);
+
+            if (bBWThirdPersonCamera && Level.NetMode != NM_DedicatedServer && KFPC != None)
+                KFPC.TransitionFOV(PlayerIronSightFOV, ZoomTime);
         }
 
         return;
@@ -1457,6 +1464,38 @@ exec function ReloadMeNow()
 simulated function bool AllowAltReload()
 {
 	return AltAmmoLoaded <= 0 && AmmoAmount(1) > 0;
+}
+
+simulated function UpdateMagCapacity(PlayerReplicationInfo PRI)
+{
+    local int PlusOneBonus;
+
+    Super.UpdateMagCapacity(PRI);
+
+    if (!bPlusOne)
+        return;
+
+    if (bDualWeapon)
+        PlusOneBonus = 2;
+    else
+        PlusOneBonus = 1;
+
+    if (MagAmmoRemaining >= PlusOneBonus)
+        MagCapacity += PlusOneBonus;
+    else if (MagAmmoRemaining > 0)
+        MagCapacity += MagAmmoRemaining;
+}
+
+function GiveTo(Pawn Other, optional Pickup Pickup)
+{
+    Super.GiveTo(Other, Pickup);
+
+    if (bPlusOne && KFWeaponPickup(Pickup) != None && Pickup.bDropped)
+    {
+        UpdateMagCapacity(Other.PlayerReplicationInfo);
+
+        MagAmmoRemaining = Clamp(KFWeaponPickup(Pickup).MagAmmoRemaining, 0, MagCapacity);
+    }
 }
 
 exec function ReloadAlt()
@@ -2944,6 +2983,7 @@ simulated function bool PutDown()
 	return bResult;
 }
 
+
 //=============================================================================
 // Scope Code
 //=============================================================================
@@ -3160,50 +3200,64 @@ simulated event RenderOverlays(Canvas Canvas)
             ScopeScriptedTexture.Revision = ScopeScriptedTexture.Revision + 1;
         }
 
-        bDrawingFirstPerson = true;
+        if (!bBWThirdPersonCamera)
+        {
+            bDrawingFirstPerson = true;
 
-        if (KFScopeDetail == KF_ModelScopeHigh)
-            ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffsetHigh;
-        else
-            ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffset;
+            if (KFScopeDetail == KF_ModelScopeHigh)
+                ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffsetHigh;
+            else
+                ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffset;
 
-        Canvas.DrawBoundActor(self, false, false, DisplayFOV, PC.Rotation, rot(0,0,0), ScopeDrawOffset);
+            Canvas.DrawBoundActor(self, false, false, DisplayFOV, PC.Rotation, rot(0,0,0), ScopeDrawOffset);
 
-        bDrawingFirstPerson = false;
+            bDrawingFirstPerson = false;
+        }
     }
     else if (bScoped && ScopeTextureOverlay != None &&
         KFScopeDetail == KF_TextureScope &&
         PC.DesiredFOV == PlayerIronSightFOV && bAimingRifle)
     {
-        Skins[ScopeLensMaterialID] = ScopeFallbackMaterial;
+        if (!bBWThirdPersonCamera)
+        {
+            Skins[ScopeLensMaterialID] = ScopeFallbackMaterial;
 
-        SetScopeBlendColor(Canvas);
+            SetScopeBlendColor(Canvas);
 
-        Canvas.Style = ERenderStyle.STY_Normal;
+            Canvas.Style = ERenderStyle.STY_Normal;
 
-        Canvas.SetPos(0, 0);
-        Canvas.DrawTile(ScopeTextureOverlay, (Canvas.SizeX - Canvas.SizeY) / 2, Canvas.SizeY, 0.0, 0.0, 8, 8);
+            Canvas.SetPos(0, 0);
+            Canvas.DrawTile(ScopeTextureOverlay, (Canvas.SizeX - Canvas.SizeY) / 2, Canvas.SizeY, 0.0, 0.0, 8, 8);
 
-        Canvas.SetPos(Canvas.SizeX, 0);
-        Canvas.DrawTile(ScopeTextureOverlay, -(Canvas.SizeX - Canvas.SizeY) / 2, Canvas.SizeY, 0.0, 0.0, 8, 8);
+            Canvas.SetPos(Canvas.SizeX, 0);
+            Canvas.DrawTile(ScopeTextureOverlay, -(Canvas.SizeX - Canvas.SizeY) / 2, Canvas.SizeY, 0.0, 0.0, 8, 8);
 
-        Canvas.Style = 255;
-        Canvas.SetPos((Canvas.SizeX - Canvas.SizeY) / 2, 0);
-        Canvas.DrawTile(ScopeTextureOverlay, Canvas.SizeY, Canvas.SizeY, 0.0, 0.0, 1024, 1024);
+            Canvas.Style = 255;
+            Canvas.SetPos((Canvas.SizeX - Canvas.SizeY) / 2, 0);
+            Canvas.DrawTile(ScopeTextureOverlay, Canvas.SizeY, Canvas.SizeY, 0.0, 0.0, 1024, 1024);
+        }
     }
     else
     {
         if (bScoped)
             Skins[ScopeLensMaterialID] = ScopeFallbackMaterial;
 
-        bDrawingFirstPerson = true;
-		
-        Canvas.DrawActor(self, false, false, DisplayFOV);
-		
-        bDrawingFirstPerson = false;
+        if (!bBWThirdPersonCamera)
+        {
+            bDrawingFirstPerson = true;
+
+            Canvas.DrawActor(self, false, false, DisplayFOV);
+
+            bDrawingFirstPerson = false;
+        }
     }
 
     DrawFPBrass(Canvas);
+}
+
+simulated function bool UsesModelScope()
+{
+    return bScoped && (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh);
 }
 
 
@@ -3494,6 +3548,7 @@ defaultproperties
 	BobDamping=6.000000
 	bHasAimingMode=true
 	bTorchEnabled=false
+	bPlusOne=False
 	
 	PlayerViewOffset=(X=0.000000,Y=0.000000,Z=0.000000)
 	
