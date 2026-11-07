@@ -1,9 +1,9 @@
-class Utility_FP7Grenade_Attachment extends BallisticAttachment ;
+class Utility_FP7Grenade_Attachment extends BallisticAttachment;
 
 defaultproperties
 {
 	Mesh=SkeletalMesh'BWKF_FP7_A.FP7_TP_Mesh'
-	DrawScale=1.000000
+	DrawScale=0.200000
 	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Knife 

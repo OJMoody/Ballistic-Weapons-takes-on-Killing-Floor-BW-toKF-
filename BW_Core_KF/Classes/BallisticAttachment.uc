@@ -22,6 +22,20 @@ var bool bMeleePrepIdle;
 
 var() name TPBrassBone;
 
+//=============================================================================
+// THIRD-PERSON GRENADE ANIMATIONS
+//=============================================================================
+
+var bool bGrenadePrepPlaying;
+var bool bGrenadePrepHolding;
+var bool bGrenadeThrowPlaying;
+
+var byte GrenadeTPFireMode;
+
+var name ActiveGrenadePrepAnim;
+var name ActiveGrenadePrepIdleAnim;
+var name ActiveGrenadeThrowAnim;
+
 simulated event PostNetBeginPlay()
 {
     Super.PostNetBeginPlay();
@@ -103,6 +117,201 @@ simulated function Timer()
         CheckMeleePrep();
     else if (bMeleeFirePlaying)
         CheckMeleeFire();
+    else if (bGrenadePrepPlaying)
+        CheckGrenadePrep();
+    else if (bGrenadeThrowPlaying)
+        CheckGrenadeThrow();
+}
+
+simulated function PlayThirdPersonGrenadePrep(byte Mode)
+{
+    local BallisticHandGrenade GrenadeWeapon;
+    local BallisticHandGrenadeFire GrenadeFire;
+
+    if (Instigator == None || Mode > 1)
+        return;
+
+    GrenadeWeapon = BallisticHandGrenade(Instigator.Weapon);
+
+    if (GrenadeWeapon == None)
+        return;
+
+    GrenadeFire = GrenadeWeapon.GetGrenadeFireMode(Mode);
+
+    if (GrenadeFire == None)
+        return;
+
+    GrenadeTPFireMode = Mode;
+
+    if (KFPawn(Instigator) != None && KFPawn(Instigator).bIsCrouched)
+    {
+        ActiveGrenadePrepAnim = GrenadeFire.GrenadePrepareCrouchAnimTP;
+        ActiveGrenadePrepIdleAnim = GrenadeFire.GrenadePrepareCrouchIdleAnimTP;
+    }
+    else
+    {
+        ActiveGrenadePrepAnim = GrenadeFire.GrenadePrepareAnimTP;
+        ActiveGrenadePrepIdleAnim = GrenadeFire.GrenadePrepareIdleAnimTP;
+    }
+
+    if (ActiveGrenadePrepAnim == '' || !Instigator.HasAnim(ActiveGrenadePrepAnim))
+        return;
+
+    bMeleePrepHolding = false;
+    bMeleePrepPlaying = false;
+    bMeleePrepIdle = false;
+    bMeleeFirePlaying = false;
+
+    bGrenadePrepHolding = true;
+    bGrenadeThrowPlaying = false;
+    bGrenadePrepPlaying = true;
+
+    Instigator.AnimBlendParams(1, 1.0, 0.0, 0.2, 'CHR_Spine1');
+    Instigator.PlayAnim(ActiveGrenadePrepAnim, 1.0, 0.0, 1);
+
+    SetTimer(0.01, true);
+}
+
+simulated function CheckGrenadePrep()
+{
+    local name AnimName;
+    local float Frame;
+    local float Rate;
+
+    if (!bGrenadePrepPlaying || !bGrenadePrepHolding || Instigator == None)
+    {
+        bGrenadePrepPlaying = false;
+
+        if (!bGrenadeThrowPlaying)
+            SetTimer(0.0, false);
+
+        return;
+    }
+
+    Instigator.GetAnimParams(1, AnimName, Frame, Rate);
+
+    if (AnimName != ActiveGrenadePrepAnim)
+    {
+        bGrenadePrepPlaying = false;
+
+        if (!bGrenadeThrowPlaying)
+            SetTimer(0.0, false);
+
+        return;
+    }
+
+    if (Frame >= 0.70)
+    {
+        if (ActiveGrenadePrepIdleAnim != ''
+            && Instigator.HasAnim(ActiveGrenadePrepIdleAnim))
+        {
+            Instigator.PlayAnim(ActiveGrenadePrepIdleAnim, 1.0, 0.0, 1);
+            Instigator.FreezeAnimAt(0.0, 1);
+
+            bGrenadePrepPlaying = false;
+            bGrenadePrepHolding = true;
+
+            SetTimer(0.0, false);
+        }
+        else
+        {
+            bGrenadePrepPlaying = false;
+            bGrenadePrepHolding = false;
+
+            SetTimer(0.0, false);
+        }
+    }
+}
+
+simulated function PlayThirdPersonGrenadeThrow(byte Mode)
+{
+    local BallisticHandGrenade GrenadeWeapon;
+    local BallisticHandGrenadeFire GrenadeFire;
+
+    if (Instigator == None || Mode > 1)
+        return;
+
+    GrenadeWeapon = BallisticHandGrenade(Instigator.Weapon);
+
+    if (GrenadeWeapon == None)
+        return;
+
+    GrenadeFire = GrenadeWeapon.GetGrenadeFireMode(Mode);
+
+    if (GrenadeFire == None)
+        return;
+
+    GrenadeTPFireMode = Mode;
+
+    bGrenadePrepPlaying = false;
+    bGrenadePrepHolding = false;
+    bGrenadeThrowPlaying = false;
+
+    if (KFPawn(Instigator) != None && KFPawn(Instigator).bIsCrouched)
+		ActiveGrenadeThrowAnim = GrenadeFire.GrenadeThrowCrouchAnimTP;
+	else
+		ActiveGrenadeThrowAnim = GrenadeFire.GrenadeThrowAnimTP;
+
+    if (ActiveGrenadeThrowAnim == '' || !Instigator.HasAnim(ActiveGrenadeThrowAnim))
+        return;
+
+    Instigator.AnimBlendParams(1, 1.0, 0.0, 0.2, 'CHR_Spine1');
+    Instigator.PlayAnim(ActiveGrenadeThrowAnim, 1.0, 0.0, 1);
+
+    bGrenadeThrowPlaying = true;
+
+    SetTimer(0.01, true);
+}
+
+simulated function CheckGrenadeThrow()
+{
+    local name AnimName;
+    local float Frame;
+    local float Rate;
+
+    if (!bGrenadeThrowPlaying || Instigator == None)
+    {
+        bGrenadeThrowPlaying = false;
+        SetTimer(0.0, false);
+        return;
+    }
+
+    Instigator.GetAnimParams(1, AnimName, Frame, Rate);
+
+    if (AnimName != ActiveGrenadeThrowAnim)
+    {
+        bGrenadeThrowPlaying = false;
+        SetTimer(0.0, false);
+        return;
+    }
+
+    if (Frame >= 0.95)
+    {
+        Instigator.AnimBlendToAlpha(1, 0.0, 0.12);
+
+        bGrenadeThrowPlaying = false;
+        SetTimer(0.0, false);
+    }
+}
+
+simulated function CancelThirdPersonGrenade()
+{
+    if (Instigator != None
+        && (bGrenadePrepPlaying || bGrenadePrepHolding || bGrenadeThrowPlaying))
+    {
+        Instigator.AnimBlendToAlpha(1, 0.0, 0.12);
+    }
+
+    bGrenadePrepPlaying = false;
+    bGrenadePrepHolding = false;
+    bGrenadeThrowPlaying = false;
+
+    ActiveGrenadePrepAnim = '';
+    ActiveGrenadePrepIdleAnim = '';
+    ActiveGrenadeThrowAnim = '';
+
+    if (!bMeleePrepPlaying && !bMeleeFirePlaying)
+        SetTimer(0.0, false);
 }
 
 simulated function PlayThirdPersonMeleePrep()

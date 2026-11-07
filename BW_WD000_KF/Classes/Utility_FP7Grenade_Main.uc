@@ -6,6 +6,7 @@ defaultproperties
     FireModeClass(1)=Class'BW_WD000_KF.Utility_FP7Grenade_SecondaryFire'
 	PickupClass=Class'BW_WD000_KF.Utility_FP7Grenade_Pickup'
 	MeleeFireClass=Class'Utility_FP7Grenade_MeleeFire'
+	AttachmentClass=Class'BW_WD000_KF.Utility_FP7Grenade_Attachment'
 	
 	AmmoClass(0)=Class'BW_WD000_KF.Utility_FP7Grenade_Ammo'
 	AmmoClass(1)=Class'BW_WD000_KF.Utility_FP7Grenade_Ammo'

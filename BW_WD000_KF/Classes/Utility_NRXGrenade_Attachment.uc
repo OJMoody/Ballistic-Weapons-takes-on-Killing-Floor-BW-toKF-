@@ -3,7 +3,7 @@ class Utility_NRXGrenade_Attachment extends BallisticAttachment ;
 defaultproperties
 {
 	Mesh=SkeletalMesh'BWKF_NRXS_A.NRXS_TP_Mesh'
-	DrawScale=1.000000
+	DrawScale=0.200000
 	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Knife 

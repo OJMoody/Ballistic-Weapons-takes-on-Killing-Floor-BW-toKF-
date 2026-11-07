@@ -17,11 +17,16 @@ var array<class<Pickup> > DisabledTraderWeapons;
 function ModifyPlayer(Pawn Other)
 {
     local BW_KFPlayerController BWPC;
+    local Inventory Inv;
 
     if (BW_KFPawn(Other) != None)
         GiveBWWelder(Other);
 
+    Inv = Other.FindInventoryType(class'Tool_WD200_Main');
+
     Super.ModifyPlayer(Other);
+
+    Inv = Other.FindInventoryType(class'Tool_WD200_Main');
 
     BWPC = BW_KFPlayerController(Other.Controller);
 
@@ -196,12 +201,12 @@ simulated function Timer()
             SetupBWTrader(KFLRules);
 
             for (C = Level.ControllerList; C != None; C = C.NextController)
-            {
-                if (C.IsA('PlayerController'))
-                {
+			{
+				if (C.IsA('PlayerController'))
+				{
 					C.PawnClass = class'BW_KFPawn';
-                }
-            }
+				}
+			}
 
             SetTimer(0.0, false);
             return;

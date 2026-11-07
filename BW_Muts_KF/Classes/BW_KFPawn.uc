@@ -716,6 +716,7 @@ function ThrowGrenade()
 function AddDefaultInventory()
 {
     local KFPlayerReplicationInfo KFPRI;
+	local Inventory Inv;
 
     KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
 
@@ -731,6 +732,8 @@ function AddDefaultInventory()
     RequiredEquipment[2] = string(DefaultGrenadeClass);
 
     Super.AddDefaultInventory();
+	
+	Inv = FindInventoryType(class'BallisticHandGrenade');
 }
 
 function bool ServerBuyAmmo(Class<Ammunition> AClass, bool bOnlyClip)

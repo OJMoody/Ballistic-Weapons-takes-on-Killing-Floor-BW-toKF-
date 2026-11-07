@@ -12,6 +12,14 @@ var() BUtil.FullSound GrenadeThrowSound;
 
 var float CachedThrowPower;
 
+var() name GrenadePrepareAnimTP;
+var() name GrenadeThrowAnimTP;
+var() name GrenadePrepareIdleAnimTP;
+
+var() name GrenadePrepareCrouchAnimTP;
+var() name GrenadeThrowCrouchAnimTP;
+var() name GrenadePrepareCrouchIdleAnimTP;
+
 //=============================================================================
 // THROW POWER
 //=============================================================================
@@ -125,6 +133,14 @@ defaultproperties
     GrenadeBaseThrowSpeed=850.000000
     GrenadeThrowChargeTime=2.500000
     GrenadeMaxThrowBonus=0.250000
+	
+	GrenadePrepareAnimTP="Grenade_BW_PrepThrow"
+    GrenadeThrowAnimTP="Grenade_BW_Throw"
+	GrenadePrepareIdleAnimTP="Grenade_BW_PrepThrowIdle"
+
+    GrenadePrepareCrouchAnimTP="Grenade_BW_CHPrepThrow"
+    GrenadeThrowCrouchAnimTP="Grenade_BW_CHThrow"
+	GrenadePrepareCrouchIdleAnimTP="Grenade_BW_CHPrepThrowIdle"
 
     ProjSpawnOffset=(X=25.0,Y=-10.0,Z=0.0)
     AmmoPerFire=0

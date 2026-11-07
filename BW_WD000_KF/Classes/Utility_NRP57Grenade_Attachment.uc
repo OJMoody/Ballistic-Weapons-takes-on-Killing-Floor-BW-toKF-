@@ -3,7 +3,7 @@ class Utility_NRP57Grenade_Attachment extends BallisticAttachment ;
 defaultproperties
 {
 	Mesh=SkeletalMesh'BWKF_NRP5_A.NRP5_TP_Mesh'
-	DrawScale=0.100000
+	DrawScale=0.200000
 	bDoFiringEffects=False
 
     MovementAnims(0)=JogF_Knife 

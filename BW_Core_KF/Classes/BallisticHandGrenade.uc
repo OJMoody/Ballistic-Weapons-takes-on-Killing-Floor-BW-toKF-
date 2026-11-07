@@ -26,6 +26,14 @@ replication
         ServerReleaseGrenade, ServerFinishGrenadeThrow;
 }
 
+simulated function BallisticHandGrenadeFire GetGrenadeFireMode(byte Mode)
+{
+    if (Mode > 1)
+        return None;
+
+    return BallisticHandGrenadeFire(FireMode[Mode]);
+}
+
 //=============================================================================
 // INPUT
 //=============================================================================
@@ -55,6 +63,9 @@ simulated function bool StartFire(int Mode)
     GrenadeFireMode = Mode;
     bGrenadeCharging = true;
     FireMode[Mode].bIsFiring = true;
+	
+	if (Role == ROLE_Authority)
+		SetGrenadeTPAnim(3, Mode);
 
     GrenadeChargeStartTime = Level.TimeSeconds;
     GrenadeChargeTime = 0.0;
@@ -152,6 +163,9 @@ simulated function BeginGrenadeThrow()
         return;
 
     bGrenadeThrowPending = true;
+	
+	if (Role == ROLE_Authority)
+		SetGrenadeTPAnim(4, GrenadeFireMode);
 
     class'BUtil'.static.PlayFullSound(self, GrenadeFire.GrenadeThrowSound);
 
@@ -312,6 +326,12 @@ simulated function CancelGrenadeAction()
     local int i;
     local BallisticHandGrenadeFire GrenadeFire;
 
+	if (Role == ROLE_Authority
+    && (bGrenadeCharging || bGrenadeThrowPending || bGrenadeReleased))
+	{
+		SetGrenadeTPAnim(5, GrenadeFireMode);
+	}
+
     // Clear any interrupted charging or throwing state.
     bGrenadeThrowPending = false;
     bGrenadeReleased = false;
@@ -396,6 +416,8 @@ function ServerBeginGrenadeThrow(byte Mode)
     bGrenadeCharging = true;
     GrenadeChargeStartTime = Level.TimeSeconds;
     GrenadeChargeTime = 0.0;
+	
+	SetGrenadeTPAnim(3, Mode);
 }
 
 function ServerCommitGrenadeThrow(byte Mode, float ChargeTime)

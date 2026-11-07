@@ -77,6 +77,11 @@ var() class<BallisticMeleeFire> MeleeFireClass;
 
 var byte ActiveMeleeFireMode;
 
+//=============================================================================
+// Grenades
+//=============================================================================
+
+var byte GrenadeTPFireMode;
 
 //=============================================================================
 // SIGHTS
@@ -295,7 +300,7 @@ replication
         ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerSetAltLoaded, ServerToggleLaser;
 
     reliable if (Role == ROLE_Authority)
-        ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn;
+        ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;    
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -439,7 +444,7 @@ simulated event PostNetReceive()
     }
 
     //=============================================================================
-    // MELEE THIRD-PERSON ANIMATION
+    // MELEE / GRENADE THIRD-PERSON ANIMATION
     //=============================================================================
 
     if (MeleeTPAnimCount != LastMeleeTPAnimCount)
@@ -450,6 +455,12 @@ simulated event PostNetReceive()
             PlayThirdPersonMeleePrep();
         else if (MeleeTPAnimState == 2)
             PlayThirdPersonMeleeFire();
+        else if (MeleeTPAnimState == 3)
+            PlayThirdPersonGrenadePrep(GrenadeTPFireMode);
+        else if (MeleeTPAnimState == 4)
+            PlayThirdPersonGrenadeThrow(GrenadeTPFireMode);
+        else if (MeleeTPAnimState == 5)
+            CancelThirdPersonGrenade();
     }
 }
 
@@ -2556,6 +2567,82 @@ simulated function PlayThirdPersonMeleeFire()
         return;
 
     WeapAttach.PlayThirdPersonMeleeFire();
+}
+
+//=============================================================================
+// THIRD-PERSON GRENADE ANIMATION REPLICATION
+//=============================================================================
+
+function SetGrenadeTPAnim(byte AnimState, byte Mode)
+{
+    local BallisticAttachment WeapAttach;
+
+    if (Role != ROLE_Authority)
+        return;
+
+    GrenadeTPFireMode = Mode;
+    MeleeTPAnimState = AnimState;
+    MeleeTPAnimCount++;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+
+    if (WeapAttach == None)
+        return;
+
+    if (AnimState == 3)
+        WeapAttach.PlayThirdPersonGrenadePrep(Mode);
+    else if (AnimState == 4)
+        WeapAttach.PlayThirdPersonGrenadeThrow(Mode);
+    else if (AnimState == 5)
+        WeapAttach.CancelThirdPersonGrenade();
+}
+
+simulated function PlayThirdPersonGrenadePrep(byte Mode)
+{
+    local BallisticAttachment WeapAttach;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+
+    if (WeapAttach == None)
+        return;
+
+    WeapAttach.PlayThirdPersonGrenadePrep(Mode);
+}
+
+simulated function PlayThirdPersonGrenadeThrow(byte Mode)
+{
+    local BallisticAttachment WeapAttach;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+
+    if (WeapAttach == None)
+        return;
+
+    WeapAttach.PlayThirdPersonGrenadeThrow(Mode);
+}
+
+simulated function CancelThirdPersonGrenade()
+{
+    local BallisticAttachment WeapAttach;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    WeapAttach = BallisticAttachment(ThirdPersonActor);
+
+    if (WeapAttach == None)
+        return;
+
+    WeapAttach.CancelThirdPersonGrenade();
 }
 
 

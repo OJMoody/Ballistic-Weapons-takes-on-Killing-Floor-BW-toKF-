@@ -39,6 +39,14 @@ replication
         CameraPerspective;
 }
 
+function SetPawnClass(string inClass, string inCharacter)
+{
+    PawnClass = class'BW_KFPawn';
+
+    inCharacter = class'KFGameType'.Static.GetValidCharacter(inCharacter);
+    PawnSetupRecord = class'xUtil'.static.FindPlayerRecord(inCharacter);
+    PlayerReplicationInfo.SetCharacterName(inCharacter);
+}
 
 //=============================================================================
 // BUY MENU
