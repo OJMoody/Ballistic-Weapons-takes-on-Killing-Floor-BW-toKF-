@@ -48,9 +48,28 @@ function DoFireEffect()
         HitLocation = End;
 
     if (FluidSurfaceInfo(Other) != None || (PhysicsVolume(Other) != None && PhysicsVolume(Other).bWaterVolume))
-        Other = None;
+		Other = None;
 
-    Dist = VSize(HitLocation - TraceStart);
+	if (GetFireControl() != None)
+	{
+		for (i = 0; i < GetFireControl().GasNodes.Length; i++)
+		{
+			// Keep your existing gas-node loop unchanged.
+		}
+
+		if (Other != None && (Other.bWorldGeometry || Mover(Other) != None))
+		{
+			if (KFPawn(Instigator) != None &&
+				Weapon_RX22AFlamer_Attachment(KFPawn(Instigator).WeaponAttachment) != None)
+				Weapon_RX22AFlamer_Attachment(KFPawn(Instigator).WeaponAttachment).QueueFlameHit(HitLocation, HitNormal);
+
+			GetFireControl().FireShot(Start, HitLocation, Dist, true, HitNormal, Instigator, Other);
+		}
+		else
+			GetFireControl().FireShot(Start, HitLocation, Dist, Other != None, HitNormal, Instigator, None);
+	}
+
+	Dist = VSize(HitLocation - Start);
 
     if (GetFireControl() != None)
     {
@@ -64,26 +83,26 @@ function DoFireEffect()
                 Weapon_RX22AFlamer_GasSoak(GetFireControl().GasNodes[i]) == None)
                 continue;
 
-            NodeDist = VSize(GetFireControl().GasNodes[i].Location - TraceStart);
+            NodeDist = VSize(GetFireControl().GasNodes[i].Location - Start);
 
             if (NodeDist > Dist)
                 continue;
 
-            DR = Dir Dot Normal(GetFireControl().GasNodes[i].Location - TraceStart);
+            DR = Dir Dot Normal(GetFireControl().GasNodes[i].Location - Start);
 
             if (DR < 0.75)
                 continue;
 
-            NodeDist = VSize(GetFireControl().GasNodes[i].Location - (TraceStart + Dir * (DR * NodeDist)));
+            NodeDist = VSize(GetFireControl().GasNodes[i].Location - (Start + Dir * (DR * NodeDist)));
 
             if (NodeDist < 128)
                 GetFireControl().GasNodes[i].TakeDamage(5, Instigator, GetFireControl().GasNodes[i].Location, vect(0,0,0), class'Weapon_RX22AFlamer_DTBurned');
         }
 
         if (Other != None && (Other.bWorldGeometry || Mover(Other) != None))
-            GetFireControl().FireShot(TraceStart, HitLocation, Dist, true, HitNormal, Instigator, Other);
+            GetFireControl().FireShot(Start, HitLocation, Dist, true, HitNormal, Instigator, Other);
         else
-            GetFireControl().FireShot(TraceStart, HitLocation, Dist, Other != None, HitNormal, Instigator, None);
+            GetFireControl().FireShot(Start, HitLocation, Dist, Other != None, HitNormal, Instigator, None);
     }
 
     Super.DoFireEffect();
@@ -91,15 +110,20 @@ function DoFireEffect()
 
 function PlayFiring()
 {
-    Super.PlayFiring();
+    ClientPlayForceFeedback(FireForce);
+    FireCount++;
 
     if (FireSoundLoop != None)
         Weapon.AmbientSound = FireSoundLoop;
 
     if (Ignition != None && !bIgnited)
     {
-        Weapon.PlayAnim(FireLoopAnim, FireAnimRate, TweenTime);
+        Weapon.LoopAnim(FireLoopAnim, FireAnimRate, TweenTime);
         Ignition.Trigger(Weapon, Instigator);
+
+        if (FireSound != None)
+            Weapon.PlayOwnedSound(FireSound, SLOT_Interact, TransientSoundVolume,, TransientSoundRadius);
+
         bIgnited = true;
     }
 
@@ -112,6 +136,7 @@ function ServerPlayFiring()
     if (!bIgnited)
     {
         bIgnited = true;
+
         if (FireSound != None)
             Weapon.PlayOwnedSound(FireSound, SLOT_Interact, TransientSoundVolume,, TransientSoundRadius);
     }
@@ -162,7 +187,7 @@ simulated function InitEffects()
         return;
 
     if (Heater == None || Heater.bDeleteMe)
-        class'BUtil'.static.InitMuzzleFlash(Heater, class'Weapon_RX22AFlamer_Heater', Weapon.DrawScale, Weapon, 'tip');
+        class'BUtil'.static.InitMuzzleFlash(Heater, class'Weapon_RX22AFlamer_Heater', Weapon.DrawScale, Weapon, 'muzzle');
 
     Weapon_RX22AFlamer_Heater(Heater).SetHeat(0.0);
     Weapon_RX22AFlamer_Main(Weapon).Heater = Weapon_RX22AFlamer_Heater(Heater);
@@ -173,7 +198,9 @@ simulated function InitEffects()
 
 defaultproperties
 {
-	FireSoundLoop=Sound'BWKF_RX22A_SN.RX22A.RX22A-FireLoop'
+    DamageMin=14.000000
+    DamageMax=14.000000
+    FireSoundLoop=Sound'BWKF_RX22A_SN.RX22A.RX22A-FireLoop'
     TraceRange=(Min=1800.000000,Max=1800.000000)
     FireSound=Sound'BWKF_RX22A_SN.RX22A.RX22A-Ignite'
     bPawnRapidFireAnim=True

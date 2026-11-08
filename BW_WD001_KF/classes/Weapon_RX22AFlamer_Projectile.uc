@@ -22,79 +22,74 @@ event Tick(float DT)
 {
     Super.Tick(DT);
 
-    if (vector(Rotation) Dot Normal(EndPoint - Location) < 0.0)
+    if (Vector(Rotation) Dot Normal(EndPoint - Location) < 0.0)
         Destroy();
 }
 
-simulated singular function Touch(Actor Other)
+simulated function Timer()
 {
-    local int i;
-
-    if (Other == None)
-        return;
-
-    if (Other.Base == Instigator)
-        return;
-
-    for (i = 0; i < AlreadyHit.Length; i++)
+    if (StartDelay > 0)
     {
-        if (AlreadyHit[i] == Other)
-            return;
+        SetCollision(true, false, false);
+        StartDelay = 0;
+        SetPhysics(default.Physics);
+        bDynamicLight = default.bDynamicLight;
+        bHidden = default.bHidden;
+        InitProjectile();
     }
-
-    Super.Touch(Other);
+    else
+        Super.Timer();
 }
 
 simulated function ProcessTouch(Actor Other, vector HitLocation)
 {
     local int i;
 
-    if (Other == None)
+    if (Other == None || (!bCanHitOwner && (Other == Instigator || Other == Owner || Other.Base == Instigator)))
+        return;
+
+    if (KFBulletWhipAttachment(Other) != None)
+        return;
+
+    if (KFHumanPawn(Other) != None && Instigator != None
+        && KFHumanPawn(Other).PlayerReplicationInfo.Team.TeamIndex == Instigator.PlayerReplicationInfo.Team.TeamIndex)
         return;
 
     for (i = 0; i < AlreadyHit.Length; i++)
-    {
         if (AlreadyHit[i] == Other)
             return;
+
+    if (Role == ROLE_Authority)
+	{
+		DoDamage(Other, HitLocation);
+	}
+
+    if (CanPenetrate(Other) && Other != HitActor)
+    {
+        AlreadyHit[AlreadyHit.Length] = Other;
+        HitActor = Other;
     }
+    else
+        Destroy();
 
-    i = AlreadyHit.Length;
-    AlreadyHit.Length = i + 1;
-    AlreadyHit[i] = Other;
-
-    Super.ProcessTouch(Other, HitLocation);
-}
-
-simulated function DoDamage(Actor Other, vector HitLocation)
-{
-    local vector Dummy;
-
-    if (Instigator == None || Instigator.Controller == None)
-        Other.SetDelayedDamageInstigatorController(InstigatorController);
-
-    class'BallisticDamageType'.static.GenericHurt(Other, Damage, Instigator, HitLocation, MomentumTransfer * Normal(Velocity), MyDamageType);
-
-    if (KFHumanPawn(Other) != None && Level.Game.ReduceDamage(10, KFHumanPawn(Other), Instigator, HitLocation, Dummy, MyDamageType) > 0)
+    if (Pawn(Other) != None && FireControl != None)
         FireControl.FireSinge(Pawn(Other), Instigator);
-}
-
-simulated function Explode(vector a, vector b)
-{
-    Destroy();
 }
 
 defaultproperties
 {
-    //WeaponClass=class'Weapon_RX22AFlamer_Main'
     bPenetrate=True
+    StartDelay=0.050000
     Speed=3000.000000
+    Damage=8.000000
     MyDamageType=Class'BW_WD001_KF.Weapon_RX22AFlamer_DTBurned'
     bHidden=True
     RemoteRole=ROLE_None
-    LifeSpan=0.350000
-    CollisionRadius=15.000000
-    CollisionHeight=15.000000
-    bCollideActors=True
+    LifeSpan=0.600000
+    CollisionRadius=32.000000
+    CollisionHeight=32.000000
+    bCollideActors=False
     bCollideWorld=False
     bBlockZeroExtentTraces=False
+    bBlockNonZeroExtentTraces=False
 }

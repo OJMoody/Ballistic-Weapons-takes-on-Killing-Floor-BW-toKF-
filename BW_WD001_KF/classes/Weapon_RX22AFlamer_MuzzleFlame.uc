@@ -2,12 +2,10 @@ class Weapon_RX22AFlamer_MuzzleFlame extends BallisticEmitter;
 
 simulated event PostBeginPlay()
 {
-    local int i;
-
     Super.PostBeginPlay();
 
-    for (i = 0; i < Emitters.Length; i++)
-        Emitters[i].ZTest = true;
+    if (WeaponAttachment(Owner) != None)
+        Emitters[2].ZTest = true;
 }
 
 defaultproperties

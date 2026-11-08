@@ -201,7 +201,6 @@ function SprayAir(vector Loc, Pawn InstigatedBy)
 }
 
 
-// Create a player-attached fuel deposit or add fuel to an existing one.
 function SpraySoak(Actor Other, Pawn InstigatedBy, optional float FuelAmount)
 {
     local BW_FuelPatch Patch;
@@ -212,8 +211,9 @@ function SpraySoak(Actor Other, Pawn InstigatedBy, optional float FuelAmount)
 
     if (HasSoak(Other, Patch))
         Patch.AddFuel(FuelAmount);
-    else if (KFHumanPawn(Other) != None &&
-        Level.Game.ReduceDamage(10, KFHumanPawn(Other), InstigatedBy, Other.Location, Dummy, class'Weapon_RX22AFlamer_DTBurned') > 0)
+    else if (Pawn(Other) != None &&
+        (KFHumanPawn(Other) == None ||
+        Level.Game.ReduceDamage(10, KFHumanPawn(Other), InstigatedBy, Other.Location, Dummy, class'Weapon_RX22AFlamer_DTBurned') > 0))
         MakeNewSoaker(Other, InstigatedBy);
 }
 

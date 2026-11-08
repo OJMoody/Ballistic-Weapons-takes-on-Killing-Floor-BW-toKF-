@@ -1,5 +1,7 @@
 class Weapon_RX22AFlamer_SecondaryFire extends BallisticInstantFire;
 
+var bool bAltFireAnimPlaying;
+
 function Weapon_RX22AFlamer_FireControl GetFireControl()
 {
     return Weapon_RX22AFlamer_Main(Weapon).GetFireControl();
@@ -102,18 +104,28 @@ function DoFireEffect()
 
 function PlayFiring()
 {
-    Super.PlayFiring();
+    ClientPlayForceFeedback(FireForce);
+    FireCount++;
 
-    Weapon.AmbientSound = FireSound;
+    if (!bAltFireAnimPlaying)
+    {
+        Weapon.LoopAnim(FireLoopAnim, FireAnimRate, TweenTime);
+        bAltFireAnimPlaying = true;
+    }
+
+    if (FireSound != None)
+        Weapon.AmbientSound = FireSound;
 }
 
 function ServerPlayFiring()
 {
-    Weapon.AmbientSound = FireSound;
+    if (FireSound != None)
+        Weapon.AmbientSound = FireSound;
 }
 
 function StopFiring()
 {
+    bAltFireAnimPlaying = false;
     Weapon_RX22AFlamer_Main(Weapon).AmbientSound = None;
 }
 
@@ -145,4 +157,6 @@ defaultproperties
     ShakeOffsetRate=(X=-1000.000000)
     ShakeOffsetTime=1.500000
     WarnTargetPct=0.500000
+	bWaitForRelease=False
+	FlashEmitterClass=None
 }

@@ -197,7 +197,6 @@ simulated function bool IsChamberOpen()
 
 simulated function name GetDualFireAnim(bool bLeft)
 {
-	Log("M806 TRACE GET FIRE ANIM: Left=" $ bLeft $ " Mag=" $ MagAmmoRemaining);
 	if (MagAmmoRemaining <= 0)
 		return 'FireLeftOpen';
 
@@ -434,13 +433,6 @@ simulated function UpdateM806AnimationSet()
 		WeaponReloadResumeAnimation = 'ReloadResumeOpen';
 		WeaponReloadResumeAnimation2 = 'ReloadResumeOpenLeft';
 	}
-
-	Log("M806 TRACE ANIMSET: Mag=" $ MagAmmoRemaining $
-		" Reload=" $ ReloadAnim $
-		" Resume1=" $ WeaponReloadResumeAnimation $
-		" Resume2=" $ WeaponReloadResumeAnimation2 $
-		" FireL=" $ FireAnimLeft $
-		" FireR=" $ FireAnimRight);
 }
 
 

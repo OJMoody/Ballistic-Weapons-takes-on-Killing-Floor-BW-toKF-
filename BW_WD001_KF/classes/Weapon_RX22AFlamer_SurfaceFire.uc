@@ -21,8 +21,6 @@ var Pawn Ignitioneer;
 var bool bPlayIgnite;
 var Actor MyAmbientSoundActor;
 
-var float RepulsionForceMag;
-
 replication
 {
     unreliable if (Role == ROLE_Authority && bNetInitial)
@@ -39,8 +37,15 @@ simulated event PostNetBeginPlay()
 
 simulated function PlayIgnite()
 {
+    local Weapon_RX22AFlamer_TrailIgnite IgniteFX;
+
     if (Level.NetMode != NM_DedicatedServer)
-        Spawn(class'Weapon_RX22AFlamer_TrailIgnite',,,Location);
+    {
+        IgniteFX = Spawn(class'Weapon_RX22AFlamer_TrailIgnite',,,Location);
+
+        if (IgniteFX != None)
+            IgniteFX.Trigger(self, Instigator);
+    }
 
     if (Role == ROLE_Authority)
         bPlayIgnite = true;
@@ -86,27 +91,13 @@ function Timer()
 
 function Toast(Actor A)
 {
-    local Vector XYVel;
-    local int Health;
-
     if ((Instigator == None || Instigator.Controller == None) && InstigatorController != None)
         A.SetDelayedDamageInstigatorController(InstigatorController);
-
-    if (Pawn(A) != None)
-        Health = Pawn(A).Health;
 
     if (Ignitioneer != None && (A == Instigator || BW_FuelPatch(A) != None) || (Instigator == None && InstigatorController == None))
         class'BallisticDamageType'.static.GenericHurt(A, Damage, Ignitioneer, A.Location, vect(0,0,0), DamageType);
     else
         class'BallisticDamageType'.static.GenericHurt(A, Damage, Instigator, A.Location, vect(0,0,0), DamageType);
-
-    // No, you will not just "ignore" fires! :)
-    if (Pawn(A) != None && Pawn(A).Health < Health)
-    {
-        XYVel = -A.Velocity;
-        XYVel.Z = 0;
-        Pawn(A).AddVelocity(XYVel + RepulsionForceMag * Normal(A.Location - Location) + vect(0,0,20));
-    }
 }
 
 simulated function PostBeginPlay()
@@ -159,7 +150,6 @@ defaultproperties
     Damage=25.000000
     DamageType=Class'BW_WD001_KF.Weapon_RX22AFlamer_DTFireTrap'
     IgniteSound=Sound'BWKF_RX22A_SN.RX22A.RX22A-IgniteFire'
-    RepulsionForceMag=275.000000
 
     Fuel=20.000000
     MaxFuel=150.000000

@@ -173,11 +173,12 @@ static function StartSpawn (vector V, vector Norm, int Surface, actor OwnedBy, o
 {
 	local BCImpactManager EM;
 
-	if (OwnedBy==None)
+	if (OwnedBy == None)
 		return;
-	EM = OwnedBy.Spawn (default.class, OwnedBy, , V, Rotator(Norm));
-	if (EM == None)	{
-		log ("Failed to spawn effect manager for class: "$default.class,'Warning');	return;	}
+
+	EM = OwnedBy.Spawn(default.class, OwnedBy, , V, Rotator(Norm));
+	if (EM == None)
+		return;
 
 	EM.Initialize(Surface, Norm, Flags);
 }

@@ -20,6 +20,13 @@ replication
         FireControl;
 }
 
+simulated event PostBeginPlay()
+{
+    Super.PostBeginPlay();
+
+    CheckBurstMode();
+}
+
 simulated function PostNetBeginPlay()
 {
     local Weapon_RX22AFlamer_FireControl FC;
@@ -173,8 +180,8 @@ defaultproperties
     FireModeClass(0)=Class'BW_WD001_KF.Weapon_RX22AFlamer_PrimaryFire'
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_RX22AFlamer_SecondaryFire'
 	PickupClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_Pickup'
-	//MeleeFireClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_MeleeFire'
-    //AttachmentClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_Attachment'
+	MeleeFireClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_MeleeFire'
+    AttachmentClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_Attachment'
 	
 	//SightFXClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_SightLEDs'
     //SightFXBone="Weapon"
@@ -193,7 +200,10 @@ defaultproperties
 	bModeZeroCanDryFire=True
 
     PlayerViewOffset=(X=4.000000,Y=6.000000,Z=-2.000000)
-	PlayerViewPivot=(Yaw=0)
+	BobDamping=0.3
+	WeaponModes(0)=(bUnavailable=True)
+	WeaponModes(1)=(bUnavailable=True)
+	CurrentWeaponMode=2
 
     ItemName="RX-22A Flamethrower"
 

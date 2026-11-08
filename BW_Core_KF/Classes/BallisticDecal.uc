@@ -59,7 +59,6 @@ simulated event PreBeginPlay()
 	{
 		 if (ProjTexture == None)
 		 {
-			log ("BallisticDecal:"$Self$" no ProjTexture", 'Warning');
 			Destroy();
 			return;
 		 }
