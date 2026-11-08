@@ -1,18 +1,11 @@
-class Weapon_RX22AFlamer_DTFireTrap extends DT_BWFire;
+class Weapon_RX22AFlamer_DTFireTrap extends DamTypeFlameNade;
 
 defaultproperties
 {
-    DeathStrings(0)="%o swam in %k's fire."
-    DeathStrings(1)="%k's lurking fire found a victim in %o."
-    DeathStrings(2)="%o foolishly stumbled into %k's raging inferno."
-    DeathStrings(3)="%k left a fiery surprise for %o to find."
-    InvasionDamageScaling=1.500000
-    DamageIdent="Streak"
-    bOnlySeverLimbs=True
-    //WeaponClass=Class'Weapon_RX22AFlamer_Main'
+    WeaponClass=Class'Weapon_RX22AFlamer_Main'
     DeathString="%o swam in %k's fire."
     FemaleSuicide="%o ran into a fire."
     MaleSuicide="%o ran into a fire."
     bDelayedDamage=True
-    KDamageImpulse=2000.000000
+	bThrowRagdoll=False
 }

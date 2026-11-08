@@ -144,7 +144,7 @@ function ServerPlayFiring()
 
 simulated function bool AllowFire()
 {
-    if (!Super.AllowFire() || Instigator.HeadVolume.bWaterVolume)
+    if (Instigator.HeadVolume.bWaterVolume)
     {
         if (bIgnited)
             StopFiring();
@@ -152,7 +152,7 @@ simulated function bool AllowFire()
         return false;
     }
 
-    return true;
+    return Super.AllowFire();
 }
 
 function StopFiring()

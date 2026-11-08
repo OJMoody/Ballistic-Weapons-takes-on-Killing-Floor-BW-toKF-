@@ -44,9 +44,18 @@ simulated function Timer()
 simulated function ProcessTouch(Actor Other, vector HitLocation)
 {
     local int i;
+	local KFMonster KFM;
 
     if (Other == None || (!bCanHitOwner && (Other == Instigator || Other == Owner || Other.Base == Instigator)))
         return;
+		
+	if (Other.IsA('ExtendedZCollision'))
+	{
+		KFM = KFMonster(Other.Owner);
+
+		if (KFM != None && Level.TimeSeconds <= KFM.SpawnTime + 0.1)
+			return;
+	}
 
     if (KFBulletWhipAttachment(Other) != None)
         return;

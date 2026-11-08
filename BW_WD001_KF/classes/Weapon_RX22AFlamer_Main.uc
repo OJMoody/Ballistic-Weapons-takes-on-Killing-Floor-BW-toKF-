@@ -91,6 +91,10 @@ simulated event RenderOverlays(Canvas C)
 {
     Super.RenderOverlays(C);
 
+    // The attachment handles spray rendering in third-person.
+    if (bBWThirdPersonCamera)
+        return;
+
     if (Instigator == None || Instigator.Controller == None)
         return;
 
@@ -106,6 +110,14 @@ simulated event RenderOverlays(Canvas C)
         GasSpray.SetRotation(Instigator.GetViewRotation());
         C.DrawActor(GasSpray, false, false, Instigator.Controller.FovAngle);
     }
+}
+
+simulated function bool IsFlamerFiring(byte Mode)
+{
+    if (Mode > 1)
+        return false;
+
+    return FireMode[Mode].bIsFiring;
 }
 
 simulated event Tick(float DT)
@@ -161,15 +173,17 @@ simulated event Destroyed()
 
 defaultproperties
 {
-    PackOnSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-PackOn',Volume=0.600000,Radius=24.000000,Pitch=1.000000)
+    WeaponReloadAnim=Reload_Flamethrower
+	
+	PackOnSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-PackOn',Volume=0.600000,Radius=24.000000,Pitch=1.000000)
     LeverOnSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-LeverOn',Volume=0.600000,Radius=24.000000,Pitch=1.000000)
     LeverOffSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-LeverOff',Volume=0.600000,Radius=24.000000,Pitch=1.000000)
 
     ValveAnim="TurnValve"
 	
-	HudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Unselected'
-    SelectedHudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Selected'
-	TraderInfoTexture=Texture'BWKF_M46_T.Icons.MedIcon_M46A2'
+	HudImage=Texture'BWKF_RX22A_T.Icons.MedIcon_RX22A_Unselected'
+    SelectedHudImage=Texture'BWKF_RX22A_T.Icons.MedIcon_RX22A_Selected'
+	TraderInfoTexture=Texture'BWKF_RX22A_T.Icons.MedIcon_RX22A'
 
     SelectSoundRef="BWKF_RX22A_SN.RX22A.RX22A-Pullout"
 	PulloutSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-Pullout')
@@ -183,15 +197,12 @@ defaultproperties
 	MeleeFireClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_MeleeFire'
     AttachmentClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_Attachment'
 	
-	//SightFXClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_SightLEDs'
-    //SightFXBone="Weapon"
-	
-	MagCapacity=90
+	MagCapacity=120
 	
 	Priority=4
     InventoryGroup=4
     GroupOffset=1
-	Weight=12.000000
+	Weight=11.000000
 	
 	PlayerIronSightFOV=65
     ZoomTime=0.4
@@ -200,12 +211,13 @@ defaultproperties
 	bModeZeroCanDryFire=True
 
     PlayerViewOffset=(X=4.000000,Y=6.000000,Z=-2.000000)
-	BobDamping=0.3
+	BobDamping=0.2
 	WeaponModes(0)=(bUnavailable=True)
 	WeaponModes(1)=(bUnavailable=True)
 	CurrentWeaponMode=2
 
     ItemName="RX-22A Flamethrower"
+	Description="A very deadly weapon designed and constructed by the UTC�s Defence Research Wing, to combat the Cryons before the second Human-Skrith war. It proved highly effective, being unchallenged by both of the Skrith�s major allies, the Cryons and Krao. The RX22A proved to be an extrmely useful weapon, when clearing out Krao from many underground tunnels and facilities on the OutWorld planet. The weapon, now feared by Cryons. and especially Krao, is one of the most dangerous weapons a Terran soldier may possess. Despite its long range, searing flames and ability to litterally fill a small room with fire make it a very powerful weapon, it has a great disadvantage. The flames may just as easily incinerate the operator when used close up, and if the fuel tanks carried on the soldiers back, were to rupture and catch fire, the user may find themselves in a very unpleasant situation."
 
     LightType=LT_Pulse
     LightEffect=LE_NonIncidence
@@ -219,4 +231,6 @@ defaultproperties
 
     bFullVolume=True
     SoundRadius=128.000000
+	
+	bIsTier2Weapon=True
 }

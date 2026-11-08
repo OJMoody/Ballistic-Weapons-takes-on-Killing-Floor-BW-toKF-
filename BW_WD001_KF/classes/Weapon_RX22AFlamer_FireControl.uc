@@ -43,31 +43,42 @@ simulated function PostBeginPlay()
 
 function Timer()
 {
-    local int i, j, k;
+    local int i, k;
+    local Actor Other;
     local array<Actor> Served;
+    local vector Offset;
+    local float XYDist;
 
     for (i = 0; i < GroundFires.Length; i++)
     {
         if (GroundFires[i] == None)
             continue;
 
-        for (j = 0; j < GroundFires[i].Touching.Length; j++)
+        foreach CollidingActors(class'Actor', Other, 256, GroundFires[i].Location)
         {
-            if (GroundFires[i].Touching[j] == None ||
-                (Pawn(GroundFires[i].Touching[j]) == None &&
-                BW_FuelPatch(GroundFires[i].Touching[j]) == None))
+            if (Other == None ||
+                (Pawn(Other) == None && BW_FuelPatch(Other) == None))
                 continue;
 
+            Offset = Other.Location - GroundFires[i].Location;
+            XYDist = VSize(Offset * vect(1,1,0));
+
+            // Check whether the actor overlaps the fire's damage area.
+            if (XYDist > GroundFires[i].CollisionRadius + Other.CollisionRadius ||
+                Abs(Offset.Z) > GroundFires[i].CollisionHeight + Other.CollisionHeight)
+                continue;
+
+            // Avoid applying damage more than once per timer cycle.
             for (k = 0; k < Served.Length; k++)
             {
-                if (Served[k] == GroundFires[i].Touching[j])
+                if (Served[k] == Other)
                     break;
             }
 
             if (k >= Served.Length)
             {
-                GroundFires[i].Toast(GroundFires[i].Touching[j]);
-                Served[Served.Length] = GroundFires[i].Touching[j];
+                GroundFires[i].Toast(Other);
+                Served[Served.Length] = Other;
             }
         }
     }

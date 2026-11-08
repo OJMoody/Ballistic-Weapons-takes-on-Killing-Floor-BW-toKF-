@@ -2,18 +2,18 @@ class Weapon_RX22AFlamer_Pickup extends BallisticPickup;
 
 defaultproperties
 {
-	AmmoMesh=StaticMesh'BWKF_M46_SM.Pickups.M46_ClipPickup_Main'
+	AmmoMesh=StaticMesh'BWKF_RX22A_SM.Pickups.RX22A_ClipPickup_SM'
 	InventoryType=Class'BW_WD001_KF.Weapon_RX22AFlamer_Main'
-	PickupSound=Sound'BWKF_M46_SN.M46.OA-AR_Pullout'
-	StaticMesh=StaticMesh'BWKF_M46_SM.Pickups.M46A2_WeaponPickup_Main'
+	PickupSound=Sound'BWKF_RX22A_SN.RX22A.RX22A-Pullout'
+	StaticMesh=StaticMesh'BWKF_RX22A_SM.Pickups.RX22A_MainPickup_SM'
 	
-	Weight=12.000000
-	cost=1500
-	AmmoCost=20
+	Weight=11.000000
+	cost=1100
+	AmmoCost=50
 	BuyClipSize=24
-	PowerValue=30
-	SpeedValue=40
-	RangeValue=40
+	PowerValue=20
+	SpeedValue=100
+	RangeValue=70
 	Description="RX-22A Flamethrower"
 	ItemName="RX-22A Flamethrower"
 	ItemShortName="RX-22A Flamethrower"
@@ -22,7 +22,7 @@ defaultproperties
 	PickupForce="AssaultRiflePickup"
 	CollisionRadius=35.000000
 	CollisionHeight=5.000000
-	EquipmentCategoryID=4
-	CorrespondingPerkIndex=3
-	DrawScale=0.500000
+	EquipmentCategoryID=5
+	CorrespondingPerkIndex=5
+	DrawScale=0.350000
 }

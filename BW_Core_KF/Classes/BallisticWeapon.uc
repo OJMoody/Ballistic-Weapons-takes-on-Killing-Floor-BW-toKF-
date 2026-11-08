@@ -237,6 +237,7 @@ var() BUtil.FullSound ClipHitSound;
 var() BUtil.FullSound SlideInSound;
 var() BUtil.FullSound SlideOutSound;
 var() BUtil.FullSound CockSound;
+var() BUtil.FullSound HandSound;
 
 var() BUtil.FullSound ClipOutAltSound;
 var() BUtil.FullSound ClipInAltSound;
@@ -2080,6 +2081,11 @@ simulated function Notify_CockStart()
     class'BUtil'.static.PlayFullSound(self, CockSound, true);
 }
 
+simulated function Notify_HandleWeapon()
+{
+    class'BUtil'.static.PlayFullSound(self, HandSound, true);
+}
+
 simulated function Notify_ClipOut1()
 {
     class'BUtil'.static.PlayFullSound(self, ClipOutSound, true);
@@ -3625,6 +3631,7 @@ defaultproperties
 	SlideOutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	PulloutSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
     PutAwaySound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+	HandSound=(Sound=SoundGroup'BWKF_Core_SN.Misc.hand',Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)
 	
 	ShellAltInSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)
 	ClipInLargeSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Misc,Pitch=1.000000,bAtten=True)

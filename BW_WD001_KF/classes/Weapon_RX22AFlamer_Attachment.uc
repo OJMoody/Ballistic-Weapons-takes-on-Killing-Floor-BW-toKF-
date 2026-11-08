@@ -3,6 +3,8 @@ class Weapon_RX22AFlamer_Attachment extends BallisticAttachment;
 var Weapon_RX22AFlamer_Spray Flame;
 var Weapon_RX22AFlamer_GasSpray GasSpray;
 
+var Weapon_RX22AFlamer_Tank RX22ATank;
+
 struct FlameHit
 {
     var vector HitLoc;
@@ -13,15 +15,55 @@ struct FlameHit
 var array<FlameHit> FlameHits;
 var Weapon_RX22AFlamer_FireHit FlameHitFX;
 var float KillFlameTime;
+var float SprayLastUpdateTime;
+
+function InitFor(Inventory I)
+{
+    Super.InitFor(I);
+
+    SpawnRX22ATank();
+}
+
+function SpawnRX22ATank()
+{
+    if (Role != ROLE_Authority || Instigator == None || RX22ATank != None)
+        return;
+
+    RX22ATank = Spawn(class'Weapon_RX22AFlamer_Tank', Instigator,, Instigator.Location, Instigator.Rotation);
+
+    if (RX22ATank != None)
+    {
+        if (!Instigator.AttachToBone(RX22ATank, 'CHR_Ribcage'))
+        {
+            RX22ATank.Destroy();
+            RX22ATank = None;
+        }
+        else
+            RX22ATank.SetRelativeRotation(RX22ATank.TankRotation);
+			RX22ATank.SetRelativeLocation(RX22ATank.TankOffset);
+    }
+}
 
 simulated function InstantFireEffects(byte Mode)
 {
     local vector TipLocation;
-
-    if (Level.NetMode == NM_DedicatedServer || Instigator == None)
+    local rotator AimRotation;
+	
+	log("RX22A InstantFireEffects ENTERED");
+    log("RX22A NetMode: "$Level.NetMode);
+    log("RX22A Owner: "$Owner);
+    log("RX22A Instigator: "$Instigator);
+    log("RX22A Attachment Location: "$Location);
+	
+	if (Level.NetMode == NM_DedicatedServer || Instigator == None)
         return;
+	
+	SprayLastUpdateTime = Level.TimeSeconds;
+	
+	log("RX22A SPRAY UPDATE" @ "Time:" @ Level.TimeSeconds @ "LastUpdate:" @ SprayLastUpdateTime);
 
     TipLocation = GetTracerStart();
+    AimRotation = Instigator.GetViewRotation();
 
     if (Mode == 0)
     {
@@ -33,13 +75,13 @@ simulated function InstantFireEffects(byte Mode)
         }
 
         if (Flame == None)
-            Flame = Spawn(class'Weapon_RX22AFlamer_Spray', Instigator,, TipLocation, Rotator(mHitLocation - TipLocation));
+            Flame = Spawn(class'Weapon_RX22AFlamer_Spray', Instigator,, TipLocation, AimRotation);
 
         if (Flame != None)
         {
-            Flame.bHidden = Instigator.IsFirstPerson();
+            Flame.bHidden = !Weapon_RX22AFlamer_Main(Instigator.Weapon).bBWThirdPersonCamera;
             Flame.SetLocation(TipLocation);
-            Flame.SetRotation(Rotator(mHitLocation - Flame.Location));
+            Flame.SetRotation(AimRotation);
             Flame.SetFlameRange(VSize(mHitLocation - Flame.Location));
 
             Weapon_RX22AFlamer_Main(Instigator.Weapon).Flame = Flame;
@@ -55,18 +97,39 @@ simulated function InstantFireEffects(byte Mode)
         }
 
         if (GasSpray == None)
-            GasSpray = Spawn(class'Weapon_RX22AFlamer_GasSpray', Instigator,, TipLocation, Rotator(mHitLocation - TipLocation));
+            GasSpray = Spawn(class'Weapon_RX22AFlamer_GasSpray', Instigator,, TipLocation, AimRotation);
 
         if (GasSpray != None)
         {
-            GasSpray.bHidden = Instigator.IsFirstPerson();
+            GasSpray.bHidden = !Weapon_RX22AFlamer_Main(Instigator.Weapon).bBWThirdPersonCamera;
             GasSpray.SetLocation(TipLocation);
-            GasSpray.SetRotation(Rotator(mHitLocation - GasSpray.Location));
+            GasSpray.SetRotation(AimRotation);
             GasSpray.SetFlameRange(VSize(mHitLocation - GasSpray.Location));
 
             Weapon_RX22AFlamer_Main(Instigator.Weapon).GasSpray = GasSpray;
         }
     }
+}
+
+simulated function vector GetTracerStart()
+{
+    local Pawn P;
+    local BallisticWeapon BW;
+
+    P = Pawn(Owner);
+
+    if (P == None)
+        return Location;
+
+    BW = BallisticWeapon(P.Weapon);
+
+    if (BW != None && BW.bBWThirdPersonCamera)
+        return GetBoneCoords('TP_tip').Origin;
+
+    if (P.Weapon != None)
+        return P.Weapon.GetEffectStart();
+
+    return GetBoneCoords('TP_tip').Origin;
 }
 
 simulated function QueueFlameHit(vector Loc, vector Norm)
@@ -101,11 +164,20 @@ simulated event Tick(float DT)
 
     if (FlameHitFX != None && Level.TimeSeconds >= KillFlameTime)
         EndFlameHit();
+
+    // Stop the spray when firing updates cease.
+    if ((Flame != None || GasSpray != None)
+        && Level.TimeSeconds - SprayLastUpdateTime > 0.30)
+    {
+        StopSpray();
+    }
 }
 
 simulated function StopSpray()
 {
-    if (Flame != None)
+    log("RX22A StopSpray CALLED - FlashCount:" @ FlashCount);
+	
+	if (Flame != None)
     {
         Flame.Kill();
         Flame.bHidden = false;
@@ -128,17 +200,13 @@ simulated function StopSpray()
 
 simulated event ThirdPersonEffects()
 {
-    Super.ThirdPersonEffects();
-
     if (FlashCount > 0)
         InstantFireEffects(FiringMode);
-    else
-        StopSpray();
 }
 
 simulated function DoFlameHit(vector Loc, vector Norm)
 {
-	if (FlameHitFX == None)
+    if (FlameHitFX == None)
         FlameHitFX = Spawn(class'Weapon_RX22AFlamer_FireHit',,, Loc, Rotator(Norm));
     else
     {
@@ -162,12 +230,18 @@ simulated event Destroyed()
 {
     EndFlameHit();
     StopSpray();
+
+    if (Role == ROLE_Authority && RX22ATank != None)
+        RX22ATank.Destroy();
+
     Super.Destroyed();
 }
 
+
 defaultproperties
 {
-    MeshRef="KF_Weapons3rd_Trip.Flamethrower_3rd"
+    MeshRef="BWKF_RX22A_A.RX22A_TP_Mesh"
+    DrawScale=0.250000
 
     MovementAnims(0)=JogF_Flamethrower
     MovementAnims(1)=JogB_Flamethrower

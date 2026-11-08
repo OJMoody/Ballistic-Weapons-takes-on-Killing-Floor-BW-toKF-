@@ -476,7 +476,14 @@ simulated function DoFlashEmitter()
 {
     if (mMuzFlash3rd == None)
     {
+        if (mMuzFlashClass == None)
+            return;
+
         mMuzFlash3rd = Spawn(mMuzFlashClass);
+
+        if (mMuzFlash3rd == None)
+            return;
+
         AttachToBone(mMuzFlash3rd, 'tip');
 
         if (mMuzFlashScale != 1.0 && BallisticEmitter(mMuzFlash3rd) != None)

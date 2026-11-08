@@ -514,5 +514,6 @@ defaultproperties
 	BWTraderWeapons(8)=(PickupClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Pickup',TraderList=3)
 	BWTraderWeapons(9)=(PickupClass=Class'BW_WD001_KF.Weapon_M46A2Rifle_Pickup',TraderList=3)
 	BWTraderWeapons(10)=(PickupClass=Class'BW_WD001_KF.Weapon_M50Rifle_Pickup',TraderList=3)
-	BWTraderWeapons(11)=(PickupClass=Class'BW_WD002_KF.Weapon_59MachinePistol_Pickup',TraderList=0)
+	BWTraderWeapons(11)=(PickupClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_Pickup',TraderList=5)
+	BWTraderWeapons(12)=(PickupClass=Class'BW_WD002_KF.Weapon_59MachinePistol_Pickup',TraderList=0)
 }

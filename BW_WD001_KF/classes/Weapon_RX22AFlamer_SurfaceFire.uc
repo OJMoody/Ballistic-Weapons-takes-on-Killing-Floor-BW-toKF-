@@ -233,7 +233,8 @@ defaultproperties
     AutoDestroy=True
     bNetInitialRotation=True
     RemoteRole=ROLE_SimulatedProxy
-    CollisionRadius=72.000000
-    CollisionHeight=70.000000
-    bCollideActors=True
+    bCollideActors=False
+	bBlockActors=False
+	CollisionRadius=72.000000
+	CollisionHeight=1.000000
 }
