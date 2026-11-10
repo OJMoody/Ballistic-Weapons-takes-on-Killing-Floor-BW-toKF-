@@ -2406,7 +2406,10 @@ function ServerShovelShellIn(int LoadAmount)
 
 simulated function AddShovelPrimaryAmmo(int LoadAmount)
 {
-	if (Role != ROLE_Authority)
+    local int ActualLoadAmount;
+    local int TargetCapacity;
+
+    if (Role != ROLE_Authority)
         return;
 
     if (!bShovelReload)
@@ -2416,14 +2419,19 @@ simulated function AddShovelPrimaryAmmo(int LoadAmount)
         return;
 
     if (bShovelReloadEmptyStart && bPlusOne)
-    {
-        if (MagAmmoRemaining >= ShovelReloadNormalCapacity)
-            return;
-    }
-    else if (MagAmmoRemaining >= MagCapacity)
+        TargetCapacity = ShovelReloadNormalCapacity;
+    else
+        TargetCapacity = MagCapacity;
+
+    ActualLoadAmount = LoadAmount;
+
+    if (ActualLoadAmount > TargetCapacity - MagAmmoRemaining)
+        ActualLoadAmount = TargetCapacity - MagAmmoRemaining;
+
+    if (ActualLoadAmount <= 0)
         return;
 
-    MagAmmoRemaining = MagAmmoRemaining + LoadAmount;
+    MagAmmoRemaining += ActualLoadAmount;
 }
 
 simulated function AddShovelSecondaryAmmo(int LoadAmount)

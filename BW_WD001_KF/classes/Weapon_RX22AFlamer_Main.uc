@@ -6,6 +6,7 @@ var Weapon_RX22AFlamer_Heater Heater;
 var() BUtil.FullSound PackOnSound;
 var() BUtil.FullSound LeverOnSound;
 var() BUtil.FullSound LeverOffSound;
+var() float FlamerMoveSlowdown;
 
 var Weapon_RX22AFlamer_FireControl FireControl;
 
@@ -148,13 +149,65 @@ simulated event Tick(float DT)
 
 simulated function WeaponTick(float DT)
 {
+    local bool bFlamerFiring;
+    local float MovementScale;
+
     Super.WeaponTick(DT);
 
-    if (FireMode[0] != None && FireMode[0].IsFiring() && Weapon_RX22AFlamer_PrimaryFire(FireMode[0]) != None && Weapon_RX22AFlamer_PrimaryFire(FireMode[0]).bIgnited)
+    bFlamerFiring = FireMode[0] != None && FireMode[0].IsFiring();
+
+    // Smoothly apply the original movement penalty.
+    if (Role == ROLE_Authority &&
+        Instigator != None &&
+        Instigator.Physics != PHYS_Falling &&
+        bFlamerFiring)
+    {
+        MovementScale = FMax(0.0, 1.0 - DT * FlamerMoveSlowdown);
+
+        Instigator.Velocity.X *= MovementScale;
+        Instigator.Velocity.Y *= MovementScale;
+    }
+
+    if (FireMode[0] != None &&
+        FireMode[0].IsFiring() &&
+        Weapon_RX22AFlamer_PrimaryFire(FireMode[0]) != None &&
+        Weapon_RX22AFlamer_PrimaryFire(FireMode[0]).bIgnited)
+    {
         HeatLevel = FMin(1, HeatLevel + DT / 6);
+    }
 
     if (Heater != None)
         Heater.SetHeat(HeatLevel);
+}
+
+simulated event AnimEnd(int Channel)
+{
+    local name AnimName;
+    local float Frame, Rate;
+
+    GetAnimParams(Channel, AnimName, Frame, Rate);
+
+    if (Channel == 0 &&
+        AnimName == 'FireLoop' &&
+        FireMode[1].IsFiring() &&
+        MagAmmoRemaining > 0)
+    {
+        LoopAnim('FireLoop', FireMode[1].FireAnimRate, 0.0);
+        return;
+    }
+
+    Super.AnimEnd(Channel);
+}
+
+simulated function bool PutDown()
+{
+    if (!Super.PutDown())
+        return false;
+
+    // Stop the continuous flamethrower sound.
+    AmbientSound = None;
+
+    return true;
 }
 
 simulated event Destroyed()
@@ -184,6 +237,9 @@ defaultproperties
 	HudImage=Texture'BWKF_RX22A_T.Icons.MedIcon_RX22A_Unselected'
     SelectedHudImage=Texture'BWKF_RX22A_T.Icons.MedIcon_RX22A_Selected'
 	TraderInfoTexture=Texture'BWKF_RX22A_T.Icons.MedIcon_RX22A'
+	
+	AmmoIcon=Texture'KillingFloorHud.Hud.Hud_Flame'
+    ReserveAmmoIcon=Texture'BWKF_RX22A_T.Icons.Hud_FlameTank'
 
     SelectSoundRef="BWKF_RX22A_SN.RX22A.RX22A-Pullout"
 	PulloutSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-Pullout')
@@ -198,6 +254,8 @@ defaultproperties
     AttachmentClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_Attachment'
 	
 	MagCapacity=120
+	
+	FlamerMoveSlowdown=7.7
 	
 	Priority=4
     InventoryGroup=4

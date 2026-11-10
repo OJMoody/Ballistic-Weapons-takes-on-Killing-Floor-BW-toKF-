@@ -104,14 +104,18 @@ function DoFireEffect()
 
 function PlayFiring()
 {
+    local name CurrentAnim;
+    local float CurrentFrame, CurrentRate;
+
+    Weapon.GetAnimParams(0, CurrentAnim, CurrentFrame, CurrentRate);
+
+    if (CurrentAnim != FireLoopAnim)
+        Weapon.LoopAnim(FireLoopAnim, FireAnimRate, 0.0);
+
     ClientPlayForceFeedback(FireForce);
     FireCount++;
 
-    if (!bAltFireAnimPlaying)
-    {
-        Weapon.LoopAnim(FireLoopAnim, FireAnimRate, TweenTime);
-        bAltFireAnimPlaying = true;
-    }
+    bAltFireAnimPlaying = true;
 
     if (FireSound != None)
         Weapon.AmbientSound = FireSound;
@@ -131,7 +135,23 @@ function StopFiring()
 
 simulated function bool AllowFire()
 {
-    if (!Super.AllowFire() || Instigator.HeadVolume.bWaterVolume ||
+    local bool bSuperAllowed;
+
+    // Stop alt-fire when the magazine is empty.
+    if (KFWeapon(Weapon).MagAmmoRemaining < 1)
+    {
+        if (IsFiring() || bAltFireAnimPlaying)
+        {
+            StopFiring();
+            PlayFireEnd();
+        }
+
+        return false;
+    }
+
+    bSuperAllowed = Super.AllowFire();
+
+    if (!bSuperAllowed || Instigator.HeadVolume.bWaterVolume ||
         Weapon.GetFireMode(0).NextFireTime > Level.TimeSeconds - 0.2)
     {
         if (IsFiring())
@@ -145,17 +165,19 @@ simulated function bool AllowFire()
 
 defaultproperties
 {  
-    FireSound=Sound'BWKF_RX22A_SN.RX22A.RX22A-FuelLoop'
+	FireLoopAnim="FireLoop"
+	FireSound=Sound'BWKF_RX22A_SN.RX22A.RX22A-FuelLoop'
     bPawnRapidFireAnim=True
     FireRate=0.100000
     AmmoClass=Class'BW_WD001_KF.Weapon_RX22AFlamer_FlamerGasAmmo'
     AmmoPerFire=1
-    ShakeRotMag=(X=64.000000,Y=64.000000,Z=64.000000)
-    ShakeRotRate=(X=10000.000000,Y=10000.000000,Z=10000.000000)
-    ShakeRotTime=2.000000
-    ShakeOffsetMag=(X=-8.000000)
-    ShakeOffsetRate=(X=-1000.000000)
-    ShakeOffsetTime=1.500000
+	bFiringDoesntAffectMovement=True
+	ShakeRotMag=(X=0,Y=0,Z=0)
+	ShakeRotRate=(X=0,Y=0,Z=0)
+	ShakeRotTime=0.0
+	ShakeOffsetMag=(X=0,Y=0,Z=0)
+	ShakeOffsetRate=(X=0,Y=0,Z=0)
+	ShakeOffsetTime=0.0
     WarnTargetPct=0.500000
 	bWaitForRelease=False
 	FlashEmitterClass=None

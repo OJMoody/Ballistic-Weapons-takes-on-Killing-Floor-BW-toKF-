@@ -49,18 +49,10 @@ simulated function InstantFireEffects(byte Mode)
     local vector TipLocation;
     local rotator AimRotation;
 	
-	log("RX22A InstantFireEffects ENTERED");
-    log("RX22A NetMode: "$Level.NetMode);
-    log("RX22A Owner: "$Owner);
-    log("RX22A Instigator: "$Instigator);
-    log("RX22A Attachment Location: "$Location);
-	
 	if (Level.NetMode == NM_DedicatedServer || Instigator == None)
         return;
 	
 	SprayLastUpdateTime = Level.TimeSeconds;
-	
-	log("RX22A SPRAY UPDATE" @ "Time:" @ Level.TimeSeconds @ "LastUpdate:" @ SprayLastUpdateTime);
 
     TipLocation = GetTracerStart();
     AimRotation = Instigator.GetViewRotation();
@@ -175,8 +167,6 @@ simulated event Tick(float DT)
 
 simulated function StopSpray()
 {
-    log("RX22A StopSpray CALLED - FlashCount:" @ FlashCount);
-	
 	if (Flame != None)
     {
         Flame.Kill();

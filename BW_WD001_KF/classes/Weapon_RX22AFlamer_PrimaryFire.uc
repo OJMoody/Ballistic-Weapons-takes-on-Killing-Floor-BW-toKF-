@@ -110,6 +110,14 @@ function DoFireEffect()
 
 function PlayFiring()
 {
+    local name CurrentAnim;
+    local float CurrentFrame, CurrentRate;
+
+    Weapon.GetAnimParams(0, CurrentAnim, CurrentFrame, CurrentRate);
+
+    if (CurrentAnim != FireLoopAnim)
+        Weapon.LoopAnim(FireLoopAnim, FireAnimRate, 0.0);
+
     ClientPlayForceFeedback(FireForce);
     FireCount++;
 
@@ -118,7 +126,6 @@ function PlayFiring()
 
     if (Ignition != None && !bIgnited)
     {
-        Weapon.LoopAnim(FireLoopAnim, FireAnimRate, TweenTime);
         Ignition.Trigger(Weapon, Instigator);
 
         if (FireSound != None)
@@ -147,7 +154,22 @@ simulated function bool AllowFire()
     if (Instigator.HeadVolume.bWaterVolume)
     {
         if (bIgnited)
+        {
             StopFiring();
+            PlayFireEnd();
+        }
+
+        return false;
+    }
+
+    // Stop the firing loop when the magazine is empty.
+    if (KFWeapon(Weapon).MagAmmoRemaining < 1)
+    {
+        if (bIgnited)
+        {
+            StopFiring();
+            PlayFireEnd();
+        }
 
         return false;
     }
@@ -157,7 +179,7 @@ simulated function bool AllowFire()
 
 function StopFiring()
 {
-    bIgnited = false;
+	bIgnited = false;
     Weapon_RX22AFlamer_Main(Weapon).AmbientSound = None;
 
     if (MuzzleFlame != None)
@@ -198,7 +220,9 @@ simulated function InitEffects()
 
 defaultproperties
 {
-    DamageMin=14.000000
+    bFiringDoesntAffectMovement=True
+	FireLoopAnim="FireLoop"
+	DamageMin=14.000000
     DamageMax=14.000000
     FireSoundLoop=Sound'BWKF_RX22A_SN.RX22A.RX22A-FireLoop'
     TraceRange=(Min=1800.000000,Max=1800.000000)
