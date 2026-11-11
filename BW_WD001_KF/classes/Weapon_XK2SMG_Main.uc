@@ -1,5 +1,7 @@
 class Weapon_XK2SMG_Main extends BallisticWeapon;
 
+#exec OBJ LOAD FILE=BWKF_Core_T.utx
+
 //=============================================================================
 // DAMAGE AMPLIFIER VARIABLES
 //=============================================================================
@@ -7,9 +9,19 @@ class Weapon_XK2SMG_Main extends BallisticWeapon;
 var bool bAmpAttached;
 var bool bAmpAnimating;
 
+var float AMPBattery;
+var bool bAMPDrainStarted;
+var bool bAMPDepleted;
+
 var() BUtil.FullSound AMPTurnSound;
 var() BUtil.FullSound AMPOnSound;
 var() BUtil.FullSound AMPOffSound;
+
+replication
+{
+    reliable if (Role == ROLE_Authority)
+        AMPBattery, bAMPDepleted, bAmpAttached;
+}
 
 simulated function PostBeginPlay()
 {
@@ -37,6 +49,10 @@ simulated function bool StartFire(int Mode)
         if (bIsReloading || bBallisticReload || bBallisticAltReload
             || bBallisticReloadClipIn || bReloadPending)
             return false;
+
+		// Cannot attach an AMP without reserve ammunition.
+		if (!bAmpAttached && AmmoAmount(1) <= 0)
+			return false;
 
         if (Super.StartFire(Mode))
 		{
@@ -100,6 +116,125 @@ simulated function string GetCurrentWeaponModeName()
     return Super.GetCurrentWeaponModeName();
 }
 
+function StartAMPDrain()
+{
+    if (Role != ROLE_Authority || bAMPDrainStarted || bAMPDepleted)
+        return;
+
+    bAMPDrainStarted = true;
+    SetTimer(1.0, true);
+}
+
+function Timer()
+{
+    Super.Timer();
+
+    if (!bAMPDrainStarted || bAMPDepleted || !bAmpAttached)
+    {
+        SetTimer(0.0, false);
+        return;
+    }
+
+    AMPBattery -= 4.0;
+	UpdateBatteryHUD();
+
+    if (AMPBattery <= 0.0)
+    {
+        AMPBattery = 0.0;
+        bAMPDepleted = true;
+		AltAmmoLoaded = 0;
+		UpdateAMPMaterials();
+		UpdateBatteryHUD();
+        bAMPDrainStarted = false;
+
+        SetTimer(0.0, false);
+
+        UpdateAMPFlashBone();
+    }
+}
+
+simulated function UpdateAMPMaterials()
+{
+    if (bAMPDepleted)
+    {
+        Skins[4] = Texture'BWKF_Core_T.Misc.Invisible';
+        Skins[3] = Texture'BWKF_Core_T.AMP.Amp-BaseDepleted';
+    }
+    else
+    {
+        Skins[3] = Shader'BWKF_Core_T.AMP.Amp-FinalCyan';
+        Skins[4] = Shader'BWKF_Core_T.AMP.Amp-GlowCyanShader';
+    }
+}
+
+simulated function UpdateBatteryHUD(optional bool bForceHide)
+{
+    local BW_HUD H;
+
+    if (Instigator == None || !Instigator.IsLocallyControlled())
+        return;
+
+    H = BW_HUD(PlayerController(Instigator.Controller).myHUD);
+
+    if (H == None)
+        return;
+
+    H.bShowWeaponBattery = bAmpAttached && !bForceHide;
+    H.WeaponBatteryValue = int(AMPBattery);
+}
+
+simulated function bool PutDown()
+{
+    local bool bResult;
+
+    bResult = Super.PutDown();
+
+    if (bResult)
+    {
+        if (Role == ROLE_Authority)
+        {
+            // Pause the battery countdown.
+            SetTimer(0.0, false);
+            bAMPDrainStarted = false;
+
+            // Deduct 10%, but never reduce the battery below 5%.
+            if (bAmpAttached && !bAMPDepleted && AMPBattery > 5.0)
+            {
+                AMPBattery -= 10.0;
+
+                if (AMPBattery < 5.0)
+                    AMPBattery = 5.0;
+            }
+        }
+
+        UpdateBatteryHUD(true);
+    }
+
+    return bResult;
+}
+
+function DropFrom(vector StartLocation)
+{
+    if (Role == ROLE_Authority && bAmpAttached)
+    {
+        // Fully deplete the AMP when the weapon is dropped.
+        AMPBattery = 0.0;
+        bAMPDepleted = true;
+        bAMPDrainStarted = false;
+
+        // Stop any active battery countdown.
+        SetTimer(0.0, false);
+
+        // Clear the loaded AMP ammo state.
+        AltAmmoLoaded = 0;
+
+        UpdateAMPMaterials();
+        UpdateAMPFlashBone();
+    }
+
+    Super.DropFrom(StartLocation);
+}
+
 
 //=============================================================================
 // ANIMATION END
@@ -126,21 +261,48 @@ simulated function Notify_AMPTurn()
 
 simulated function Notify_AMPOn()
 {
-    class'BUtil'.static.PlayFullSound(self, AMPOnSound, true);
+    if (Role == ROLE_Authority)
+    {
+        if (AltAmmoLoaded > 0 || AmmoAmount(1) <= 0)
+            return;
+
+        if (!ConsumeAmmo(1, 1))
+            return;
+
+        AltAmmoLoaded = 1;
+    }
 
     bAmpAttached = true;
-	UpdateAMPFlashBone();
-	CommonSwitchWeaponMode(3);
-}
+	
+	AMPBattery = 100.0;
+	bAMPDrainStarted = false;
+	bAMPDepleted = false;
 
+	UpdateAMPMaterials();
+	UpdateBatteryHUD();
+
+    // Set the alternate-loaded state and activate ice mode.
+    //SetAltLoaded();
+
+    class'BUtil'.static.PlayFullSound(self, AMPOnSound, true);
+
+    UpdateAMPFlashBone();
+}
 
 simulated function Notify_AMPOff()
 {
-    class'BUtil'.static.PlayFullSound(self, AMPOffSound, true);
+    if (Role == ROLE_Authority)
+        AltAmmoLoaded = 0;
 
     bAmpAttached = false;
-	UpdateAMPFlashBone();
-	CommonSwitchWeaponMode(2);
+	UpdateBatteryHUD();
+
+    // Clear the alternate-loaded state and return to normal mode.
+    ClearAltLoaded();
+
+    class'BUtil'.static.PlayFullSound(self, AMPOffSound, true);
+
+    UpdateAMPFlashBone();
 }
 
 
@@ -165,6 +327,8 @@ simulated function Notify_AMPShow()
 simulated function BringUp(optional Weapon PrevWeapon)
 {
     Super.BringUp(PrevWeapon);
+	
+	UpdateBatteryHUD();
 
     bAmpAnimating = false;
 
@@ -182,19 +346,63 @@ simulated function BringUp(optional Weapon PrevWeapon)
 simulated function UpdateAMPFlashBone()
 {
     local BallisticInstantFire PrimaryFire;
+    local class<Emitter> NewFlashClass;
 
     PrimaryFire = BallisticInstantFire(FireMode[0]);
 
-    if (PrimaryFire == None || PrimaryFire.FlashEmitter == None)
+    if (PrimaryFire == None)
         return;
 
+    // Select the correct flash and attachment bone.
     if (bAmpAttached)
-        FlashBoneRight = 'tip2';
-    else
-        FlashBoneRight = 'tip';
+	{
+		FlashBoneRight = 'tip2';
 
-    if (Instigator != None && Instigator.IsLocallyControlled())
+		if (bAMPDepleted)
+			NewFlashClass = class'BW_WD001_KF.Weapon_XK2SMG_FlashEmitter';
+		else
+			NewFlashClass = class'BW_WD001_KF.Weapon_XK2SMG_IceFlashEmitter';
+	}
+	else
+	{
+		FlashBoneRight = 'tip';
+		NewFlashClass = class'BW_WD001_KF.Weapon_XK2SMG_FlashEmitter';
+	}
+
+    // Replace the existing first-person flash emitter if necessary.
+    if (PrimaryFire.FlashEmitterClass != NewFlashClass)
+    {
+        if (PrimaryFire.FlashEmitter != None)
+        {
+            PrimaryFire.FlashEmitter.Destroy();
+            PrimaryFire.FlashEmitter = None;
+        }
+
+        PrimaryFire.FlashEmitterClass = NewFlashClass;
+    }
+
+    // Create the selected emitter if it doesn't exist.
+    if (PrimaryFire.FlashEmitter == None
+        && Level.NetMode != NM_DedicatedServer
+        && Instigator != None
+        && Instigator.IsLocallyControlled())
+    {
+        PrimaryFire.FlashEmitter = Spawn(NewFlashClass);
+    }
+
+    // Attach the emitter to the appropriate muzzle bone.
+    if (PrimaryFire.FlashEmitter != None
+        && Instigator != None
+        && Instigator.IsLocallyControlled())
+    {
         AttachToBone(PrimaryFire.FlashEmitter, FlashBoneRight);
+    }
+	
+	// Update third-person muzzle flash and tracer.
+    if (ThirdPersonActor != None)
+    {
+        Weapon_XK2SMG_Attachment(ThirdPersonActor).UpdateAMPVisuals();
+    }
 }
 
 
@@ -223,10 +431,14 @@ defaultproperties
 	AMPOnSound=(Sound=Sound'BWKF_XK2_SN.XK2.XK2-AMPOn',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	AMPOffSound=(Sound=Sound'BWKF_XK2_SN.XK2.XK2-AMPOff',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 	
+	bNetNotify=True
 	bHasSecondaryAmmo=True
     AltAmmoLoaded=0
     bReduceMagAmmoOnSecondaryFire=False
     bShowAltAmmoChamber=True
+	AmmoClass(1)=Class'BW_WD001_KF.Weapon_XK2SMG_AmmoAMP'
+	AltLoadedWeaponMode=3
+	AltLoadedReturnWeaponMode=2
 
     FireModeClass(0)=Class'BW_WD001_KF.Weapon_XK2SMG_PrimaryFire'
     FireModeClass(1)=Class'BW_WD001_KF.Weapon_XK2SMG_SecondaryFire'

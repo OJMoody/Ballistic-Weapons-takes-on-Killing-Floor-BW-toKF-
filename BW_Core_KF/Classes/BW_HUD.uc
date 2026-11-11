@@ -11,6 +11,9 @@ var() int AltAmmoDividerOffsetY;
 
 var() int AltAmmoReserveOffsetX;
 
+var bool bShowWeaponBattery;
+var int WeaponBatteryValue;
+
 //=============================================================================
 // WEAPON NAME / FIRE MODE
 //=============================================================================
@@ -110,6 +113,8 @@ simulated function DrawHudPassA(Canvas C)
     local byte OldGrenadeReserveDigitsAlpha0, OldGrenadeReserveDigitsAlpha1;
     local bool bOldTorchEnabled;
     local bool bMoveLaserHUD;
+
+	DrawWeaponBattery(C);
 
     Grenade = None;
     bMoveLaserHUD = false;
@@ -650,6 +655,35 @@ simulated function AdjustLaserHUDPosition(float Offset)
     FlashlightOffIcon.PosX += Offset;
     FlashlightDigits.PosX += Offset;
 }
+
+simulated function DrawWeaponBattery(Canvas C)
+{
+    local SpriteWidget BatteryBG;
+    local SpriteWidget BatteryIcon;
+    local NumericWidget BatteryDigits;
+
+    if (!bShowWeaponBattery)
+        return;
+
+    BatteryBG = FlashlightBG;
+    BatteryIcon = FlashlightIcon;
+	BatteryIcon.WidgetTexture = Texture'KillingFloorHUD.HUD.Hud_Lightning_Bolt';
+    BatteryDigits = FlashlightDigits;
+
+    // Shift the AMP battery display to the right.
+    BatteryBG.PosX -= 0.07;
+	BatteryIcon.PosX -= 0.07;
+	BatteryDigits.PosX -= 0.07;
+
+    BatteryDigits.Value = WeaponBatteryValue;
+
+    if (!bLightHud)
+        DrawSpriteWidget(C, BatteryBG);
+
+    DrawSpriteWidget(C, BatteryIcon);
+    DrawNumericWidget(C, BatteryDigits, DigitsSmall);
+}
+
 
 //=============================================================================
 // BALLISTIC GRENADE HUD

@@ -7,7 +7,8 @@ function PlayFiring()
     Super.PlayFiring();
 
     if (Weapon_XK2SMG_Main(Weapon) != None
-        && Weapon_XK2SMG_Main(Weapon).bAmpAttached)
+        && Weapon_XK2SMG_Main(Weapon).bAmpAttached
+		&& !Weapon_XK2SMG_Main(Weapon).bAMPDepleted)
     {
         Weapon.Instigator.PlaySound(IceFireSound, SLOT_None, 1.0, false, 24.0);
     }
@@ -21,7 +22,8 @@ function DoFireEffect()
 
     // Normal instant bullets when the AMP is detached.
     if (Weapon_XK2SMG_Main(Weapon) == None
-        || !Weapon_XK2SMG_Main(Weapon).bAmpAttached)
+		|| !Weapon_XK2SMG_Main(Weapon).bAmpAttached
+		|| Weapon_XK2SMG_Main(Weapon).bAMPDepleted)
     {
         Super.DoFireEffect();
         return;
@@ -44,7 +46,11 @@ function DoFireEffect()
 	);
 
     if (IceProjectile != None)
+    {
         IceProjectile.Instigator = Instigator;
+
+        Weapon_XK2SMG_Main(Weapon).StartAMPDrain();
+    }
 }
 
 defaultproperties
@@ -69,7 +75,7 @@ defaultproperties
     AmmoClass=Class'BW_WD001_KF.Weapon_XK2SMG_Ammo'
     AmmoPerFire=1
     BotRefireRate=0.350000
-    //FlashEmitterClass=Class'BW_WD001_KF.Weapon_M46A2Rifle_PrimaryFlashEmitter'
+    FlashEmitterClass=Class'BW_WD001_KF.Weapon_XK2SMG_FlashEmitter'
     aimerror=30.000000
     Spread=0.015000
     SpreadStyle=SS_Random

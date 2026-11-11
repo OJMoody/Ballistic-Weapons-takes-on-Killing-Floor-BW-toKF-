@@ -18,7 +18,7 @@ defaultproperties
 	ItemName="XK2 Submachine Gun"
 	ItemShortName="XK2 Submachine Gun"
 	AmmoItemName="9mm Ammo"
-	SecondaryAmmoShortName="Element Damage Amplifier"
+	SecondaryAmmoShortName="Ice Squall: E-D Amplifier"
 	PickupMessage="You picked up the XK2 SubmachineGun"
 	PickupForce="AssaultRiflePickup"
 	CollisionRadius=35.000000

@@ -34,7 +34,9 @@ simulated function StopFiring()
 
 defaultproperties
 {
-    AmmoPerFire=0
+    AmmoClass=Class'BW_WD001_KF.Weapon_XK2SMG_AmmoAMP'
+	
+	AmmoPerFire=0
     bWaitForRelease=True
     FireRate=1.000000
 }

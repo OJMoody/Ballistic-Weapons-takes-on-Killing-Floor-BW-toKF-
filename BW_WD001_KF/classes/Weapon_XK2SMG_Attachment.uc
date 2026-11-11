@@ -7,6 +7,52 @@ class Weapon_XK2SMG_Attachment extends BallisticAttachment;
 var class<Emitter> mMuzFlashClassSecondary;
 var Emitter mMuzFlash3rdSecondary;
 
+simulated function UpdateAMPVisuals()
+{
+    local Weapon_XK2SMG_Main XK2;
+    local class<Emitter> NewFlashClass;
+
+    if (Instigator == None)
+        return;
+
+    XK2 = Weapon_XK2SMG_Main(Instigator.Weapon);
+
+    if (XK2 == None)
+        return;
+
+    // Select the correct third-person muzzle flash.
+    if (XK2.bAmpAttached)
+    {
+        NewFlashClass = class'BW_Core_KF.IceDartMuzzleFlash';
+        mTracerClass = None;
+    }
+    else
+    {
+        NewFlashClass = class'BW_WD001_KF.Weapon_XK2SMG_FlashEmitter';
+        mTracerClass = class'BW_Core_KF.TraceEmitter_Default';
+    }
+
+    // Replace the existing muzzle flash if the class has changed.
+    if (mMuzFlashClass != NewFlashClass)
+    {
+        if (mMuzFlash3rd != None)
+        {
+            mMuzFlash3rd.Destroy();
+            mMuzFlash3rd = None;
+        }
+
+        mMuzFlashClass = NewFlashClass;
+    }
+}
+
+simulated function SpawnTracer()
+{
+    if (mTracerClass == None)
+        return;
+
+    Super.SpawnTracer();
+}
+
 simulated function PostBeginPlay()
 {
     Super.PostBeginPlay();
@@ -20,7 +66,7 @@ defaultproperties
     Mesh=SkeletalMesh'BWKF_M46_A.M46A1_TP_Mesh'
 	DrawScale=0.150000
 
-    mMuzFlashClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_PrimaryFlashEmitter'
+    mMuzFlashClass=Class'BW_WD001_KF.Weapon_XK2SMG_FlashEmitter'
 	//mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFlashEmitter'
 	mMuzFlashScale=0.400000
 
