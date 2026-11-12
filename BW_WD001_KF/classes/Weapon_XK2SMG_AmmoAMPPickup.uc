@@ -8,6 +8,6 @@ defaultproperties
      PickupMessage="You picked up an Ice Element Damage Amplifier for the XK2"
      PickupForce="AssaultAmmoPickup"
      DrawType=DT_StaticMesh
-     StaticMesh=StaticMesh'BWKF_M46_SM.Pickups.M46_ClipPickup_Main'
-	 DrawScale=0.500000
+     StaticMesh=StaticMesh'BWKF_XK2_SM.Pickups.XK2_AMPPickup_SM'
+	 DrawScale=1.000000
 }

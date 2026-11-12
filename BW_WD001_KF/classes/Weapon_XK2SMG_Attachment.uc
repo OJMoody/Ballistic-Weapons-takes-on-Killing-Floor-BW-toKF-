@@ -1,5 +1,8 @@
 class Weapon_XK2SMG_Attachment extends BallisticAttachment;
 
+#exec OBJ LOAD FILE=BWKF_Core_T.utx
+#exec OBJ LOAD FILE=BWKF_XK2_T.utx
+
 //=============================================================================
 // DEFAULT PROPERTIES
 //=============================================================================
@@ -19,6 +22,23 @@ simulated function UpdateAMPVisuals()
 
     if (XK2 == None)
         return;
+		
+	// Update third-person AMP materials.
+	if (XK2.bAmpAttached)
+	{
+		if (XK2.bAMPDepleted)
+		{
+			Skins[0] = Shader'BWKF_XK2_T.XK2.XK2_Main-Shiney';
+			Skins[2] = Texture'BWKF_Core_T.Misc.Invisible';
+			Skins[1] = Texture'BWKF_Core_T.AMP.Amp-BaseDepleted';
+		}
+		else
+		{
+			Skins[0] = Shader'BWKF_XK2_T.XK2.XK2_Main-Shiney';
+			Skins[1] = Shader'BWKF_Core_T.AMP.Amp-FinalCyan';
+			Skins[2] = Shader'BWKF_Core_T.AMP.Amp-GlowCyanShader';
+		}
+	}
 
     // Select the correct third-person muzzle flash.
     if (XK2.bAmpAttached)
@@ -45,6 +65,23 @@ simulated function UpdateAMPVisuals()
     }
 }
 
+simulated function vector GetTracerStart()
+{
+    local Pawn P;
+
+    P = Instigator;
+
+    if (P != None && BallisticWeapon(P.Weapon) != None)
+    {
+        if (BallisticWeapon(P.Weapon).bBWThirdPersonCamera)
+            return GetBoneCoords('TP_tip').Origin;
+
+        return P.Weapon.GetEffectStart();
+    }
+
+    return GetBoneCoords('TP_tip').Origin;
+}
+
 simulated function SpawnTracer()
 {
     if (mTracerClass == None)
@@ -63,15 +100,13 @@ simulated function PostBeginPlay()
 
 defaultproperties
 {
-    Mesh=SkeletalMesh'BWKF_M46_A.M46A1_TP_Mesh'
-	DrawScale=0.150000
+    Mesh=SkeletalMesh'BWKF_XK2_A.XK2_TP_Mesh'
 
     mMuzFlashClass=Class'BW_WD001_KF.Weapon_XK2SMG_FlashEmitter'
-	//mMuzFlashClassSecondary=Class'BW_WD001_KF.Weapon_M46A1Rifle_SecondaryFlashEmitter'
 	mMuzFlashScale=0.400000
 
     mTracerClass=Class'BW_Core_KF.TraceEmitter_Default'
-    //mShellCaseEmitterClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Brass'
+    mShellCaseEmitterClass=Class'BW_WD001_KF.Weapon_XK2SMG_Brass'
     SplashEffect=Class'BulletSplashEmitter'
 
     LightType=LT_Pulse

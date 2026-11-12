@@ -16,6 +16,7 @@ var bool bAMPDepleted;
 var() BUtil.FullSound AMPTurnSound;
 var() BUtil.FullSound AMPOnSound;
 var() BUtil.FullSound AMPOffSound;
+var() BUtil.FullSound AMPDeactivateSound;
 
 replication
 {
@@ -142,6 +143,7 @@ function Timer()
     {
         AMPBattery = 0.0;
         bAMPDepleted = true;
+		class'BUtil'.static.PlayFullSound(self, AMPDeactivateSound, true);
 		AltAmmoLoaded = 0;
 		UpdateAMPMaterials();
 		UpdateBatteryHUD();
@@ -308,17 +310,30 @@ simulated function Notify_AMPOff()
 
 simulated function Notify_AMPHide()
 {
+    local Weapon_XK2SMG_Attachment XK2Attachment;
+
     if (Instigator != None && Instigator.IsLocallyControlled())
         SetBoneScale(0, 0.0, 'AMP');
+
+    XK2Attachment = Weapon_XK2SMG_Attachment(ThirdPersonActor);
+
+    if (XK2Attachment != None)
+        XK2Attachment.SetBoneScale(0, 0.0, 'AMP');
 }
 
 
 simulated function Notify_AMPShow()
 {
+    local Weapon_XK2SMG_Attachment XK2Attachment;
+
     if (Instigator != None && Instigator.IsLocallyControlled())
         SetBoneScale(0, 1.0, 'AMP');
-}
 
+    XK2Attachment = Weapon_XK2SMG_Attachment(ThirdPersonActor);
+
+    if (XK2Attachment != None)
+        XK2Attachment.SetBoneScale(0, 1.0, 'AMP');
+}
 
 //=============================================================================
 // WEAPON INITIALISATION
@@ -333,12 +348,20 @@ simulated function BringUp(optional Weapon PrevWeapon)
     bAmpAnimating = false;
 
     if (Instigator != None && Instigator.IsLocallyControlled())
-    {
-        if (bAmpAttached)
-            SetBoneScale(0, 1.0, 'AMP');
-        else
-            SetBoneScale(0, 0.0, 'AMP');
-    }
+	{
+		if (bAmpAttached)
+			SetBoneScale(0, 1.0, 'AMP');
+		else
+			SetBoneScale(0, 0.0, 'AMP');
+	}
+
+	if (ThirdPersonActor != None)
+	{
+		if (bAmpAttached)
+			ThirdPersonActor.SetBoneScale(0, 1.0, 'AMP');
+		else
+			ThirdPersonActor.SetBoneScale(0, 0.0, 'AMP');
+	}
 	
 	UpdateAMPFlashBone();
 }
@@ -427,9 +450,10 @@ simulated function bool InterruptReload()
 
 defaultproperties
 {
-    AMPTurnSound=(Sound=SoundGroup'BWKF_XK2_SN.XK2.XK2-AMPTurn',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-	AMPOnSound=(Sound=Sound'BWKF_XK2_SN.XK2.XK2-AMPOn',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
-	AMPOffSound=(Sound=Sound'BWKF_XK2_SN.XK2.XK2-AMPOff',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+    AMPTurnSound=(Sound=SoundGroup'BWKF_XK2_SN.XK2.XK2-AMPTurn',Volume=1.000000,Radius=24.000000,Slot=SLOT_None,Pitch=1.000000,bAtten=True)
+	AMPOnSound=(Sound=Sound'BWKF_Core_SN.AMP.Amp-Install',Volume=1.000000,Radius=24.000000,Slot=SLOT_None,Pitch=1.000000,bAtten=True)
+	AMPOffSound=(Sound=Sound'BWKF_XK2_SN.XK2.XK2-AMPOff',Volume=1.000000,Radius=24.000000,Slot=SLOT_None,Pitch=1.000000,bAtten=True)
+	AMPDeactivateSound=(Sound=Sound'BWKF_Core_SN.AMP.Amp-Depleted',Volume=1.000000,Radius=24.000000,Slot=SLOT_None,Pitch=1.000000,bAtten=True)
 	
 	bNetNotify=True
 	bHasSecondaryAmmo=True
@@ -464,7 +488,10 @@ defaultproperties
     Priority=3
     InventoryGroup=3
     GroupOffset=2
-    Weight=8.000000
+    Weight=5.000000
+	
+	SightFXClass=Class'BW_WD001_KF.Weapon_XK2SMG_SightLEDs'
+    SightFXBone="XK2"
 
     PlayerIronSightFOV=65
     ZoomTime=0.25

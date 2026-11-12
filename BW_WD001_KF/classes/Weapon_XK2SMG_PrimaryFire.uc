@@ -32,7 +32,10 @@ function DoFireEffect()
     // Projectile firing when the AMP is attached.
     Instigator.MakeNoise(1.0);
 
-    StartTrace = Instigator.Location + Instigator.EyePosition();
+    if (BallisticWeapon(Weapon).bBWThirdPersonCamera)
+		StartTrace = Weapon.ThirdPersonActor.GetBoneCoords('TP_tip').Origin;
+	else
+		StartTrace = Instigator.Location + Instigator.EyePosition();
 
     Aim = AdjustAim(StartTrace, AimError);
     R = Rotator(Vector(Aim) + VRand() * FRand() * Spread);
@@ -88,5 +91,5 @@ defaultproperties
     ShakeRotTime=3.0
     bRandomPitchFireSound=false
 	
-	//BrassClass=Class'BW_WD001_KF.Weapon_M46A1Rifle_Brass'
+	BrassClass=Class'BW_WD001_KF.Weapon_XK2SMG_Brass'
 }
