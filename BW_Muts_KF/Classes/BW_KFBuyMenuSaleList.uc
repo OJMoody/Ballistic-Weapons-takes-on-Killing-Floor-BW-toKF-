@@ -1,5 +1,25 @@
 class BW_KFBuyMenuSaleList extends KFBuyMenuSaleList;
 
+event Opened(GUIComponent Sender)
+{
+    local KFLevelRules KFLRules;
+    local Mut_BallisticWeapons BWMutator;
+
+    foreach PlayerOwner().DynamicActors(class'KFLevelRules', KFLRules)
+        break;
+
+    foreach PlayerOwner().DynamicActors(class'Mut_BallisticWeapons', BWMutator)
+        break;
+
+    if (BWMutator != None)
+    {
+        if (KFLRules != None)
+            BWMutator.SetupBWTrader(KFLRules);
+    }
+
+    Super.Opened(Sender);
+}
+
 function int PopulateBuyables()
 {
     local int i;

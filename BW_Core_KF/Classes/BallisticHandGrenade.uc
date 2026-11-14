@@ -255,8 +255,6 @@ function GiveAmmo(int m, WeaponPickup WP, bool bJustSpawned)
 {
     Super.GiveAmmo(m, WP, bJustSpawned);
 
-    // Hand grenades have no magazine, so KF1 initializes their ammo to zero.
-    // Seed the ammo inventory object with its initial amount instead.
     if (!bNoAmmoInstances && m == 0 && bJustSpawned && Ammo[0] != None && Ammo[0].AmmoAmount < 1)
         Ammo[0].AddAmmo(Ammo[0].InitialAmount);
 }

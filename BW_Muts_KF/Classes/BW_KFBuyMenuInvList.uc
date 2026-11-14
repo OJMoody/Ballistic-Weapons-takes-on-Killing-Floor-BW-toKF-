@@ -5,6 +5,18 @@ class BW_KFBuyMenuInvList extends KFBuyMenuInvList;
 
 #exec OBJ LOAD FILE=BWKF_Core_T.utx
 
+function DisableMeleeAmmoRefill(GUIBuyable Buyable)
+{
+	if (Buyable == None || !Buyable.bMelee)
+		return;
+
+	Buyable.ItemAmmoClass = None;
+	Buyable.ItemAmmoCost = 0;
+	Buyable.ItemFillAmmoCost = 0;
+	Buyable.ItemAmmoCurrent = 0;
+	Buyable.ItemAmmoMax = 0;
+}
+
 function UpdateMyBuyables()
 {
 	local class<KFVeterancyTypes> PlayerVeterancy;
@@ -21,18 +33,18 @@ function UpdateMyBuyables()
 	local class<KFWeaponPickup> MyPickup, MyPrimaryPickup;
 	local int DualDivider, NumInvItems;
 
-	//Let's start with our current inventory
-	if ( PlayerOwner().Pawn.Inventory == none )
-        return;
+	// Let's start with our current inventory.
+	if (PlayerOwner().Pawn.Inventory == None)
+		return;
 
 	DualDivider = 1;
 	AutoFillCost = 0.00000;
 
-	//Clear the MyBuyables array
+	// Clear the MyBuyables array.
 	MyBuyables.Remove(0, MyBuyables.Length);
 
-	// Grab Players Veterancy for quick reference
-	if ( KFPlayerController(PlayerOwner()) != none && KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo).ClientVeteranSkill != none )
+	// Grab Players Veterancy for quick reference.
+	if (KFPlayerController(PlayerOwner()) != None && KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo).ClientVeteranSkill != None)
 	{
 		PlayerVeterancy = KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo).ClientVeteranSkill;
 	}
@@ -43,138 +55,109 @@ function UpdateMyBuyables()
 
 	KFPRI = KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo);
 
-	//Check if we have dualies or dual hand cannons
-	for ( CurInv = PlayerOwner().Pawn.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-    {
-		if ( KFWeapon(CurInv) != none )
-        {
-			if ( KFWeapon(CurInv).default.PickupClass == class'DualDeaglePickup' )
-	    	{
+	// Check if we have dualies or dual hand cannons.
+	for (CurInv = PlayerOwner().Pawn.Inventory; CurInv != None; CurInv = CurInv.Inventory)
+	{
+		if (KFWeapon(CurInv) != None)
+		{
+			if (KFWeapon(CurInv).default.PickupClass == class'DualDeaglePickup')
 				bHasDualCannon = true;
-			}
 
-			if ( KFWeapon(CurInv).default.PickupClass == class'GoldenDualDeaglePickup' )
-	    	{
+			if (KFWeapon(CurInv).default.PickupClass == class'GoldenDualDeaglePickup')
 				bHasGoldDualCannon = true;
-			}
 
-			if ( KFWeapon(CurInv).default.PickupClass == class'DualiesPickup' )
-	    	{
+			if (KFWeapon(CurInv).default.PickupClass == class'DualiesPickup')
 				bHasDual = true;
-			}
 
-			if ( KFWeapon(CurInv).default.PickupClass == class'Dual44MagnumPickup' )
-	    	{
+			if (KFWeapon(CurInv).default.PickupClass == class'Dual44MagnumPickup')
 				bHasDual44 = true;
-			}
 
-			if ( KFWeapon(CurInv).default.PickupClass == class'DualMK23Pickup' )
-	    	{
+			if (KFWeapon(CurInv).default.PickupClass == class'DualMK23Pickup')
 				bhasDualM23 = true;
-			}
 
-			if ( KFWeapon(CurInv).default.PickupClass == class'DualFlareRevolverPickup' )
-	    	{
+			if (KFWeapon(CurInv).default.PickupClass == class'DualFlareRevolverPickup')
 				bHasDualFlareGuns = true;
-			}
 		}
 	}
 
-	// Grab the items for sale, we need the categories
-    foreach PlayerOwner().DynamicActors(class'KFLevelRules', KFLR)
-        break;
+	// Grab the items for sale, we need the categories.
+	foreach PlayerOwner().DynamicActors(class'KFLevelRules', KFLR)
+		break;
 
-	// Fill the Buyables
+	// Fill the Buyables.
 	NumInvItems = 0;
-	for ( CurInv = PlayerOwner().Pawn.Inventory; CurInv != none; CurInv = CurInv.Inventory )
-    {
-		if ( CurInv.IsA('Ammunition') )
-        {
-            continue;
-        }
 
-        // No need for Syringe, Welder or WD200 Combat Welder
-		if (CurInv.IsA('Welder') || CurInv.IsA('Syringe') || CurInv.IsA('Tool_WD200_Main') || CurInv.IsA('Tool_ICIS25_Main'))
-		{
+	for (CurInv = PlayerOwner().Pawn.Inventory; CurInv != None; CurInv = CurInv.Inventory)
+	{
+		if (CurInv.IsA('Ammunition'))
 			continue;
-		}
-		
-		if ( CurInv.IsA('DualDeagle') || CurInv.IsA('Dual44Magnum') || CurInv.IsA('DualMK23Pistol')
-            || CurInv.IsA('DualFlareRevolver') )
-		{
+
+		// No need for Syringe, Welder or WD200 Combat Welder.
+		if (CurInv.IsA('Welder') || CurInv.IsA('Syringe') || CurInv.IsA('Tool_WD200_Main') || CurInv.IsA('Tool_ICIS25_Main'))
+			continue;
+
+		if (CurInv.IsA('DualDeagle') || CurInv.IsA('Dual44Magnum') || CurInv.IsA('DualMK23Pistol') || CurInv.IsA('DualFlareRevolver'))
 			DualDivider = 2;
-		}
 		else
-		{
 			DualDivider = 1;
-		}
 
 		MyPickup = class<KFWeaponPickup>(KFWeapon(CurInv).default.PickupClass);
 
-        // if we already own dualies, we do not need the single 9mm in the list
-        if ( (bHasDual && MyPickup == class'SinglePickup') ||
-			 (bHasDualCannon && MyPickup == class'DeaglePickup') ||
-			 (bHasGoldDualCannon && MyPickup == class'GoldenDeaglePickup') ||
-			 (bHasDual44 && MyPickup == class'Magnum44Pickup') ||
-			 (bhasDualM23 && MyPickup == class'MK23Pickup') ||
-             (bHasDualFlareGuns && MyPickup == class'FlareRevolverPickup'))
-        {
-            continue;
-        }
+		// If we already own dualies, we do not need the single 9mm in the list.
+		if ((bHasDual && MyPickup == class'SinglePickup') ||
+			(bHasDualCannon && MyPickup == class'DeaglePickup') ||
+			(bHasGoldDualCannon && MyPickup == class'GoldenDeaglePickup') ||
+			(bHasDual44 && MyPickup == class'Magnum44Pickup') ||
+			(bhasDualM23 && MyPickup == class'MK23Pickup') ||
+			(bHasDualFlareGuns && MyPickup == class'FlareRevolverPickup'))
+		{
+			continue;
+		}
 
-        if ( CurInv.IsA('KFWeapon') )
-        {
+		if (CurInv.IsA('KFWeapon'))
+		{
 			KFWeapon(CurInv).GetAmmoCount(MaxAmmo, CurAmmo);
 
 			MyBuyable = new class'GUIBuyable';
 
-			// This is a rather ugly way to support Secondary Ammo because all of the needed Data is jumbled between the Weapon and it's 2 Pickup Classes
-			if ( KFWeapon(CurInv).bHasSecondaryAmmo )
+			// This is a rather ugly way to support Secondary Ammo because all of the needed Data is jumbled between the Weapon and it's 2 Pickup Classes.
+			if (KFWeapon(CurInv).bHasSecondaryAmmo)
 			{
-				if ( Class<BallisticPickup>(MyPickup) != none )
-				{
+				if (Class<BallisticPickup>(MyPickup) != None)
 					MyPrimaryPickup = MyPickup;
-				}
 				else
-				{
 					MyPrimaryPickup = MyPickup.default.PrimaryWeaponPickup;
-				}
 
-				MyBuyable.ItemName 			= MyPickup.default.ItemShortName;
-				MyBuyable.ItemDescription 	= KFWeapon(CurInv).default.Description;
-				MyBuyable.ItemCategorie		= KFLR.EquipmentCategories[MyPickup.default.EquipmentCategoryID].EquipmentCategoryName;
-				MyBuyable.ItemImage			= KFWeapon(CurInv).default.TraderInfoTexture;
-				MyBuyable.ItemWeaponClass	= KFWeapon(CurInv).class;
-				MyBuyable.ItemAmmoClass		= KFWeapon(CurInv).default.FireModeClass[0].default.AmmoClass;
-				MyBuyable.ItemPickupClass	= MyPrimaryPickup;
-				MyBuyable.ItemCost			= (float(MyPickup.default.Cost) * PlayerVeterancy.static.GetCostScaling(KFPRI, MyPickup)) / DualDivider;
-				MyBuyable.ItemAmmoCost		= MyPrimaryPickup.default.AmmoCost * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPrimaryPickup) * PlayerVeterancy.static.GetMagCapacityMod(KFPRI, KFWeapon(CurInv));
-    			MyBuyable.ItemFillAmmoCost	= (int(((MaxAmmo - CurAmmo) * float(MyPrimaryPickup.default.AmmoCost)) / float(KFWeapon(CurInv).default.MagCapacity))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPrimaryPickup);
-				MyBuyable.ItemWeight		= KFWeapon(CurInv).Weight;
-				MyBuyable.ItemPower			= MyPickup.default.PowerValue;
-				MyBuyable.ItemRange			= MyPickup.default.RangeValue;
-				MyBuyable.ItemSpeed			= MyPickup.default.SpeedValue;
-				MyBuyable.ItemAmmoCurrent	= CurAmmo;
-				MyBuyable.ItemAmmoMax		= MaxAmmo;
-				MyBuyable.bMelee			= (KFMeleeGun(CurInv) != none);
-				MyBuyable.bSaleList			= false;
-				MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
+				MyBuyable.ItemName = MyPickup.default.ItemShortName;
+				MyBuyable.ItemDescription = KFWeapon(CurInv).default.Description;
+				MyBuyable.ItemCategorie = KFLR.EquipmentCategories[MyPickup.default.EquipmentCategoryID].EquipmentCategoryName;
+				MyBuyable.ItemImage = KFWeapon(CurInv).default.TraderInfoTexture;
+				MyBuyable.ItemWeaponClass = KFWeapon(CurInv).class;
+				MyBuyable.ItemAmmoClass = KFWeapon(CurInv).default.FireModeClass[0].default.AmmoClass;
+				MyBuyable.ItemPickupClass = MyPrimaryPickup;
+				MyBuyable.ItemCost = (float(MyPickup.default.Cost) * PlayerVeterancy.static.GetCostScaling(KFPRI, MyPickup)) / DualDivider;
+				MyBuyable.ItemAmmoCost = MyPrimaryPickup.default.AmmoCost * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPrimaryPickup) * PlayerVeterancy.static.GetMagCapacityMod(KFPRI, KFWeapon(CurInv));
+				MyBuyable.ItemFillAmmoCost = (int(((MaxAmmo - CurAmmo) * float(MyPrimaryPickup.default.AmmoCost)) / float(KFWeapon(CurInv).default.MagCapacity))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPrimaryPickup);
+				MyBuyable.ItemWeight = KFWeapon(CurInv).Weight;
+				MyBuyable.ItemPower = MyPickup.default.PowerValue;
+				MyBuyable.ItemRange = MyPickup.default.RangeValue;
+				MyBuyable.ItemSpeed = MyPickup.default.SpeedValue;
+				MyBuyable.ItemAmmoCurrent = CurAmmo;
+				MyBuyable.ItemAmmoMax = MaxAmmo;
+				MyBuyable.bMelee = (KFMeleeGun(CurInv) != None || BallisticMeleeWeapon(CurInv) != None);
+				DisableMeleeAmmoRefill(MyBuyable);
+				MyBuyable.bSaleList = false;
+				MyBuyable.ItemPerkIndex = MyPickup.default.CorrespondingPerkIndex;
 
-				if ( KFWeapon(CurInv) != none && KFWeapon(CurInv).SellValue != -1 )
-				{
+				if (KFWeapon(CurInv) != None && KFWeapon(CurInv).SellValue != -1)
 					MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
-				}
 				else
-				{
 					MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
-				}
 
-				if ( !MyBuyable.bMelee && int(MaxAmmo) > int(CurAmmo))
-				{
+				if (!MyBuyable.bMelee && int(MaxAmmo) > int(CurAmmo))
 					AutoFillCost += MyBuyable.ItemFillAmmoCost;
-				}
 
-				MyBuyable.bSellable	= !KFWeapon(CurInv).default.bKFNeverThrow;
+				MyBuyable.bSellable = !KFWeapon(CurInv).default.bKFNeverThrow;
 
 				MyBuyables.Insert(0, 1);
 				MyBuyables[0] = MyBuyable;
@@ -185,16 +168,16 @@ function UpdateMyBuyables()
 
 				MyBuyable = new class'GUIBuyable';
 
-				MyBuyable.ItemName 			= MyPickup.default.SecondaryAmmoShortName;
-				MyBuyable.ItemDescription 	= KFWeapon(CurInv).default.Description;
-				MyBuyable.ItemCategorie		= KFLR.EquipmentCategories[MyPickup.default.EquipmentCategoryID].EquipmentCategoryName;
-				MyBuyable.ItemImage			= KFWeapon(CurInv).default.TraderInfoTexture;
-				MyBuyable.ItemWeaponClass	= KFWeapon(CurInv).class;
-				MyBuyable.ItemAmmoClass		= KFWeapon(CurInv).default.FireModeClass[1].default.AmmoClass;
-				MyBuyable.ItemPickupClass	= MyPickup;
-				MyBuyable.ItemCost			= (float(MyPickup.default.Cost) * PlayerVeterancy.static.GetCostScaling(KFPRI, MyPickup)) / DualDivider;
+				MyBuyable.ItemName = MyPickup.default.SecondaryAmmoShortName;
+				MyBuyable.ItemDescription = KFWeapon(CurInv).default.Description;
+				MyBuyable.ItemCategorie = KFLR.EquipmentCategories[MyPickup.default.EquipmentCategoryID].EquipmentCategoryName;
+				MyBuyable.ItemImage = KFWeapon(CurInv).default.TraderInfoTexture;
+				MyBuyable.ItemWeaponClass = KFWeapon(CurInv).class;
+				MyBuyable.ItemAmmoClass = KFWeapon(CurInv).default.FireModeClass[1].default.AmmoClass;
+				MyBuyable.ItemPickupClass = MyPickup;
+				MyBuyable.ItemCost = (float(MyPickup.default.Cost) * PlayerVeterancy.static.GetCostScaling(KFPRI, MyPickup)) / DualDivider;
 
-				if ( Class<BallisticPickup>(MyPickup) != none && Class<BallisticPickup>(MyPickup).default.SecondaryAmmoCost > 0 )
+				if (Class<BallisticPickup>(MyPickup) != None && Class<BallisticPickup>(MyPickup).default.SecondaryAmmoCost > 0)
 				{
 					MyBuyable.ItemAmmoCost = Class<BallisticPickup>(MyPickup).default.SecondaryAmmoCost * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup) * PlayerVeterancy.static.GetMagCapacityMod(KFPRI, KFWeapon(CurInv));
 					MyBuyable.ItemFillAmmoCost = (int(((MaxAmmo - CurAmmo) * float(Class<BallisticPickup>(MyPickup).default.SecondaryAmmoCost)))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup);
@@ -205,73 +188,60 @@ function UpdateMyBuyables()
 					MyBuyable.ItemFillAmmoCost = (int(((MaxAmmo - CurAmmo) * float(MyPickup.default.AmmoCost)))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup);
 				}
 
-				MyBuyable.ItemWeight		= KFWeapon(CurInv).Weight;
-				MyBuyable.ItemPower			= MyPickup.default.PowerValue;
-				MyBuyable.ItemRange			= MyPickup.default.RangeValue;
-				MyBuyable.ItemSpeed			= MyPickup.default.SpeedValue;
-				MyBuyable.ItemAmmoCurrent	= CurAmmo;
-				MyBuyable.ItemAmmoMax		= MaxAmmo;
-				MyBuyable.bMelee			= (KFMeleeGun(CurInv) != none);
-				MyBuyable.bSaleList			= false;
-				//MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
+				MyBuyable.ItemWeight = KFWeapon(CurInv).Weight;
+				MyBuyable.ItemPower = MyPickup.default.PowerValue;
+				MyBuyable.ItemRange = MyPickup.default.RangeValue;
+				MyBuyable.ItemSpeed = MyPickup.default.SpeedValue;
+				MyBuyable.ItemAmmoCurrent = CurAmmo;
+				MyBuyable.ItemAmmoMax = MaxAmmo;
+				MyBuyable.bMelee = (KFMeleeGun(CurInv) != None || BallisticMeleeWeapon(CurInv) != None);
+				DisableMeleeAmmoRefill(MyBuyable);
+				MyBuyable.bSaleList = false;
 				MyBuyable.ItemPerkIndex = -1;
-				
-				if ( KFWeapon(CurInv) != none && KFWeapon(CurInv).SellValue != -1 )
-				{
-					MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
-				}
-				else
-				{
-					MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
-				}
 
-				if ( !MyBuyable.bMelee && int(MaxAmmo) > int(CurAmmo))
-				{
+				if (KFWeapon(CurInv) != None && KFWeapon(CurInv).SellValue != -1)
+					MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
+				else
+					MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
+
+				if (!MyBuyable.bMelee && int(MaxAmmo) > int(CurAmmo))
 					AutoFillCost += MyBuyable.ItemFillAmmoCost;
-				}
 			}
 			else
 			{
-				MyBuyable.ItemName 			= MyPickup.default.ItemShortName;
-				MyBuyable.ItemDescription 	= KFWeapon(CurInv).default.Description;
-				MyBuyable.ItemCategorie		= KFLR.EquipmentCategories[MyPickup.default.EquipmentCategoryID].EquipmentCategoryName;
-				MyBuyable.ItemImage			= KFWeapon(CurInv).default.TraderInfoTexture;
-				MyBuyable.ItemWeaponClass	= KFWeapon(CurInv).class;
-				MyBuyable.ItemAmmoClass		= KFWeapon(CurInv).default.FireModeClass[0].default.AmmoClass;
-				MyBuyable.ItemPickupClass	= MyPickup;
-				MyBuyable.ItemCost			= (float(MyPickup.default.Cost) * PlayerVeterancy.static.GetCostScaling(KFPRI, MyPickup)) / DualDivider;
-				MyBuyable.ItemAmmoCost		= MyPickup.default.AmmoCost * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup) * PlayerVeterancy.static.GetMagCapacityMod(KFPRI, KFWeapon(CurInv));
-                if( MyPickup == class'HuskGunPickup' )
-				{
-    				MyBuyable.ItemFillAmmoCost	= (int(((MaxAmmo - CurAmmo) * float(MyPickup.default.AmmoCost)) / float(MyPickup.default.BuyClipSize))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup);
-			    }
-			    else
-			    {
-    				MyBuyable.ItemFillAmmoCost	= (int(((MaxAmmo - CurAmmo) * float(MyPickup.default.AmmoCost)) / float(KFWeapon(CurInv).default.MagCapacity))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup);
-			    }
-				MyBuyable.ItemWeight		= KFWeapon(CurInv).Weight;
-				MyBuyable.ItemPower			= MyPickup.default.PowerValue;
-				MyBuyable.ItemRange			= MyPickup.default.RangeValue;
-				MyBuyable.ItemSpeed			= MyPickup.default.SpeedValue;
-				MyBuyable.ItemAmmoCurrent	= CurAmmo;
-				MyBuyable.ItemAmmoMax		= MaxAmmo;
-				MyBuyable.bMelee			= (KFMeleeGun(CurInv) != none);
-				MyBuyable.bSaleList			= false;
-				MyBuyable.ItemPerkIndex		= MyPickup.default.CorrespondingPerkIndex;
+				MyBuyable.ItemName = MyPickup.default.ItemShortName;
+				MyBuyable.ItemDescription = KFWeapon(CurInv).default.Description;
+				MyBuyable.ItemCategorie = KFLR.EquipmentCategories[MyPickup.default.EquipmentCategoryID].EquipmentCategoryName;
+				MyBuyable.ItemImage = KFWeapon(CurInv).default.TraderInfoTexture;
+				MyBuyable.ItemWeaponClass = KFWeapon(CurInv).class;
+				MyBuyable.ItemAmmoClass = KFWeapon(CurInv).default.FireModeClass[0].default.AmmoClass;
+				MyBuyable.ItemPickupClass = MyPickup;
+				MyBuyable.ItemCost = (float(MyPickup.default.Cost) * PlayerVeterancy.static.GetCostScaling(KFPRI, MyPickup)) / DualDivider;
+				MyBuyable.ItemAmmoCost = MyPickup.default.AmmoCost * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup) * PlayerVeterancy.static.GetMagCapacityMod(KFPRI, KFWeapon(CurInv));
 
-				if ( KFWeapon(CurInv) != none && KFWeapon(CurInv).SellValue != -1 )
-				{
-					MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
-				}
+				if (MyPickup == class'HuskGunPickup')
+					MyBuyable.ItemFillAmmoCost = (int(((MaxAmmo - CurAmmo) * float(MyPickup.default.AmmoCost)) / float(MyPickup.default.BuyClipSize))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup);
 				else
-				{
-					MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
-				}
+					MyBuyable.ItemFillAmmoCost = (int(((MaxAmmo - CurAmmo) * float(MyPickup.default.AmmoCost)) / float(KFWeapon(CurInv).default.MagCapacity))) * PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, MyPickup);
 
-				if ( !MyBuyable.bMelee && int(MaxAmmo) > int(CurAmmo))
-				{
+				MyBuyable.ItemWeight = KFWeapon(CurInv).Weight;
+				MyBuyable.ItemPower = MyPickup.default.PowerValue;
+				MyBuyable.ItemRange = MyPickup.default.RangeValue;
+				MyBuyable.ItemSpeed = MyPickup.default.SpeedValue;
+				MyBuyable.ItemAmmoCurrent = CurAmmo;
+				MyBuyable.ItemAmmoMax = MaxAmmo;
+				MyBuyable.bMelee = (KFMeleeGun(CurInv) != None || BallisticMeleeWeapon(CurInv) != None);
+				DisableMeleeAmmoRefill(MyBuyable);
+				MyBuyable.bSaleList = false;
+				MyBuyable.ItemPerkIndex = MyPickup.default.CorrespondingPerkIndex;
+
+				if (KFWeapon(CurInv) != None && KFWeapon(CurInv).SellValue != -1)
+					MyBuyable.ItemSellValue = KFWeapon(CurInv).SellValue;
+				else
+					MyBuyable.ItemSellValue = MyBuyable.ItemCost * 0.75;
+
+				if (!MyBuyable.bMelee && int(MaxAmmo) > int(CurAmmo))
 					AutoFillCost += MyBuyable.ItemFillAmmoCost;
-				}
 			}
 
 			if (KFWeapon(CurInv).bHasSecondaryAmmo)
@@ -282,9 +252,9 @@ function UpdateMyBuyables()
 				MyBuyables.Insert(1, 1);
 				MyBuyables[1] = MyBuyable;
 			}
-			else if ( CurInv.IsA('Knife') || CurInv.IsA('Weapon_A909Blades_Main') )
+			else if (CurInv.IsA('Knife') || CurInv.IsA('Weapon_A909Blades_Main'))
 			{
-				MyBuyable.bSellable	= false;
+				MyBuyable.bSellable = false;
 				KnifeBuyable = MyBuyable;
 			}
 			else if (BallisticHandGrenade(CurInv) != None)
@@ -297,9 +267,9 @@ function UpdateMyBuyables()
 				MyBuyable.bSellable = false;
 				FragBuyable = MyBuyable;
 			}
-			else if ( NumInvItems < 7 )
+			else if (NumInvItems < 7)
 			{
-				MyBuyable.bSellable	= !KFWeapon(CurInv).default.bKFNeverThrow;
+				MyBuyable.bSellable = !KFWeapon(CurInv).default.bKFNeverThrow;
 
 				MyBuyables.Insert(0, 1);
 				MyBuyables[0] = MyBuyable;
@@ -311,20 +281,20 @@ function UpdateMyBuyables()
 
 	MyBuyable = new class'GUIBuyable';
 
-	MyBuyable.ItemName 			= "Ballistic Vest and Helmet";
-	MyBuyable.ItemDescription 	= class'BuyableVest'.default.ItemDescription;
-	MyBuyable.ItemCategorie		= "";
-	MyBuyable.ItemImage			= Texture'BWKF_Core_T.Armor.BallisticVestandHelmetIcon';
-	MyBuyable.ItemAmmoCurrent	= PlayerOwner().Pawn.ShieldStrength;
-	MyBuyable.ItemAmmoMax		= 100;
-	MyBuyable.ItemCost			= int(class'BuyableVest'.default.ItemCost * PlayerVeterancy.static.GetCostScaling(KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo), class'Vest'));
-	MyBuyable.ItemAmmoCost		= MyBuyable.ItemCost / 100;
-	MyBuyable.ItemFillAmmoCost	= int((100.0 - MyBuyable.ItemAmmoCurrent) * MyBuyable.ItemAmmoCost);
-	MyBuyable.bIsVest			= true;
-	MyBuyable.bMelee			= false;
-	MyBuyable.bSaleList			= false;
-	MyBuyable.bSellable			= false;
-	MyBuyable.ItemPerkIndex		= class'BuyableVest'.default.CorrespondingPerkIndex;
+	MyBuyable.ItemName = "Ballistic Vest and Helmet";
+	MyBuyable.ItemDescription = class'BuyableVest'.default.ItemDescription;
+	MyBuyable.ItemCategorie = "";
+	MyBuyable.ItemImage = Texture'BWKF_Core_T.Armor.BallisticVestandHelmetIcon';
+	MyBuyable.ItemAmmoCurrent = PlayerOwner().Pawn.ShieldStrength;
+	MyBuyable.ItemAmmoMax = 100;
+	MyBuyable.ItemCost = int(class'BuyableVest'.default.ItemCost * PlayerVeterancy.static.GetCostScaling(KFPlayerReplicationInfo(PlayerOwner().PlayerReplicationInfo), class'Vest'));
+	MyBuyable.ItemAmmoCost = MyBuyable.ItemCost / 100;
+	MyBuyable.ItemFillAmmoCost = int((100.0 - MyBuyable.ItemAmmoCurrent) * MyBuyable.ItemAmmoCost);
+	MyBuyable.bIsVest = true;
+	MyBuyable.bMelee = false;
+	MyBuyable.bSaleList = false;
+	MyBuyable.bSellable = false;
+	MyBuyable.ItemPerkIndex = class'BuyableVest'.default.CorrespondingPerkIndex;
 
 	//=============================================================================
 	// EQUIPMENT SECTION
@@ -357,18 +327,33 @@ function UpdateMyBuyables()
 
 		if (HandGrenade != None)
 		{
-			GrenadeAmmo = HandGrenade.GetGrenadeAmmo();
+			// Grenades are free equipment; only replenishment should cost money.
+			GrenadeBuyable.ItemCost = 0;
+
+			GrenadeAmmo = None;
+
+			for (CurInv = PlayerOwner().Pawn.Inventory; CurInv != None; CurInv = CurInv.Inventory)
+			{
+				if (CurInv.Class == GrenadeBuyable.ItemAmmoClass)
+				{
+					GrenadeAmmo = Ammunition(CurInv);
+					break;
+				}
+			}
+
 			GrenadePickup = Class<KFWeaponPickup>(HandGrenade.PickupClass);
 
 			if (GrenadeAmmo != None && GrenadePickup != None)
 			{
-				GrenadeBuyable.ItemCost = 0;
-				GrenadeBuyable.ItemAmmoCost = GrenadePickup.default.AmmoCost;
+				GrenadeBuyable.ItemAmmoCost = GrenadePickup.default.AmmoCost
+					* PlayerVeterancy.static.GetAmmoCostScaling(KFPRI, GrenadePickup);
+
 				GrenadeBuyable.ItemAmmoCurrent = GrenadeAmmo.AmmoAmount;
 				GrenadeBuyable.ItemAmmoMax = GrenadeAmmo.MaxAmmo;
+
 				GrenadeBuyable.ItemFillAmmoCost =
 					(GrenadeAmmo.MaxAmmo - GrenadeAmmo.AmmoAmount)
-					* GrenadePickup.default.AmmoCost;
+					* GrenadeBuyable.ItemAmmoCost;
 			}
 		}
 

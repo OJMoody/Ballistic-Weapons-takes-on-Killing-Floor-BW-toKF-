@@ -7,6 +7,74 @@ var int PendingGrenadeIndex;
 var bool bGrenadeSelectionConfirmed;
 var int GrenadeSelectionConfirmedWave;
 
+function ShowPanel(bool bShow)
+{
+    local int i, PistolIndex;
+
+	Super(UT2K4TabPanel).ShowPanel(bShow);
+	bClosed = false;
+
+    if (!bShow || InvSelect == None || InvSelect.List == None)
+        return;
+
+    PistolIndex = -1;
+
+    // Find the player's Single or Dual pistol, skipping empty slots.
+    for (i = 0; i < InvSelect.List.MyBuyables.Length; i++)
+    {
+        if (InvSelect.List.MyBuyables[i] == None)
+            continue;
+
+        if (InvSelect.List.MyBuyables[i].ItemWeaponClass == class'Single'
+            || InvSelect.List.MyBuyables[i].ItemWeaponClass == class'Dualies')
+        {
+            PistolIndex = i;
+            break;
+        }
+    }
+
+    // If no pistol is found, select the first valid inventory item.
+    if (PistolIndex < 0)
+    {
+        for (i = 0; i < InvSelect.List.MyBuyables.Length; i++)
+        {
+            if (InvSelect.List.MyBuyables[i] != None)
+            {
+                PistolIndex = i;
+                break;
+            }
+        }
+    }
+
+    if (PistolIndex >= 0)
+    {
+        TheBuyable = InvSelect.List.MyBuyables[PistolIndex];
+        InvSelect.List.Index = PistolIndex;
+    }
+    else
+    {
+        TheBuyable = None;
+        InvSelect.List.Index = -1;
+    }
+
+    if (KFPlayerController(PlayerOwner()) != None)
+        KFPlayerController(PlayerOwner()).bDoTraderUpdate = true;
+
+    LastBuyable = TheBuyable;
+
+    InvSelect.SetPosition(InvBG.WinLeft + 7.0 / float(Controller.ResX),
+                          InvBG.WinTop + 55.0 / float(Controller.ResY),
+                          InvBG.WinWidth - 15.0 / float(Controller.ResX),
+                          InvBG.WinHeight - 45.0 / float(Controller.ResY),
+                          true);
+
+    SaleSelect.SetPosition(SaleBG.WinLeft + 7.0 / float(Controller.ResX),
+                           SaleBG.WinTop + 55.0 / float(Controller.ResY),
+                           SaleBG.WinWidth - 15.0 / float(Controller.ResX),
+                           SaleBG.WinHeight - 63.0 / float(Controller.ResY),
+                           true);
+}
+
 function DoBuy()
 {
     if (KFPawn(PlayerOwner().Pawn) != None)
@@ -193,18 +261,22 @@ function class<BallisticHandGrenade> GetCurrentGrenadeClass()
 
 event Opened(GUIComponent Sender)
 {
-    Super.Opened(Sender);
+    local KFLevelRules KFLRules;
+    local Mut_BallisticWeapons BWMutator;
 
-    CurrentGrenadeClass = GetCurrentGrenadeClass();
-    PendingGrenadeClass = CurrentGrenadeClass;
+    foreach PlayerOwner().DynamicActors(class'KFLevelRules', KFLRules)
+        break;
 
-    PendingGrenadeIndex = FindGrenadeIndex(CurrentGrenadeClass);
+    foreach PlayerOwner().DynamicActors(class'Mut_BallisticWeapons', BWMutator)
+        break;
 
-    if (PendingGrenadeIndex < 0 && GrenadeClasses.Length > 0)
+    if (BWMutator != None)
     {
-        PendingGrenadeIndex = 0;
-        PendingGrenadeClass = GrenadeClasses[0];
+        if (KFLRules != None)
+            BWMutator.SetupBWTrader(KFLRules);
     }
+
+    Super.Opened(Sender);
 }
 
 function CycleGrenadeSelection(int Direction)

@@ -101,18 +101,8 @@ simulated function SetBeltVisibility(int Amount)
 		SetBoneScale(0, 1.0, BeltBones[0]);
 }
 
-// Run to give hand opportinity to go to stand mode handle instead of playing to end of normal reload anim
-/*simulated function Notify_MachinegunGoToHandle()
-{
-	if (bNeedCock && MagAmmo > 0)
-		CommonCockGun(2);
-}*/
-
-simulated function Notify_CockGoToHandle()
-{
-}
 // Run when cover is opened
-simulated function Notify_MachinegunOpen()
+simulated function Notify_MGFlapOpen()
 {
 	if (Level.NetMode != NM_Client)
 		PlayOwnedSound(FlapUpSound.Sound,FlapUpSound.Slot,FlapUpSound.Volume,FlapUpSound.bNoOverride,FlapUpSound.Radius,FlapUpSound.Pitch,FlapUpSound.bAtten);
@@ -120,7 +110,7 @@ simulated function Notify_MachinegunOpen()
 	    class'BUtil'.static.PlayFullSound(self, FlapUpSound);
 }
 // Run when cover is closed
-simulated function Notify_MachinegunClose()
+simulated function Notify_MGFlapClose()
 {
 	if (Level.NetMode != NM_Client)
 		PlayOwnedSound(FlapDownSound.Sound,FlapDownSound.Slot,FlapDownSound.Volume,FlapDownSound.bNoOverride,FlapDownSound.Radius,FlapDownSound.Pitch,FlapDownSound.bAtten);
@@ -128,7 +118,7 @@ simulated function Notify_MachinegunClose()
 		class'BUtil'.static.PlayFullSound(self, FlapDownSound);
 }
 // Run ammo Box is pulled off
-simulated function Notify_MachinegunBoxOff()
+simulated function Notify_MGBoxOff()
 {
 	if (Level.NetMode != NM_Client)
 		PlayOwnedSound(BoxOffSound.Sound,BoxOffSound.Slot,BoxOffSound.Volume,BoxOffSound.bNoOverride,BoxOffSound.Radius,BoxOffSound.Pitch,BoxOffSound.bAtten);
@@ -136,7 +126,7 @@ simulated function Notify_MachinegunBoxOff()
 		class'BUtil'.static.PlayFullSound(self, BoxOffSound);
 }
 // Run when ammo box is clipped on
-simulated function Notify_MachinegunBoxOn()
+simulated function Notify_MGBoxOn()
 {
 	if (Level.NetMode != NM_Client)
 		PlayOwnedSound(BoxOnSound.Sound,BoxOnSound.Slot,BoxOnSound.Volume,BoxOnSound.bNoOverride,BoxOnSound.Radius,BoxOnSound.Pitch,BoxOnSound.bAtten);
@@ -169,8 +159,8 @@ defaultproperties
      BeltBones(9)="Bullet10"
      BeltLength=11
      BoxBone="AmmoBox"
-     BoxOnSound=(Volume=0.500000,Radius=24.000000,Pitch=1.000000,bAtten=True)
-     BoxOffSound=(Volume=0.500000,Radius=24.000000,Pitch=1.000000,bAtten=True)
-     FlapUpSound=(Volume=0.500000,Radius=24.000000,Pitch=1.000000,bAtten=True)
-     FlapDownSound=(Volume=0.500000,Radius=24.000000,Pitch=1.000000,bAtten=True)
+     BoxOnSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+     BoxOffSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+     FlapUpSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
+     FlapDownSound=(Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
 }

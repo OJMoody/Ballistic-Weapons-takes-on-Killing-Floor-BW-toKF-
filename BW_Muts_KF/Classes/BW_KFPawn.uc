@@ -329,6 +329,23 @@ simulated function ChangedWeapon()
 // GRENADE TYPE REPLACEMENT
 //=============================================================================
 
+function InitializeGrenadeAmmo(BallisticHandGrenade Grenade)
+{
+    local int i;
+
+    if (Role != ROLE_Authority || Grenade == None)
+        return;
+
+    for (i = 0; i < 2; i++)
+    {
+        if (Grenade.FireModeClass[i] != None
+            && Grenade.FireModeClass[i].default.AmmoClass != None)
+        {
+            Grenade.GiveAmmo(i, None, true);
+        }
+    }
+}
+
 function ServerSelectGrenadeClass(class<BallisticHandGrenade> NewGrenadeClass)
 {
     local Inventory Inv;
@@ -367,6 +384,8 @@ function ServerSelectGrenadeClass(class<BallisticHandGrenade> NewGrenadeClass)
         return;
 
     NewGrenade.GiveTo(Self);
+	
+	InitializeGrenadeAmmo(NewGrenade);
 
     if (NewGrenade.Owner != Self)
     {
@@ -716,7 +735,8 @@ function ThrowGrenade()
 function AddDefaultInventory()
 {
     local KFPlayerReplicationInfo KFPRI;
-	local Inventory Inv;
+    local Inventory Inv;
+    local BallisticHandGrenade Grenade;
 
     KFPRI = KFPlayerReplicationInfo(PlayerReplicationInfo);
 
@@ -732,8 +752,14 @@ function AddDefaultInventory()
     RequiredEquipment[2] = string(DefaultGrenadeClass);
 
     Super.AddDefaultInventory();
-	
-	Inv = FindInventoryType(class'BallisticHandGrenade');
+
+    for (Inv = Inventory; Inv != None; Inv = Inv.Inventory)
+    {
+        Grenade = BallisticHandGrenade(Inv);
+
+        if (Grenade != None)
+            InitializeGrenadeAmmo(Grenade);
+    }
 }
 
 function bool ServerBuyAmmo(Class<Ammunition> AClass, bool bOnlyClip)

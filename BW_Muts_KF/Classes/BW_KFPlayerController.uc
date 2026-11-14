@@ -329,10 +329,10 @@ event PlayerCalcView(out actor ViewActor, out vector CameraLocation, out rotator
 
     // Dedicated server does not need a rendered camera.
     if (Level.NetMode == NM_DedicatedServer)
-    {
-        Global.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
-        return;
-    }
+	{
+		Super.PlayerCalcView(ViewActor, CameraLocation, CameraRotation);
+		return;
+	}
 
     // Enforce Third Person Only.
     if (CameraPerspective == 1 &&

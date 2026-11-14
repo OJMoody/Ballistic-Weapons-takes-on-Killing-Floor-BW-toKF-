@@ -301,7 +301,7 @@ replication
         ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerSetAltLoaded, ServerToggleLaser;
 
     reliable if (Role == ROLE_Authority)
-        ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;    
+        ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -2044,6 +2044,8 @@ simulated function Notify_ClipIn()
 
     if (Role == ROLE_Authority)
         AddReloadedAmmo();
+    else
+        ServerClipIn();
 
     BallisticReloadStage = 0;
 }

@@ -3,6 +3,7 @@ class Mut_BallisticWeapons extends Mutator
 
 var() config bool bUseBWHands;
 var() config byte CameraPerspective;
+var bool bServerDisableStandardTraderWeapons;
 
 struct BWTraderWeapon
 {
@@ -13,6 +14,12 @@ struct BWTraderWeapon
 var array<BWTraderWeapon> BWTraderWeapons;
 var() config bool bDisableStandardTraderWeapons;
 var array<class<Pickup> > DisabledTraderWeapons;
+
+replication
+{
+    reliable if (Role == ROLE_Authority)
+        bServerDisableStandardTraderWeapons;
+}
 
 function ModifyPlayer(Pawn Other)
 {
@@ -181,6 +188,9 @@ static function string GetDescriptionText(string SettingName)
 function PostBeginPlay()
 {
     Super.PostBeginPlay();
+	
+	if (Role == ROLE_Authority)
+		bServerDisableStandardTraderWeapons = bDisableStandardTraderWeapons;
 
     KFGameType(Level.Game).PlayerControllerClass = class'BW_KFPlayerController';
 
@@ -199,14 +209,12 @@ simulated function Timer()
         if (KFLRules != None)
         {
             SetupBWTrader(KFLRules);
-
+			
             for (C = Level.ControllerList; C != None; C = C.NextController)
-			{
-				if (C.IsA('PlayerController'))
-				{
-					C.PawnClass = class'BW_KFPawn';
-				}
-			}
+            {
+                if (C.IsA('PlayerController'))
+                    C.PawnClass = class'BW_KFPawn';
+            }
 
             SetTimer(0.0, false);
             return;
@@ -232,17 +240,27 @@ simulated function bool IsTraderWeaponDisabled(class<Pickup> PickupClass)
 
 simulated function RemoveDisabledTraderWeapons(KFLevelRules KFLRules)
 {
-	if (!bDisableStandardTraderWeapons || KFLRules == None)
-		return;
+    local bool bDisableStandard;
 
-	RemoveDisabledTraderWeaponsFromList(KFLRules.MediItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.SuppItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.ShrpItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.CommItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.BersItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.FireItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.DemoItemForSale);
-	RemoveDisabledTraderWeaponsFromList(KFLRules.NeutItemForSale);
+    if (KFLRules == None)
+        return;
+
+    if (Role == ROLE_SimulatedProxy)
+        bDisableStandard = bServerDisableStandardTraderWeapons;
+    else
+        bDisableStandard = bDisableStandardTraderWeapons;
+
+    if (!bDisableStandard)
+        return;
+
+    RemoveDisabledTraderWeaponsFromList(KFLRules.MediItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.SuppItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.ShrpItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.CommItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.BersItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.FireItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.DemoItemForSale);
+    RemoveDisabledTraderWeaponsFromList(KFLRules.NeutItemForSale);
 }
 
 simulated function RemoveDisabledTraderWeaponsFromList(out array<class<Pickup> > TraderItems)

@@ -13,7 +13,7 @@ defaultproperties
      ImpactSounds(0)=Sound'KFWeaponSound.bullethitglass'
      ImpactSounds(1)=Sound'KFWeaponSound.bullethitglass2'
      Begin Object Class=MeshEmitter Name=MeshEmitter0
-         StaticMesh=StaticMesh'IJC_Project_Santa_A.IceChunk1'
+         StaticMesh=StaticMesh'BWKF_Core_SM.IceChunk1'
          UseCollision=True
          RespawnDeadParticles=False
          SpinParticles=True
@@ -35,7 +35,7 @@ defaultproperties
      Emitters(0)=MeshEmitter'IceChunkEmitter.MeshEmitter0'
 
      Begin Object Class=MeshEmitter Name=MeshEmitter2
-         StaticMesh=StaticMesh'IJC_Project_Santa_A.IceChunk2'
+         StaticMesh=StaticMesh'BWKF_Core_SM.IceChunk2'
          UseCollision=True
          RespawnDeadParticles=False
          SpinParticles=True
@@ -58,7 +58,7 @@ defaultproperties
      Emitters(1)=MeshEmitter'IceChunkEmitter.MeshEmitter2'
 
      Begin Object Class=MeshEmitter Name=MeshEmitter3
-         StaticMesh=StaticMesh'IJC_Project_Santa_A.IceChunk3'
+         StaticMesh=StaticMesh'BWKF_Core_SM.IceChunk3'
          UseCollision=True
          RespawnDeadParticles=False
          SpinParticles=True
