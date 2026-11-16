@@ -57,8 +57,8 @@ function DoFireEffect()
     local Vector HitLocation, HitNormal;
     local Actor Other;
     local int Hand;
-
-    if (Instigator == None || Weapon == None)
+	
+	if (Instigator == None || Weapon == None)
         return;
 
     Instigator.MakeNoise(1.0);

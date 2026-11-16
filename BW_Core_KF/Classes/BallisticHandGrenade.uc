@@ -12,6 +12,7 @@ var byte GrenadeFireMode;
 
 var bool bSkipGrenadePutDown;
 var bool bGrenadePulloutPlaying;
+var bool bGrenadeRequireRelease;
 
 var() bool bRequireAmmoToSelect;
 
@@ -22,8 +23,9 @@ var() BUtil.FullSound GrenadeClipOutSound;
 replication
 {
     reliable if (Role < ROLE_Authority)
-        ServerBeginGrenadeThrow, ServerCommitGrenadeThrow,
-        ServerReleaseGrenade, ServerFinishGrenadeThrow;
+        ServerReleaseGrenade,
+        ServerFinishGrenadeThrow,
+        ServerClearGrenadeRequireRelease;
 }
 
 simulated function BallisticHandGrenadeFire GetGrenadeFireMode(byte Mode)
@@ -48,7 +50,16 @@ simulated function bool StartFire(int Mode)
     if (ClientState == WS_BringUp)
         return false;
 
-    if (bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging || bGrenadePulloutPlaying)
+    if (bGrenadeRequireRelease)
+    {
+        if (Mode == GrenadeFireMode)
+            FireMode[Mode].bIsFiring = true;
+
+        return false;
+    }
+
+    if (bGrenadeThrowPending || bGrenadeReleased
+        || bGrenadeCharging || bGrenadePulloutPlaying)
         return false;
 
     GrenadeFire = BallisticHandGrenadeFire(FireMode[Mode]);
@@ -56,48 +67,59 @@ simulated function bool StartFire(int Mode)
     if (GrenadeFire == None)
         return false;
 
-    if (AmmoAmount(0) < 1 || GrenadeFire.GrenadePrepareAnimation == ''
+    if (AmmoAmount(0) < 1)
+        return false;
+
+    if (GrenadeFire.GrenadePrepareAnimation == ''
         || GrenadeFire.GrenadeThrowAnimation == '')
         return false;
 
+    FireMode[Mode].bIsFiring = true;
+
     GrenadeFireMode = Mode;
     bGrenadeCharging = true;
-    FireMode[Mode].bIsFiring = true;
-	
-	if (Role == ROLE_Authority)
-		SetGrenadeTPAnim(3, Mode);
+
+    if (Role == ROLE_Authority)
+        SetGrenadeTPAnim(3, Mode);
 
     GrenadeChargeStartTime = Level.TimeSeconds;
     GrenadeChargeTime = 0.0;
 
     LoopAnim(GrenadeFire.GrenadePrepareAnimation, 1.0, 0.0);
 
-    if (Role < ROLE_Authority)
-        ServerBeginGrenadeThrow(Mode);
-
     return true;
 }
 
 simulated event StopFire(int Mode)
 {
-    if (Mode != GrenadeFireMode || !bGrenadeCharging)
+    if (Mode != GrenadeFireMode)
     {
         Super.StopFire(Mode);
         return;
     }
 
-    FireMode[GrenadeFireMode].bIsFiring = false;
+    if (!bGrenadeCharging)
+    {
+        if (bGrenadeRequireRelease)
+        {
+            bGrenadeRequireRelease = false;
+
+            if (Role < ROLE_Authority)
+                ServerClearGrenadeRequireRelease();
+        }
+
+        Super.StopFire(Mode);
+        return;
+    }
+
     bGrenadeCharging = false;
 
-    GrenadeChargeTime = FMax(0.0, Level.TimeSeconds - GrenadeChargeStartTime);
+    GrenadeChargeTime = FMax(
+        0.0,
+        Level.TimeSeconds - GrenadeChargeStartTime
+    );
 
-    if (Role == ROLE_Authority)
-        BeginGrenadeThrow();
-    else
-    {
-        BeginGrenadeThrow();
-        ServerCommitGrenadeThrow(GrenadeFireMode, GrenadeChargeTime);
-    }
+    BeginGrenadeThrow();
 }
 
 //=============================================================================
@@ -178,7 +200,7 @@ simulated function BeginGrenadeThrow()
 
 simulated function Notify_GrenadeLeaveHand()
 {
-    if (!bGrenadeThrowPending || bGrenadeReleased)
+	if (!bGrenadeThrowPending || bGrenadeReleased)
         return;
 
     // Hide the grenade held in the first-person mesh.
@@ -221,7 +243,7 @@ simulated function Notify_GrenadeClipOut()
 function ReleaseGrenade(byte Mode)
 {
     local BallisticHandGrenadeFire GrenadeFire;
-
+	
     if (Role != ROLE_Authority)
         return;
 
@@ -248,6 +270,7 @@ function ReleaseGrenade(byte Mode)
     GrenadeFire.CacheGrenadeThrowPower(GrenadeChargeTime);
 
     ConsumeAmmo(0, 1);
+	
     GrenadeFire.DoFireEffect();
 }
 
@@ -332,9 +355,10 @@ simulated function CancelGrenadeAction()
 
     // Clear any interrupted charging or throwing state.
     bGrenadeThrowPending = false;
-    bGrenadeReleased = false;
-    bGrenadeCharging = false;
-    bGrenadePulloutPlaying = false;
+	bGrenadeReleased = false;
+	bGrenadeCharging = false;
+	bGrenadePulloutPlaying = false;
+	bGrenadeRequireRelease = false;
 
     GrenadeChargeStartTime = 0.0;
     GrenadeChargeTime = 0.0;
@@ -396,39 +420,6 @@ simulated function bool PutDown()
 // SERVER RPCS
 //=============================================================================
 
-function ServerBeginGrenadeThrow(byte Mode)
-{
-    local BallisticHandGrenadeFire GrenadeFire;
-
-    if (Mode > 1 || bGrenadeThrowPending || bGrenadeReleased || bGrenadeCharging
-        || AmmoAmount(0) < 1)
-        return;
-
-    GrenadeFire = BallisticHandGrenadeFire(FireMode[Mode]);
-
-    if (GrenadeFire == None || GrenadeFire.GrenadePrepareAnimation == ''
-        || GrenadeFire.GrenadeThrowAnimation == '')
-        return;
-
-    GrenadeFireMode = Mode;
-    bGrenadeCharging = true;
-    GrenadeChargeStartTime = Level.TimeSeconds;
-    GrenadeChargeTime = 0.0;
-	
-	SetGrenadeTPAnim(3, Mode);
-}
-
-function ServerCommitGrenadeThrow(byte Mode, float ChargeTime)
-{
-    if (Role != ROLE_Authority || !bGrenadeCharging || Mode != GrenadeFireMode)
-        return;
-
-    GrenadeChargeTime = FMax(0.0, ChargeTime);
-    bGrenadeCharging = false;
-
-    BeginGrenadeThrow();
-}
-
 function ServerReleaseGrenade(byte Mode)
 {
     ReleaseGrenade(Mode);
@@ -436,15 +427,24 @@ function ServerReleaseGrenade(byte Mode)
 
 function ServerFinishGrenadeThrow(byte Mode)
 {
-    if (Mode != GrenadeFireMode)
+    if (Role != ROLE_Authority || Mode != GrenadeFireMode)
         return;
+
+    FireMode[GrenadeFireMode].bIsFiring = false;
 
     bGrenadeCharging = false;
     bGrenadeThrowPending = false;
     bGrenadeReleased = false;
-
-    SwitchBackIfEmpty();
 }
+
+function ServerClearGrenadeRequireRelease()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    bGrenadeRequireRelease = false;
+}
+
 
 //=============================================================================
 // CLEANUP
@@ -452,6 +452,8 @@ function ServerFinishGrenadeThrow(byte Mode)
 
 simulated function FinishGrenadeThrow()
 {
+    FireMode[GrenadeFireMode].bIsFiring = false;
+
     bGrenadeCharging = false;
     bGrenadeThrowPending = false;
     bGrenadeReleased = false;

@@ -298,7 +298,7 @@ var() float FPBrassScale;
 replication
 {
     reliable if (Role < ROLE_Authority)
-        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerSetAltLoaded, ServerToggleLaser;
+        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff;
 
     reliable if (Role == ROLE_Authority)
         ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;
@@ -1261,6 +1261,25 @@ function ServerToggleLaser()
         PlaySound(LaserOnSound,, 0.7,, 32);
     else
         PlaySound(LaserOffSound,, 0.7,, 32);
+}
+
+function ServerSetLaserOff()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    if (!bHasLaser || !bLaserOn)
+        return;
+
+    bLaserOn = false;
+
+    if (FlashLight != None)
+        FlashLight.bHasLight = false;
+
+    if (Level.NetMode != NM_DedicatedServer)
+        ClientSwitchLaser();
+
+    PlaySound(LaserOffSound,, 0.7,, 32);
 }
 
 simulated function ClientSwitchLaser()
@@ -3096,9 +3115,11 @@ simulated function bool PutDown()
 	}
 
 	bResult = Super.PutDown();
-	
+
 	if (bResult && bHasLaser)
 	{
+		ServerSetLaserOff();
+
 		bLaserOn = false;
 		bLaserToggleInProgress = false;
 		LaserToggleActiveAnim = '';
