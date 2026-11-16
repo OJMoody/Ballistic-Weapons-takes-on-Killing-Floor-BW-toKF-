@@ -57,7 +57,7 @@ defaultproperties
          CoordinateSystem=PTCS_Relative
          MaxParticles=1
          StartLocationOffset=(X=14.000000)
-         StartSizeRange=(X=(Min=140.000000,Max=140.000000),Y=(Min=140.000000,Max=140.000000),Z=(Min=140.000000,Max=140.000000))
+         StartSizeRange=(X=(Min=70.000000,Max=70.000000),Y=(Min=70.000000,Max=70.000000),Z=(Min=70.000000,Max=70.000000))
          DrawStyle=PTDS_Brighten
          Texture=Texture'BWKF_Core_T.Particles.FlareB1'
          SecondsBeforeInactive=0.000000
@@ -87,7 +87,7 @@ defaultproperties
          StartLocationOffset=(X=10.000000)
          SizeScale(0)=(RelativeSize=0.700000)
          SizeScale(1)=(RelativeTime=1.000000,RelativeSize=1.000000)
-         StartSizeRange=(X=(Min=8.000000,Max=8.000000),Y=(Min=0.300000,Max=0.300000),Z=(Min=0.300000,Max=0.300000))
+         StartSizeRange=(X=(Min=4.000000,Max=4.000000),Y=(Min=0.150000,Max=0.150000),Z=(Min=0.150000,Max=0.150000))
          SecondsBeforeInactive=0.000000
          LifetimeRange=(Min=0.300000,Max=0.300000)
      End Object

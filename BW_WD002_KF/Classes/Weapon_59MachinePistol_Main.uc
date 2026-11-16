@@ -154,6 +154,21 @@ simulated function AnimEnd(int Channel)
     Super.AnimEnd(Channel);
 }
 
+simulated function SetTPStockRotation(bool bStockOut)
+{
+    local rotator StockRotation;
+
+    if (ThirdPersonActor == None)
+        return;
+
+    if (bStockOut)
+        StockRotation.Pitch = 32768;
+    else
+        StockRotation.Pitch = 0;
+
+    ThirdPersonActor.SetBoneRotation('Stock', StockRotation);
+}
+
 simulated function Notify_Fifty9StockOut1()
 {
     class'BUtil'.static.PlayFullSound(self, StockOutSound1, true);
@@ -162,11 +177,13 @@ simulated function Notify_Fifty9StockOut1()
 simulated function Notify_Fifty9StockOut2()
 {
     class'BUtil'.static.PlayFullSound(self, StockOutSound2, true);
+    SetTPStockRotation(true);
 }
 
 simulated function Notify_Fifty9StockIn()
 {
     class'BUtil'.static.PlayFullSound(self, StockInSound, true);
+    SetTPStockRotation(false);
 }
 
 simulated function CacheStockBaseValues()

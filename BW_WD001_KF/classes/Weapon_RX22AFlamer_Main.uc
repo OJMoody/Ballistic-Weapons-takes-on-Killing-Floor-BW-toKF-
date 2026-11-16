@@ -226,7 +226,7 @@ simulated event Destroyed()
 
 defaultproperties
 {
-    WeaponReloadAnim=Reload_Flamethrower
+    WeaponReloadAnim=RX22A_BW_Reload
 	
 	PackOnSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-PackOn',Volume=0.600000,Radius=24.000000,Pitch=1.000000)
     LeverOnSound=(Sound=Sound'BWKF_RX22A_SN.RX22A.RX22A-LeverOn',Volume=0.600000,Radius=24.000000,Pitch=1.000000)

@@ -233,20 +233,20 @@ defaultproperties
     MeshRef="BWKF_RX22A_A.RX22A_TP_Mesh"
     DrawScale=0.250000
 
-    MovementAnims(0)=JogF_Flamethrower
-    MovementAnims(1)=JogB_Flamethrower
-    MovementAnims(2)=JogL_Flamethrower
-    MovementAnims(3)=JogR_Flamethrower
+    MovementAnims(0)=RX22A_BW_JogF
+    MovementAnims(1)=RX22A_BW_JogB
+    MovementAnims(2)=RX22A_BW_JogL
+    MovementAnims(3)=RX22A_BW_JogR
 
-    CrouchAnims(0)=CHwalkF_Flamethrower
-    CrouchAnims(1)=CHwalkB_Flamethrower
-    CrouchAnims(2)=CHwalkL_Flamethrower
-    CrouchAnims(3)=CHwalkR_Flamethrower
+    CrouchAnims(0)=RX22A_BW_CHwalkF
+    CrouchAnims(1)=RX22A_BW_CHwalkB
+    CrouchAnims(2)=RX22A_BW_CHwalkL
+    CrouchAnims(3)=RX22A_BW_CHwalkR
 
-    WalkAnims(0)=WalkF_Flamethrower
-    WalkAnims(1)=WalkB_Flamethrower
-    WalkAnims(2)=WalkL_Flamethrower
-    WalkAnims(3)=WalkR_Flamethrower
+    WalkAnims(0)=RX22A_BW_WalkF
+    WalkAnims(1)=RX22A_BW_WalkB
+    WalkAnims(2)=RX22A_BW_WalkL
+    WalkAnims(3)=RX22A_BW_WalkR
 
     AirStillAnim=JumpF_Mid
     AirAnims(0)=JumpF_Mid
@@ -254,57 +254,57 @@ defaultproperties
     AirAnims(2)=JumpL_Mid
     AirAnims(3)=JumpR_Mid
 
-    TakeoffStillAnim=JumpF_Takeoff
-    TakeoffAnims(0)=JumpF_Takeoff
-    TakeoffAnims(1)=JumpF_Takeoff
-    TakeoffAnims(2)=JumpL_Takeoff
-    TakeoffAnims(3)=JumpR_Takeoff
+    TakeoffStillAnim=JumpF_Takeoff		
+    TakeoffAnims(0)=JumpF_Takeoff		
+    TakeoffAnims(1)=JumpF_Takeoff		
+    TakeoffAnims(2)=JumpL_Takeoff		
+    TakeoffAnims(3)=JumpR_Takeoff		
 
-    LandAnims(0)=JumpF_Land
-    LandAnims(1)=JumpF_Land
-    LandAnims(2)=JumpL_Land
-    LandAnims(3)=JumpR_Land
+    LandAnims(0)=JumpF_Land				
+    LandAnims(1)=JumpF_Land				
+    LandAnims(2)=JumpL_Land				
+    LandAnims(3)=JumpR_Land				
 
-    TurnRightAnim=TurnR_Flamethrower
-    TurnLeftAnim=TurnL_Flamethrower
-    CrouchTurnRightAnim=CH_TurnR_Flamethrower
-    CrouchTurnLeftAnim=CH_TurnL_Flamethrower
+    TurnRightAnim=RX22A_BW_TurnR
+    TurnLeftAnim=RX22A_BW_TurnL
+    CrouchTurnRightAnim=RX22A_BW_CHTurnR
+    CrouchTurnLeftAnim=RX22A_BW_CHTurnL
 
-    IdleRestAnim=Idle_Flamethrower
-    IdleCrouchAnim=CHIdle_Flamethrower
-    IdleSwimAnim=Swim_Tread
-    IdleWeaponAnim=Idle_Flamethrower
-    IdleHeavyAnim=Idle_Flamethrower
-    IdleRifleAnim=Idle_Flamethrower
-    IdleChatAnim=Idle_Flamethrower
+    IdleRestAnim=RX22A_BW_Idle
+    IdleCrouchAnim=CHRX22A_BW_Idle
+    IdleSwimAnim=Swim_Tread						
+    IdleWeaponAnim=RX22A_BW_Idle
+    IdleHeavyAnim=RX22A_BW_Idle
+    IdleRifleAnim=RX22A_BW_Idle
+    IdleChatAnim=RX22A_BW_Idle
 
-    FireAnims(0)=Fire_Flamethrower
-    FireAnims(1)=Fire_Flamethrower
-    FireAnims(2)=Fire_Flamethrower
-    FireAnims(3)=Fire_Flamethrower
+    FireAnims(0)=RX22A_BW_Fire
+    FireAnims(1)=RX22A_BW_Fire
+    FireAnims(2)=RX22A_BW_Fire
+    FireAnims(3)=RX22A_BW_Fire
 
-    FireAltAnims(0)=Fire_Flamethrower
-    FireAltAnims(1)=Fire_Flamethrower
-    FireAltAnims(2)=Fire_Flamethrower
-    FireAltAnims(3)=Fire_Flamethrower
+    FireAltAnims(0)=RX22A_BW_Fire
+    FireAltAnims(1)=RX22A_BW_Fire
+    FireAltAnims(2)=RX22A_BW_Fire
+    FireAltAnims(3)=RX22A_BW_Fire
 
-    FireCrouchAnims(0)=CHFire_Flamethrower
-    FireCrouchAnims(1)=CHFire_Flamethrower
-    FireCrouchAnims(2)=CHFire_Flamethrower
-    FireCrouchAnims(3)=CHFire_Flamethrower
+    FireCrouchAnims(0)=RX22A_BW_CHFire
+    FireCrouchAnims(1)=RX22A_BW_CHFire
+    FireCrouchAnims(2)=RX22A_BW_CHFire
+    FireCrouchAnims(3)=RX22A_BW_CHFire
 
-    FireCrouchAltAnims(0)=CHFire_Flamethrower
-    FireCrouchAltAnims(1)=CHFire_Flamethrower
-    FireCrouchAltAnims(2)=CHFire_Flamethrower
-    FireCrouchAltAnims(3)=CHFire_Flamethrower
+    FireCrouchAltAnims(0)=RX22A_BW_CHFire
+    FireCrouchAltAnims(1)=RX22A_BW_CHFire
+    FireCrouchAltAnims(2)=RX22A_BW_CHFire
+    FireCrouchAltAnims(3)=RX22A_BW_CHFire
 
-    HitAnims(0)=HitF_Flamethrower
-    HitAnims(1)=HitB_Flamethrower
-    HitAnims(2)=HitL_Flamethrower
-    HitAnims(3)=HitR_Flamethrower
+    HitAnims(0)=RX22A_BW_HitF
+    HitAnims(1)=RX22A_BW_HitB
+    HitAnims(2)=RX22A_BW_HitL
+    HitAnims(3)=RX22A_BW_HitR			
 
-    PostFireBlendStandAnim=Blend_Flamethrower
-    PostFireBlendCrouchAnim=CHBlend_Flamethrower
+    PostFireBlendStandAnim=RX22A_BW_Blend
+    PostFireBlendCrouchAnim=RX22A_BW_CHBlend
 
     WeaponAmbientScale=2.0
 }

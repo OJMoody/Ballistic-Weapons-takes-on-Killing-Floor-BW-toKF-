@@ -74,7 +74,7 @@ defaultproperties
          CoordinateSystem=PTCS_Relative
          MaxParticles=1
          StartLocationOffset=(X=20.000000)
-         StartSizeRange=(X=(Min=50.000000,Max=50.000000))
+         StartSizeRange=(X=(Min=25.000000,Max=25.000000))
          DrawStyle=PTDS_Brighten
          Texture=Texture'BWKF_Core_T.Particles.FlareB1'
          SecondsBeforeInactive=0.000000

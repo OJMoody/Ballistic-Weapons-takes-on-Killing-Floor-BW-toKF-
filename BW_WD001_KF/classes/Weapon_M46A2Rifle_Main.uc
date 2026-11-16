@@ -426,7 +426,7 @@ defaultproperties
     SelectedHudImage=Texture'BWKF_M46_T.Icons.MedIcon_M46A2_Selected'
 	TraderInfoTexture=Texture'BWKF_M46_T.Icons.MedIcon_M46A2'
 
-    PlayerViewOffset=(X=45.000000,Y=38.000000,Z=-15.000000)
+    PlayerViewOffset=(X=20.000000,Y=19.000000,Z=-7.000000)
 	PlayerViewPivot=(Yaw=0)
     SelectSoundRef="BWKF_M806_SN.M806Pullout"
     PulloutSound=(Sound=Sound'BWKF_M46_SN.M46.OA-AR_Pullout',Volume=1.000000,Radius=24.000000,Slot=SLOT_Interact,Pitch=1.000000,bAtten=True)
