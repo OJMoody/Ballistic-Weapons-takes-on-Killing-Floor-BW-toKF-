@@ -298,10 +298,10 @@ var() float FPBrassScale;
 replication
 {
     reliable if (Role < ROLE_Authority)
-        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff;
+    ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerCancelShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff;
 
     reliable if (Role == ROLE_Authority)
-        ClientSwitchWeaponMode, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;
+        ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -1798,11 +1798,25 @@ simulated function PlayShovelReloadStartAnimation()
 
     if (AnimName != '' && HasAnim(AnimName))
     {
+        if (Role == ROLE_Authority)
+            ClientPlayShovelReloadAnimation(AnimName, bShovelReloadEmptyStart, ShovelReloadNormalCapacity, ShovelReloadMode);
+
         PlayAnim(AnimName, ReloadAnimRate, 0.0);
         return;
     }
 
     PlayIdle();
+}
+
+simulated function ClientPlayShovelReloadAnimation(name AnimName, bool bEmptyStart, int NormalCapacity, byte ReloadMode)
+{
+    bShovelReload = true;
+    bShovelReloadEmptyStart = bEmptyStart;
+    ShovelReloadNormalCapacity = NormalCapacity;
+    ShovelReloadMode = ReloadMode;
+
+    if (AnimName != '' && HasAnim(AnimName))
+        PlayAnim(AnimName, ReloadAnimRate, 0.0);
 }
 
 simulated function PlayShovelReloadLoopAnimation()
@@ -1814,6 +1828,10 @@ simulated function PlayShovelReloadLoopAnimation()
     if (AnimName != '' && HasAnim(AnimName))
     {
         bShovelReloadLooping = true;
+
+        if (Role == ROLE_Authority)
+            ClientPlayShovelReloadAnimation(AnimName, bShovelReloadEmptyStart, ShovelReloadNormalCapacity, ShovelReloadMode);
+
         PlayAnim(AnimName, ReloadAnimRate, 0.0);
         return;
     }
@@ -1829,11 +1847,22 @@ simulated function PlayShovelReloadEndAnimation()
 
     if (AnimName != '' && HasAnim(AnimName))
     {
+        if (Role == ROLE_Authority)
+            ClientPlayShovelReloadAnimation(AnimName, bShovelReloadEmptyStart, ShovelReloadNormalCapacity, ShovelReloadMode);
+
         PlayAnim(AnimName, ReloadAnimRate, 0.0);
         return;
     }
 
     PlayIdle();
+}
+
+function ServerCancelShovelReload()
+{
+    if (!bShovelReload)
+        return;
+
+    bShovelReloadStopRequested = true;
 }
 
 
@@ -1852,6 +1881,10 @@ simulated function bool InterruptReload()
 	if (bShovelReload)
 	{
 		bShovelReloadCancelRequested = true;
+
+		if (Role < ROLE_Authority)
+			ServerCancelShovelReload();
+
 		return true;
 	}
 
@@ -2393,17 +2426,11 @@ function ServerBeginShovelReload(bool bEmptyStart, int NormalCapacity, byte Relo
 
 simulated function HandleShovelShellIn(int LoadAmount)
 {
-    if (!bShovelReload)
-        return;
-
-    if (LoadAmount <= 0)
-        return;
-
     if (Role < ROLE_Authority)
-    {
-        ServerShovelShellIn(LoadAmount);
         return;
-    }
+
+    if (!bShovelReload || LoadAmount <= 0)
+        return;
 
     if (ShovelReloadMode == 0)
         AddShovelPrimaryAmmo(LoadAmount);
@@ -2944,11 +2971,10 @@ simulated function bool StartFire(int Mode)
 
 	if (bShovelReload)
 	{
-		if (bShovelReloadLooping)
-		{
-			bShovelReloadStopRequested = true;
-			return false;
-		}
+		bShovelReloadStopRequested = true;
+
+		if (Role < ROLE_Authority)
+			ServerCancelShovelReload();
 
 		return false;
 	}

@@ -9,13 +9,9 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 
     bHasExploded = True;
 
-    Log("FP7: Explode called. Role="$Role$" Location="$Location);
-
     if (Role == ROLE_Authority)
     {
         FireActor = Spawn(Class'BW_WD000_KF.Utility_FP7Grenade_FireControl',,, Location + vect(0,0,16), rot(0,0,0));
-
-        Log("FP7: FireControl spawn result="$FireActor);
 
         if (FireActor != None)
             FireActor.Instigator = Instigator;
