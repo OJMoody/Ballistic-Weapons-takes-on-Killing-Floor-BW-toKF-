@@ -19,7 +19,7 @@ var bool bQuickHealActive;
 replication
 {
     reliable if (Role < ROLE_Authority)
-        ServerAttemptHeal;
+        ServerAttemptHeal, ServerAttemptSelfHeal;
 
     reliable if (Role == ROLE_Authority)
         ClientSuccessfulHeal;
@@ -143,12 +143,17 @@ simulated function Notify_HealStart()
     if (Anim != 'FriendlyShankFire' && Anim != 'SelfMedicateFire')
         return;
 
-    if (Role == ROLE_Authority)
+    if (Anim == 'FriendlyShankFire')
     {
-        if (Anim == 'FriendlyShankFire')
+        if (Role == ROLE_Authority)
             Tool_ICIS25_PrimaryFire(FireMode[0]).NotifyHealStart();
-        else
+    }
+    else if (Anim == 'SelfMedicateFire')
+    {
+        if (Role == ROLE_Authority)
             Tool_ICIS25_SecondaryFire(FireMode[1]).NotifyHealStart();
+        else
+            ServerAttemptSelfHeal();
     }
 
     if (Instigator != None && Instigator.IsLocallyControlled())
@@ -245,6 +250,14 @@ simulated function float ChargeBar()
 function ServerAttemptHeal()
 {
     Tool_ICIS25_PrimaryFire(FireMode[0]).AttemptHeal();
+}
+
+function ServerAttemptSelfHeal()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    Tool_ICIS25_SecondaryFire(FireMode[1]).NotifyHealStart();
 }
 
 simulated function ClientSuccessfulHeal(string HealedName)

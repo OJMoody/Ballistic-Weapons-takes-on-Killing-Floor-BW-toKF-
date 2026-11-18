@@ -37,8 +37,11 @@ function ModifyPlayer(Pawn Other)
 
     BWPC = BW_KFPlayerController(Other.Controller);
 
-    if (BWPC != None)
-        BWPC.SetCameraPerspective(CameraPerspective);
+	if (BWPC != None)
+	{
+		BWPC.SetCameraPerspective(CameraPerspective);
+		BWPC.ClientInstallWelderUseInteraction();
+	}
 }
 
 function string GetInventoryClassOverride(string InventoryClassName)

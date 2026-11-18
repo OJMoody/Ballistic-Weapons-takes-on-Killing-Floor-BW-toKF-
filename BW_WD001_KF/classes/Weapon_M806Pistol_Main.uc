@@ -178,7 +178,7 @@ simulated function bool HandleFlashlightToggle()
     return true;
 }
 
-function LightFire()
+simulated function LightFire()
 {
     RequestLaserToggle();
 }

@@ -14,6 +14,9 @@ enum EThirdPersonCameraMode
 var EThirdPersonCameraMode ThirdPersonCameraMode;
 var byte CameraPerspective;
 
+var bool bWelderUseHeld;
+var bool bWelderUseInteractionInstalled;
+
 var() config float ThirdPersonDistance;
 var() config float ThirdPersonHeight;
 var() config float ThirdPersonShoulderOffset;
@@ -37,6 +40,15 @@ replication
 {
     reliable if (bNetOwner && Role == ROLE_Authority)
         CameraPerspective;
+
+    reliable if (Role == ROLE_Authority)
+        ClientSelectWD200;
+	
+	reliable if (Role < ROLE_Authority)
+		ServerTrySelectWD200;
+		
+	reliable if (Role == ROLE_Authority)
+		ClientInstallWelderUseInteraction;
 }
 
 function SetPawnClass(string inClass, string inCharacter)
@@ -444,6 +456,65 @@ function bool IsBWThirdPersonCameraActive()
     return ThirdPersonCameraMode != TPCM_FirstPerson;
 }
 
+
+//=============================================================================
+// AUTOMATIC WD200 DOOR SELECTION
+//=============================================================================
+
+function ClientSelectWD200()
+{
+    local Weapon WD200;
+
+    if (Pawn == None)
+        return;
+
+    WD200 = Weapon(Pawn.FindInventoryType(class'BW_WD000_KF.Tool_WD200_Main'));
+
+    if (WD200 == None || Pawn.Weapon == WD200 || Pawn.PendingWeapon == WD200)
+        return;
+
+    Pawn.PendingWeapon = WD200;
+
+    if (Pawn.Weapon != None)
+        Pawn.Weapon.PutDown();
+    else
+        Pawn.ChangedWeapon();
+}
+
+simulated function ClientInstallWelderUseInteraction()
+{
+    local Interaction NewInteraction;
+
+    if (bWelderUseInteractionInstalled)
+        return;
+
+    if (Player == None || Player.InteractionMaster == None)
+        return;
+
+    NewInteraction = Player.InteractionMaster.AddInteraction("BW_Muts_KF.BW_WelderUseInteraction", Player);
+
+    if (NewInteraction != None)
+        bWelderUseInteractionInstalled = true;
+}
+
+function ServerTrySelectWD200()
+{
+    local KFUseTrigger DoorTrigger;
+    local Weapon WD200;
+
+    if (Role < ROLE_Authority || Pawn == None)
+        return;
+
+    ForEach Pawn.TouchingActors(class'KFMod.KFUseTrigger', DoorTrigger)
+    {
+        WD200 = Weapon(Pawn.FindInventoryType(class'BW_WD000_KF.Tool_WD200_Main'));
+
+        if (WD200 != None && Pawn.Weapon != WD200 && Pawn.PendingWeapon != WD200)
+            ClientSelectWD200();
+
+        return;
+    }
+}
 
 //=============================================================================
 

@@ -14,7 +14,7 @@ defaultproperties
     Description="NRX-82 'Scarab' Cluster Grenade"
     ItemName="NRX-82 'Scarab' Cluster Grenade"
     ItemShortName="NRX-82 Cluster Grenade"
-    InventoryType=Class'BW_WD000_KF.Utility_NRP57Grenade_Main'
+    InventoryType=Class'BW_WD000_KF.Utility_NRXGrenade_Main'
 	AmmoAmount(0)=4
     AmmoAmount(1)=4
     PickupMessage="You picked up the NRX-82 'Scarab' Cluster Grenade"

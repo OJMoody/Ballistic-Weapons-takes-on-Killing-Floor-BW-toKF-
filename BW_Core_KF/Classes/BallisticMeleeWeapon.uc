@@ -57,12 +57,16 @@ function DoReflectEffect(int Drain)
 
 simulated function BringUp(optional Weapon PrevWeapon)
 {
-	if(BloodyMaterial!=none && Skins[BloodSkinSwitchArray] == BloodyMaterial )
-	{
-		Skins[BloodSkinSwitchArray] = default.Skins[BloodSkinSwitchArray];
-		Texture = default.Texture;
-	}
-	super.BringUp(PrevWeapon);
+    if (BloodyMaterial != None
+        && BloodSkinSwitchArray >= 0
+        && BloodSkinSwitchArray < Skins.Length
+        && Skins[BloodSkinSwitchArray] == BloodyMaterial)
+    {
+        Skins[BloodSkinSwitchArray] = default.Skins[BloodSkinSwitchArray];
+        Texture = default.Texture;
+    }
+
+    Super.BringUp(PrevWeapon);
 }
 
 simulated function bool HasAmmo()

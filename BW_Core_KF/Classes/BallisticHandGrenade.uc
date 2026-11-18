@@ -390,31 +390,26 @@ simulated function bool PutDown()
     local bool bResult;
     local name SavedPutDownAnim;
 
-    if (!bSkipGrenadePutDown)
+    if (bSkipGrenadePutDown)
     {
-        bResult = Super.PutDown();
-
-        if (bResult)
-            CancelGrenadeAction();
-
-        return bResult;
+        SavedPutDownAnim = PutDownAnim;
+        PutDownAnim = '';
     }
-
-    bSkipGrenadePutDown = false;
-    bSkipPutAwaySound = true;
-
-    SavedPutDownAnim = PutDownAnim;
-    PutDownAnim = '';
 
     bResult = Super.PutDown();
 
-    PutDownAnim = SavedPutDownAnim;
+    if (bSkipGrenadePutDown)
+    {
+        PutDownAnim = SavedPutDownAnim;
+        bSkipGrenadePutDown = false;
+    }
 
     if (bResult)
         CancelGrenadeAction();
 
     return bResult;
 }
+
 
 //=============================================================================
 // SERVER RPCS
@@ -435,6 +430,8 @@ function ServerFinishGrenadeThrow(byte Mode)
     bGrenadeCharging = false;
     bGrenadeThrowPending = false;
     bGrenadeReleased = false;
+
+    SwitchBackIfEmpty();
 }
 
 function ServerClearGrenadeRequireRelease()

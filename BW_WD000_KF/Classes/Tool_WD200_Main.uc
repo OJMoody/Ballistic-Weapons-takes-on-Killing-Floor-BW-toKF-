@@ -15,6 +15,14 @@ simulated function Tick(float DeltaTime)
 	}
 }
 
+simulated function bool StartFire(int Mode)
+{
+	if (Mode == 0 && MagAmmoRemaining < 1 && AmmoAmount(0) > 0)
+		MagAmmoRemaining = 1;
+
+	return Super.StartFire(Mode);
+}
+
 simulated function float ChargeBar()
 {
 	return FMin(1, (AmmoAmount(0))/(FireMode[0].AmmoClass.Default.MaxAmmo));

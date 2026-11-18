@@ -398,6 +398,98 @@ simulated function DrawHudPassA(Canvas C)
     DrawSpriteWidget(C, AltAmmoDivider);
 }
 
+
+//=============================================================================
+// DOOR WELD HEALTH
+//=============================================================================
+
+simulated function DrawDoorHealthBars(Canvas C)
+{
+    local KFDoorMover DamageDoor;
+    local vector CameraLocation, CamDir, TargetLocation, HBScreenPos;
+    local rotator CameraRotation;
+    local name DoorTag;
+    local int i;
+    local float Distance, DoorDistance;
+    local bool bWD200;
+
+    if (PlayerOwner == None || PawnOwner == None)
+        return;
+
+    Distance = 300.0;
+
+    bWD200 = (PawnOwner.Weapon != None &&
+        PawnOwner.Weapon.Name == 'Tool_WD200_Main');
+
+    if (bWD200 && KFPRI != None &&
+        KFPRI.ClientVeteranSkill == class'KFMod.KFVetSupportSpec')
+    {
+        Distance = 600.0;
+    }
+
+    if (Level.TimeSeconds > LastDoorBarHealthUpdate ||
+        (bWD200 && PlayerOwner.bFire == 1))
+    {
+        DoorCache.Length = 0;
+
+        foreach AllActors(class'KFDoorMover', DamageDoor)
+        {
+            DoorDistance = VSize(PawnOwner.Location - DamageDoor.Location);
+
+            if (DoorDistance > Distance)
+                continue;
+
+            if (DamageDoor.WeldStrength <= 0 || DamageDoor.bHidden || DamageDoor.MaxWeld <= 0)
+                continue;
+
+            DoorCache[DoorCache.Length] = DamageDoor;
+
+            C.GetCameraLocation(CameraLocation, CameraRotation);
+
+            TargetLocation = DamageDoor.WeldIconLocation;
+            TargetLocation.Z = CameraLocation.Z;
+            CamDir = vector(CameraRotation);
+
+            if (Normal(TargetLocation - CameraLocation) dot Normal(CamDir) >= 0.1 &&
+                DamageDoor.Tag != DoorTag &&
+                FastTrace(DamageDoor.WeldIconLocation - ((DamageDoor.WeldIconLocation - CameraLocation) * 0.25), CameraLocation))
+            {
+                HBScreenPos = C.WorldToScreen(TargetLocation);
+
+                DrawDoorBar(C, HBScreenPos.X, HBScreenPos.Y, DamageDoor.WeldStrength / DamageDoor.MaxWeld, 255);
+                DoorTag = DamageDoor.Tag;
+            }
+        }
+
+        LastDoorBarHealthUpdate = Level.TimeSeconds + 0.2;
+    }
+    else
+    {
+        for (i = 0; i < DoorCache.Length; i++)
+        {
+            if (DoorCache[i] == None || DoorCache[i].WeldStrength <= 0 || DoorCache[i].MaxWeld <= 0)
+                continue;
+
+            C.GetCameraLocation(CameraLocation, CameraRotation);
+
+            TargetLocation = DoorCache[i].WeldIconLocation;
+            TargetLocation.Z = CameraLocation.Z;
+            CamDir = vector(CameraRotation);
+
+            if (Normal(TargetLocation - CameraLocation) dot Normal(CamDir) >= 0.1 &&
+                DoorCache[i].Tag != DoorTag &&
+                FastTrace(DoorCache[i].WeldIconLocation - ((DoorCache[i].WeldIconLocation - CameraLocation) * 0.25), CameraLocation))
+            {
+                HBScreenPos = C.WorldToScreen(TargetLocation);
+
+                DrawDoorBar(C, HBScreenPos.X, HBScreenPos.Y, DoorCache[i].WeldStrength / DoorCache[i].MaxWeld, 255);
+                DoorTag = DoorCache[i].Tag;
+            }
+        }
+    }
+}
+
+
 //=============================================================================
 // INVENTORY SELECTION FILTER
 //=============================================================================

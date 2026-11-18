@@ -7,6 +7,9 @@ replication
 {
     reliable if (Role < ROLE_Authority)
         ServerSelectGrenadeClass;
+
+    reliable if (Role == ROLE_Authority)
+        ClientStartWeaponSwitch;
 }
 
 simulated exec function ToggleFlashlight()
@@ -324,6 +327,25 @@ simulated function ChangedWeapon()
         BWWeap.bTorchEnabled = true;
 }
 
+simulated function ClientStartWeaponSwitch(Weapon NewWeapon)
+{
+    local BallisticHandGrenade Grenade;
+
+    if (Role == ROLE_Authority || NewWeapon == None || Weapon == None)
+        return;
+
+    if (PendingWeapon != None || NewWeapon == Weapon)
+        return;
+
+    Grenade = BallisticHandGrenade(Weapon);
+
+    if (Grenade != None)
+        Grenade.bSkipGrenadePutDown = true;
+
+    PendingWeapon = NewWeapon;
+    Weapon.PutDown();
+}
+
 
 //=============================================================================
 // GRENADE TYPE REPLACEMENT
@@ -627,13 +649,15 @@ exec function SwitchToLastWeapon()
     if (Weapon == None)
         return;
 
-    LastGrenade = BallisticHandGrenade(Weapon.OldWeapon);
+    LastGrenade = BallisticHandGrenade(Weapon);
 
-    // A missing previous weapon or an empty grenade requires a fallback.
     bNeedFallback = (Weapon.OldWeapon == None);
 
-    if (LastGrenade != None && LastGrenade.bRequireAmmoToSelect && LastGrenade.AmmoAmount(0) <= 0)
+    if (LastGrenade != None && LastGrenade.bRequireAmmoToSelect
+        && LastGrenade.AmmoAmount(0) <= 0)
+    {
         bNeedFallback = true;
+    }
 
     if (!bNeedFallback)
     {
@@ -669,10 +693,7 @@ exec function SwitchToLastWeapon()
     }
 
     if (FallbackWeapon != None)
-    {
-        PendingWeapon = FallbackWeapon;
-        Weapon.PutDown();
-    }
+        ClientStartWeaponSwitch(FallbackWeapon);
 }
 
 function ThrowGrenade()

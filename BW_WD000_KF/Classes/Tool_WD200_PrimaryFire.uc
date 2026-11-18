@@ -14,7 +14,7 @@ simulated event ModeDoFire()
 	if( !AllowFire() )
 		return;
 
-	if( !bPreFiring && FireCount == 0 )
+	if( !bPreFiring )
 	{
 		bPreFiring = true;
 
@@ -25,12 +25,14 @@ simulated event ModeDoFire()
 		return;
 	}
 
-	if( bPreFiring )
-	{
-		bPreFiring = false;
-	}
-
 	Super.ModeDoFire();
+}
+
+simulated function StopFiring()
+{
+	bPreFiring = false;
+
+	Super.StopFiring();
 }
 
 function KFDoorMover GetDoor()
@@ -59,6 +61,7 @@ function DoTrace(Vector Start, Rotator Dir)
 	local Actor Other;
 	local array<int> HitPoints;
 	local KFPawn HitPawn;
+	local KFDoorMover HitDoor;
 
 	MaxRange();
 
@@ -75,7 +78,14 @@ function DoTrace(Vector Start, Rotator Dir)
 
 	if (Other != None && Other != Instigator && Other.Base != Instigator)
 	{
-		if (!Other.bWorldGeometry)
+		HitDoor = KFDoorMover(Other);
+
+		// Doors must receive damage even if flagged as world geometry.
+		if (HitDoor != None)
+		{
+			Other.TakeDamage(DamageMax, Instigator, HitLocation, Momentum * X, DamageType);
+		}
+		else if (!Other.bWorldGeometry)
 		{
 			HitPawn = KFPawn(Other);
 
