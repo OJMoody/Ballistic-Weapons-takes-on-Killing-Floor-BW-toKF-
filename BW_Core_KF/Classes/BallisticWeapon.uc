@@ -175,6 +175,7 @@ var() Sound LaserOffSound;
 var() class<Actor> LaserBatteryClass;
 
 var bool bPendingLaserToggle;
+var bool bSilentLaserOff;
 
 //=============================================================================
 // Dual Weapons
@@ -1279,7 +1280,10 @@ function ServerSetLaserOff()
     if (Level.NetMode != NM_DedicatedServer)
         ClientSwitchLaser();
 
-    PlaySound(LaserOffSound,, 0.7,, 32);
+    if (!bSilentLaserOff)
+        PlaySound(LaserOffSound,, 0.7,, 32);
+
+    bSilentLaserOff = false;
 }
 
 simulated function ClientSwitchLaser()
@@ -1956,9 +1960,12 @@ simulated function bool InterruptReload()
 		case 3:
 			bReloadResumePending = false;
 			bReloadCancelRequested = false;
+			BallisticReloadStage = 0;
 
-			if (!bPuttingDown)
+			if (!bPuttingDown && !bDualWeapon)
+			{
 				PlayAnim(SelectAnim, SelectAnimRate, 0.0);
+			}
 			break;
 	}
 
@@ -3144,6 +3151,7 @@ simulated function bool PutDown()
 
 	if (bResult && bHasLaser)
 	{
+		bSilentLaserOff = true;
 		ServerSetLaserOff();
 
 		bLaserOn = false;
