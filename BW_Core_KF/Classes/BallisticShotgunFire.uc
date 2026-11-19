@@ -267,9 +267,14 @@ simulated function bool AllowFire()
     }
 
     if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
-        return false;
+	{
+		if (Weapon.Role < ROLE_Authority && bIsFiring)
+			return Super(WeaponFire).AllowFire();
 
-    return Super(WeaponFire).AllowFire();
+		return false;
+	}
+
+	return Super(WeaponFire).AllowFire();
 }
 
 function PlayFiring()
@@ -443,7 +448,10 @@ simulated event ModeDoFire()
     }
 
     if (!AllowFire())
-        return;
+    {
+        if (!(Weapon.Role < ROLE_Authority && bIsFiring && BW.MagAmmoRemaining < AmmoPerFire))
+            return;
+    }
 
     if (bBurstMode && BurstCount == 0)
     {
@@ -471,7 +479,7 @@ simulated event ModeDoFire()
         Spread *= KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo).ClientVeteranSkill.Static.ModifyRecoilSpread(KFPlayerReplicationInfo(Instigator.PlayerReplicationInfo), self, Rec);
     }
 
-    if (Weapon.Owner != None && AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
+    if (Weapon.Owner != None && (AllowFire() || (Weapon.Role < ROLE_Authority && bIsFiring && BW.MagAmmoRemaining < AmmoPerFire)) && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
     {
         if (FireRate > 0.25)
         {

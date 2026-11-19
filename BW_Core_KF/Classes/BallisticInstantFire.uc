@@ -184,7 +184,24 @@ simulated function bool AllowFire()
 	if (bBurstMode && bBurstComplete)
 		return false;
 
-	return Super.AllowFire();
+	if (KFWeapon(Weapon).bIsReloading)
+		return false;
+
+	if (KFPawn(Instigator).SecondaryItem != None)
+		return false;
+
+	if (KFPawn(Instigator).bThrowingNade)
+		return false;
+
+	if (KFWeapon(Weapon).MagAmmoRemaining < 1)
+	{
+		if (Weapon.Role < ROLE_Authority && bIsFiring)
+			return Super(WeaponFire).AllowFire();
+
+		return false;
+	}
+
+	return Super(WeaponFire).AllowFire();
 }
 
 function PlayFiring()
@@ -394,17 +411,20 @@ simulated event ModeDoFire()
 
 	if (BallisticMeleeFire(self) == None)
 	{
-		if (Weapon.Owner != None && AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
+		if (Weapon.Owner != None)
 		{
-			if (FireRate > 0.25)
+			if (AllowFire() && !bFiringDoesntAffectMovement && Weapon.Owner.Physics != PHYS_Falling)
 			{
-				Weapon.Owner.Velocity.X *= 0.1;
-				Weapon.Owner.Velocity.Y *= 0.1;
-			}
-			else
-			{
-				Weapon.Owner.Velocity.X *= 0.5;
-				Weapon.Owner.Velocity.Y *= 0.5;
+				if (FireRate > 0.25)
+				{
+					Weapon.Owner.Velocity.X *= 0.1;
+					Weapon.Owner.Velocity.Y *= 0.1;
+				}
+				else
+				{
+					Weapon.Owner.Velocity.X *= 0.5;
+					Weapon.Owner.Velocity.Y *= 0.5;
+				}
 			}
 		}
 	}
@@ -416,9 +436,7 @@ simulated event ModeDoFire()
 		bFiringDoesntAffectMovement = default.bFiringDoesntAffectMovement;
 	}
 	else
-	{
 		Super.ModeDoFire();
-	}
 
 	if (Instigator.IsLocallyControlled())
 	{
