@@ -54,10 +54,23 @@ event TakeDamage(int Damage,Pawn EventInstigator,vector HitLocation,vector Momen
     Destroy();
 }
 
-function SpawnMineExplosionEffects()
+function FinishMineDetonation()
 {
+    if (Role != ROLE_Authority)
+        return;
+
+    TearOffHitNormal = Vector(Rotation);
+    bTearOff = True;
+    GoToState('NetTrapped');
+}
+
+simulated event TornOff()
+{
+    if (Level.NetMode == NM_DedicatedServer)
+        return;
+
     if (ImpactManager != None)
-        ImpactManager.static.StartSpawn(Location, Vector(Rotation), 0, Instigator);
+        ImpactManager.static.StartSpawn(Location, TearOffHitNormal, 0, self);
 }
 
 defaultproperties

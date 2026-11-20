@@ -60,7 +60,7 @@ function DetonateStickyMine()
         );
     }
 
-    SpawnMineExplosionEffects();
+    FinishMineDetonation();
 
     if (StickyDamageRadius > 0)
     {
@@ -72,8 +72,6 @@ function DetonateStickyMine()
             Location
         );
     }
-
-    Destroy();
 }
 
 simulated function bool IsStationary()

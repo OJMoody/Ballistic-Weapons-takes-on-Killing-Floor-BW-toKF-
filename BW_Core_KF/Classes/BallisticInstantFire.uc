@@ -18,6 +18,8 @@ var() class<Actor> HitEffectClass;
 
 var() bool bAltFire;
 
+var int ClientStartAmmo;
+
 //=============================================================================
 // BRASS EJECTION
 //=============================================================================
@@ -195,7 +197,7 @@ simulated function bool AllowFire()
 
 	if (KFWeapon(Weapon).MagAmmoRemaining < 1)
 	{
-		if (Weapon.Role < ROLE_Authority && bIsFiring)
+		if (Weapon.Role < ROLE_Authority && bIsFiring && FireCount < ClientStartAmmo)
 			return Super(WeaponFire).AllowFire();
 
 		return false;

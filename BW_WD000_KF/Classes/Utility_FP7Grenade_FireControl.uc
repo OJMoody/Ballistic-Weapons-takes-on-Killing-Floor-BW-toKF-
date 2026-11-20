@@ -28,6 +28,8 @@ replication
 
 function PostBeginPlay()
 {
+    Log("FP7 FireControl PostBeginPlay: Role="$Role$" RemoteRole="$RemoteRole$" NetMode="$Level.NetMode$" AlwaysRelevant="$bAlwaysRelevant$" Hidden="$bHidden);
+
     Super.PostBeginPlay();
 
     if (Role == ROLE_Authority)
@@ -89,6 +91,43 @@ function TryDamage(Pawn Victim, float Interval, class<DamageType> DamageType)
 simulated function PostNetBeginPlay()
 {
     Super.PostNetBeginPlay();
+
+    if (Level.NetMode == NM_Client)
+    {
+        PlaySound(Sound'BWKF_FP7_SN.FP7.FP7Ignition',, 1.0,, DamageRadius);
+        SpawnClientFires();
+    }
+}
+
+simulated function SpawnClientFires()
+{
+    local int i, FireCount;
+    local Utility_FP7Grenade_GroundFire GF;
+
+    if (Level.NetMode != NM_Client || bClientFiresSpawned)
+        return;
+
+    for (i = 0; i < ArrayCount(GroundFireSpots); i++)
+    {
+        if (GroundFireSpots[i] != vect(0,0,0))
+        {
+            FireCount++;
+
+            Log("FP7 Client Fire Spawn: Index="$i$" Location="$GroundFireSpots[i]);
+
+            GF = Spawn(class'BW_WD000_KF.Utility_FP7Grenade_GroundFire', self,, GroundFireSpots[i], rot(0,0,0));
+
+            Log("FP7 Client Fire Spawn Result: "$GF);
+
+            if (GF != None)
+                GF.Velocity = GroundFireSpots[i] - Location;
+        }
+    }
+
+    Log("FP7 Client Fire Positions Received: "$FireCount);
+
+    if (FireCount > 0)
+        bClientFiresSpawned = True;
 }
 
 simulated function Initialize()
@@ -99,8 +138,6 @@ simulated function Initialize()
     local KFHumanPawn Human;
     local Utility_FP7Grenade_GroundFire GF;
     local Utility_FP7Grenade_ActorBurner Burner;
-	
-	PlaySound(Sound'BWKF_FP7_SN.FP7.FP7Ignition',, 1.0,, DamageRadius);
 
     // Apply initial damage and ignite nearby human players.
     foreach VisibleCollidingActors(class'Actor', A, DamageRadius, Location)
@@ -164,24 +201,7 @@ simulated function Initialize()
 
 simulated function PostNetReceive()
 {
-    local int i;
-    local Utility_FP7Grenade_GroundFire GF;
-
-    if (Level.NetMode != NM_Client || bClientFiresSpawned)
-        return;
-
-    for (i = 0; i < ArrayCount(GroundFireSpots); i++)
-    {
-        if (GroundFireSpots[i] != vect(0,0,0))
-        {
-            GF = Spawn(class'BW_WD000_KF.Utility_FP7Grenade_GroundFire', self,, GroundFireSpots[i], rot(0,0,0));
-
-            if (GF != None)
-                GF.Velocity = GroundFireSpots[i] - Location;
-        }
-    }
-
-    bClientFiresSpawned = True;
+    SpawnClientFires();
 }
 
 //=============================================================================

@@ -102,7 +102,7 @@ function DetonateMine()
         );
     }
 
-    SpawnMineExplosionEffects();
+    FinishMineDetonation();
 
     if (MDamageRadius > 0)
     {
@@ -114,8 +114,6 @@ function DetonateMine()
             Location
         );
     }
-
-    Destroy();
 }
 
 simulated function bool IsStationary()

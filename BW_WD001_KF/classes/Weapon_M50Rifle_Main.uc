@@ -17,7 +17,6 @@ var() Sound GrenOpenSound;
 var() Sound GrenLoadSound;
 var() Sound GrenCloseSound;
 
-
 //=============================================================================
 // LASER POINTER
 //=============================================================================
@@ -25,6 +24,14 @@ var() Sound GrenCloseSound;
 var() BallisticLaserActor_FPStandard Laser;
 var() Emitter LaserDot;
 
+replication
+{
+    reliable if (Role < ROLE_Authority)
+        ServerCancelM50GrenadePrep, ServerStartM50GrenadeReload;
+		
+	reliable if (Role == ROLE_Authority)
+		ClientPlayM50GrenadeReload;
+}
 
 //=============================================================================
 // Alt Grenade Firing
@@ -101,8 +108,8 @@ simulated function LaunchM50Grenade()
     bM50GrenadePriming = false;
     bM50GrenadePrimed = false;
     bM50GrenadeLaunching = true;
-	
-	IncrementFlashCount(1);
+
+    IncrementFlashCount(1);
 
     IdleAimAnim = default.IdleAimAnim;
 
@@ -111,8 +118,14 @@ simulated function LaunchM50Grenade()
     else
         PlayAnim('GrenadeFire', 1.0, 0.0);
 
-    if (Instigator != None && Instigator.IsLocallyControlled() && FireMode[1] != None)
-        Weapon_M50Rifle_SecondaryFire(FireMode[1]).TriggerGrenadeFlash();
+    if (Instigator != None && Instigator.IsLocallyControlled())
+    {
+        if (M50GrenadeLaunchSound != None)
+            PlaySound(M50GrenadeLaunchSound,, 1.0,, 256.0);
+
+        if (FireMode[1] != None)
+            Weapon_M50Rifle_SecondaryFire(FireMode[1]).TriggerGrenadeFlash();
+    }
 
     if (Role != ROLE_Authority)
         return;
@@ -135,7 +148,7 @@ simulated function LaunchM50Grenade()
     AltAmmoLoaded = 0;
 
     if (M50GrenadeLaunchSound != None)
-        PlaySound(M50GrenadeLaunchSound,, 1.0,, 256.0);
+        PlayOwnedSound(M50GrenadeLaunchSound,, 1.0,, 256.0);
 
     Mine.Instigator = Instigator;
     Mine.InstigatorController = Instigator.Controller;
@@ -242,7 +255,37 @@ exec function ReloadMeNow()
     }
 
     // If primary ammunition cannot be reloaded, try the grenade launcher.
+	if (Role < ROLE_Authority)
+		ServerStartM50GrenadeReload();
+
+	StartM50GrenadeReload();
+}
+
+function ServerStartM50GrenadeReload()
+{
+    if (Role != ROLE_Authority)
+        return;
+
     StartM50GrenadeReload();
+}
+
+simulated function ClientPlayM50GrenadeReload()
+{
+    if (Role == ROLE_Authority)
+        return;
+
+    if (bAimingRifle)
+    {
+        ZoomOut(true);
+
+        if (KFHumanPawn(Instigator) != None)
+            KFHumanPawn(Instigator).SetAiming(false);
+
+        bAimingRifle = false;
+    }
+
+    bM50GrenadeReloading = true;
+    PlayAnim('GrenadeReload', 1.0, 0.0);
 }
 
 simulated function bool InterruptReload()
@@ -310,7 +353,16 @@ simulated function bool StartM50GrenadeReload()
     }
 
     bM50GrenadeReloading = true;
-    PlayAnim('GrenadeReload', 1.0, 0.0);
+
+	if (Role == ROLE_Authority)
+	{
+		ClientPlayM50GrenadeReload();
+		PlayAnim('GrenadeReload', 1.0, 0.0);
+	}
+	else
+	{
+		PlayAnim('GrenadeReload', 1.0, 0.0);
+	}
 
     return true;
 }
@@ -363,7 +415,27 @@ simulated function bool PutDown()
     else
         PutDownAnim = default.PutDownAnim;
 
-    return Super.PutDown();
+    if (Super.PutDown())
+    {
+        ServerCancelM50GrenadePrep();
+        return true;
+    }
+
+    return false;
+}
+
+function ServerCancelM50GrenadePrep()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    bM50GrenadePriming = false;
+    bM50GrenadePrimed = false;
+    bM50GrenadeLaunching = false;
+    bM50GrenadeReloading = false;
+
+    IdleAnim = default.IdleAnim;
+    IdleAimAnim = default.IdleAimAnim;
 }
 
 
@@ -391,10 +463,19 @@ simulated function PlayIdle()
 
 simulated function ClientReload()
 {
+    local name SavedReloadAnim;
+
     if (bLaserToggleInProgress)
         return;
 
+    SavedReloadAnim = ReloadAnim;
+
+    if (MagAmmoRemaining <= 0)
+        ReloadAnim = 'ReloadEmpty';
+
     Super.ClientReload();
+
+    ReloadAnim = SavedReloadAnim;
 }
 
 simulated function MeleeHoldImpl()

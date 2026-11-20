@@ -3031,6 +3031,12 @@ simulated function bool StartFire(int Mode)
 	if (bAutoReloadStart)
 		bSuppressStartFireReloadInterrupt = true;
 
+	if (Role < ROLE_Authority && Instigator != None && Instigator.IsLocallyControlled() && Mode == 0 && !FireMode[Mode].bIsFiring)
+	{
+		if (BallisticInstantFire(FireMode[Mode]) != None)
+			BallisticInstantFire(FireMode[Mode]).ClientStartAmmo = MagAmmoRemaining;
+	}
+	
 	RetVal = Super.StartFire(Mode);
 
 	if (bAutoReloadStart)

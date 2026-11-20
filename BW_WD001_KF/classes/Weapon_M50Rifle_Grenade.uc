@@ -113,6 +113,9 @@ simulated function HitWall(Vector HitNormal, Actor Wall)
         Explode(Location, HitNormal);
         return;
     }
+	
+	if (Wall == None || Wall.bWorldGeometry)
+		DestroyEffects();
 
     // Start the timed detonation on the first impact.
     if (!bM50DetonationPending)

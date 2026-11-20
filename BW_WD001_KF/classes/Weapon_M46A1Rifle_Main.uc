@@ -13,6 +13,15 @@ var() Sound GrenOpenSound;
 var() Sound GrenLoadSound;
 var() Sound GrenCloseSound;
 
+replication
+{
+    reliable if (Role < ROLE_Authority)
+        ServerCancelM46MinePrep;
+		
+	reliable if (Role == ROLE_Authority)
+        ClientPlayM46GrenadeReload;
+}
+
 //=============================================================================
 // Alt Grenade Firing
 //=============================================================================
@@ -95,11 +104,17 @@ simulated function LaunchM46Mine()
     else
         PlayAnim('GrenadeFire', 1.0, 0.0);
 
-    if (Instigator != None && Instigator.IsLocallyControlled() && FireMode[1] != None)
-        Weapon_M46A1Rifle_SecondaryFire(FireMode[1]).TriggerGrenadeFlash();
+    if (Instigator != None && Instigator.IsLocallyControlled())
+	{
+		if (M46MineLaunchSound != None)
+			PlaySound(M46MineLaunchSound,, 1.0,, 256.0);
 
-    if (Role != ROLE_Authority)
-        return;
+		if (FireMode[1] != None)
+			Weapon_M46A1Rifle_SecondaryFire(FireMode[1]).TriggerGrenadeFlash();
+	}
+
+	if (Role != ROLE_Authority)
+		return;
 
     if (Instigator == None)
         return;
@@ -119,7 +134,7 @@ simulated function LaunchM46Mine()
     AltAmmoLoaded = 0;
 
     if (M46MineLaunchSound != None)
-        PlaySound(M46MineLaunchSound,, 1.0,, 256.0);
+		PlayOwnedSound(M46MineLaunchSound,, 1.0,, 256.0);
 
     Mine.Instigator = Instigator;
     Mine.InstigatorController = Instigator.Controller;
@@ -218,8 +233,8 @@ exec function ReloadMeNow()
 
         if (bM46EmptyReload)
             ReloadAnim = 'ReloadEmpty';
-
-        Super.ReloadMeNow();
+		
+		Super.ReloadMeNow();
 
         ReloadAnim = SavedReloadAnim;
         return;
@@ -227,6 +242,20 @@ exec function ReloadMeNow()
 
     // If primary ammunition cannot be reloaded, try the grenade launcher.
     StartM46GrenadeReload();
+}
+
+simulated function ClientReload()
+{
+    local name SavedReloadAnim;
+
+    SavedReloadAnim = ReloadAnim;
+
+    if (MagAmmoRemaining <= 0)
+        ReloadAnim = 'ReloadEmpty';
+
+    Super.ClientReload();
+
+    ReloadAnim = SavedReloadAnim;
 }
 
 simulated function bool InterruptReload()
@@ -273,6 +302,25 @@ function InitializeM46GrenadeAmmo()
     }
 }
 
+simulated function ClientPlayM46GrenadeReload()
+{
+    if (Role == ROLE_Authority)
+        return;
+
+    if (bAimingRifle)
+    {
+        ZoomOut(true);
+
+        if (KFHumanPawn(Instigator) != None)
+            KFHumanPawn(Instigator).SetAiming(false);
+
+        bAimingRifle = false;
+    }
+
+    bM46GrenadeReloading = true;
+    PlayAnim('GrenadeReload', 1.0, 0.0);
+}
+
 simulated function bool StartM46GrenadeReload()
 {
     if (AltAmmoLoaded > 0 || bM46GrenadeReloading)
@@ -302,7 +350,16 @@ simulated function bool StartM46GrenadeReload()
     }
 
     bM46GrenadeReloading = true;
-    PlayAnim('GrenadeReload', 1.0, 0.0);
+
+    if (Role == ROLE_Authority)
+    {
+        ClientPlayM46GrenadeReload();
+        PlayAnim('GrenadeReload', 1.0, 0.0);
+    }
+    else
+    {
+        PlayAnim('GrenadeReload', 1.0, 0.0);
+    }
 
     return true;
 }
@@ -355,7 +412,27 @@ simulated function bool PutDown()
     else
         PutDownAnim = default.PutDownAnim;
 
-    return Super.PutDown();
+    if (Super.PutDown())
+    {
+        ServerCancelM46MinePrep();
+        return true;
+    }
+
+    return false;
+}
+
+function ServerCancelM46MinePrep()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    bM46MinePriming = false;
+    bM46MinePrimed = false;
+    bM46MineLaunching = false;
+    bM46GrenadeReloading = false;
+
+    IdleAnim = default.IdleAnim;
+    IdleAimAnim = default.IdleAimAnim;
 }
 
 
