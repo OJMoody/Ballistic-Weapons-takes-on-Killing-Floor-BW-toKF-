@@ -2,7 +2,6 @@ class Utility_G28Aerosol_Projectile extends BallisticHandGrenadeProjectile;
 
 #exec OBJ LOAD FILE=BWKF_G28M_SN.uax
 
-var Actor AerosolTrail;
 var() class<Actor> TrailClass;
 var() vector TrailOffset;
 
@@ -41,57 +40,43 @@ simulated function InitEffects()
 simulated function Explode(vector HitLocation, vector HitNormal)
 {
     local Utility_G28Aerosol_CloudControl C;
-    local Vector X, Y, Z;
+    local vector X, Y, Z;
+    local vector SprayLocation;
+    local rotator SprayRotation;
 
     if (bHasExploded)
         return;
 
+    bHasExploded = True;
+
     if (Role == ROLE_Authority)
     {
-        C = Spawn(class'BW_WD000_KF.Utility_G28Aerosol_CloudControl', self,, HitLocation - HitNormal * 2);
+        GetAxes(rot(16384,0,0), X, Y, Z);
+
+        X = X >> Rotation;
+        Y = Y >> Rotation;
+        Z = Z >> Rotation;
+
+        SprayLocation = Location + class'BUtil'.static.AlignedOffset(Rotation, TrailOffset);
+        SprayRotation = OrthoRotation(X,Y,Z);
+
+        C = Spawn(class'BW_WD000_KF.Utility_G28Aerosol_CloudControl', Self,, HitLocation + HitNormal * 2);
 
         if (C != None)
+        {
             C.Instigator = Instigator;
+            C.SprayLocation = SprayLocation;
+            C.SprayRotation = SprayRotation;
+            C.bSprayDataReady = True;
+
+            C.StartClientEffects();
+        }
     }
 
-    if (Level.NetMode != NM_DedicatedServer && TrailClass != None && AerosolTrail == None)
-	{
-		GetAxes(rot(16384,0,0), X, Y, Z);
-
-		X = X >> Rotation;
-		Y = Y >> Rotation;
-		Z = Z >> Rotation;
-
-		AerosolTrail = Spawn(TrailClass, self,, Location + class'BUtil'.static.AlignedOffset(Rotation, TrailOffset), OrthoRotation(X, Y, Z));
-
-		if (AerosolTrail != None)
-			AerosolTrail.SetBase(self);
-
-        PlaySound(Sound'BWKF_G28M_SN.G28.G28-Ignite',, 0.7,, 128, 1.0, true);
-        AmbientSound = Sound'BWKF_G28M_SN.G28.G28-ToxinLoop';
-    }
-
-    // Prevent the standard grenade explosion from occurring.
-    bHasExploded = true;
     LifeSpan = 12.0;
-    SetTimer(10.5, false);
+    SetTimer(10.5, False);
 }
 
-//=============================================================================
-// TIMER
-//=============================================================================
-
-simulated function Timer()
-{
-    Super.Timer();
-
-    if (LifeSpan < 3.0 && AerosolTrail != None)
-    {
-        AmbientSound = None;
-        AerosolTrail.Destroy();
-        AerosolTrail = None;
-    }
-}
 
 //=============================================================================
 // CLEANUP
@@ -99,12 +84,6 @@ simulated function Timer()
 
 simulated function Destroyed()
 {
-    if (AerosolTrail != None)
-    {
-        AerosolTrail.Destroy();
-        AerosolTrail = None;
-    }
-
     if (PATrail != None)
     {
         PATrail.Destroy();
@@ -112,6 +91,10 @@ simulated function Destroyed()
     }
 
     AmbientSound = None;
+
+    // Prevent KFMod.Nade.Destroyed() from triggering another explosion on clients.
+    if (Role < ROLE_Authority)
+        bHasExploded = True;
 
     Super.Destroyed();
 }

@@ -104,8 +104,6 @@ simulated function LaunchM46Mine()
     else
         PlayAnim('GrenadeFire', 1.0, 0.0);
 
-	Log("M46A2: LaunchM46Mine - Instigator="$Instigator$" FireMode1="$FireMode[1]);
-
     if (Instigator != None && Instigator.IsLocallyControlled())
 	{
 		if (M46MineLaunchSound != None)

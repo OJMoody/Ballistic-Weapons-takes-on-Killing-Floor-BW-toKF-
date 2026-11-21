@@ -5,7 +5,6 @@ class Utility_T10Grenade_Projectile extends BallisticHandGrenadeProjectile;
 var Actor PATrail;
 var() class<Actor> PATrailClass;
 var() vector TrailOffset;
-var Utility_T10Grenade_Spray T10Spray;
 
 simulated function InitEffects()
 {
@@ -29,11 +28,9 @@ simulated function Destroyed()
         PATrail = None;
     }
 
-    if (T10Spray != None)
-    {
-        T10Spray.Destroy();
-        T10Spray = None;
-    }
+    // Prevent KFMod.Nade.Destroyed() from triggering another explosion on clients.
+    if (Role < ROLE_Authority)
+        bHasExploded = True;
 
     Super.Destroyed();
 }
@@ -42,6 +39,8 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 {
     local Utility_T10Grenade_CloudControl C;
     local vector X, Y, Z;
+    local vector SprayLocation;
+    local rotator SprayRotation;
 
     if (bHasExploded)
         return;
@@ -50,45 +49,31 @@ simulated function Explode(vector HitLocation, vector HitNormal)
 
     if (Role == ROLE_Authority)
     {
+        GetAxes(rot(16384,0,0), X, Y, Z);
+        X = X >> Rotation;
+        Y = Y >> Rotation;
+        Z = Z >> Rotation;
+
+        SprayLocation = Location + class'BUtil'.static.AlignedOffset(Rotation, TrailOffset);
+        SprayRotation = OrthoRotation(X,Y,Z);
+
         C = Spawn(class'Utility_T10Grenade_CloudControl', Self,, HitLocation + HitNormal * 2);
 
         if (C != None)
         {
             C.Instigator = Instigator;
             C.InstigatorController = InstigatorController;
-        }
-    }
 
-    if (Level.NetMode != NM_DedicatedServer)
-    {
-        GetAxes(rot(16384,0,0), X, Y, Z);
-        X = X >> Rotation;
-        Y = Y >> Rotation;
-        Z = Z >> Rotation;
+            C.SprayLocation = SprayLocation;
+            C.SprayRotation = SprayRotation;
+            C.bSprayDataReady = True;       
 
-        T10Spray = Spawn(class'Utility_T10Grenade_Spray', Self,, Location + class'BUtil'.static.AlignedOffset(Rotation, TrailOffset), OrthoRotation(X,Y,Z));
-
-        if (T10Spray != None)
-            T10Spray.SetBase(Self);
-
-        PlaySound(Sound'BWKF_T10_SN.T10.T10-Ignite',, 0.7,, 128, 1.0, True);
-        AmbientSound = Sound'BWKF_T10_SN.T10.T10-toxinLoop';
+			C.StartClientEffects();
+		}
     }
 
     LifeSpan = 8.0;
     SetTimer(6.5, False);
-}
-
-simulated function Timer()
-{
-    Super.Timer();
-
-    if (LifeSpan < 3.0 && T10Spray != None)
-    {
-        AmbientSound = None;
-        T10Spray.Destroy();
-        T10Spray = None;
-    }
 }
 
 defaultproperties

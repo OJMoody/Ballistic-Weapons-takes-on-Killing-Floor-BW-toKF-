@@ -8,13 +8,20 @@ var() class<DamageType> DamageType;
 var vector CloudSpawnLoc;
 var vector OldCloudSpawnLoc;
 
+var vector SprayLocation;
+var rotator SprayRotation;
+var bool bSprayDataReady;
+var bool bClientEffectsStarted;
+var bool bClientEffectsStopped;
+var Utility_T10Grenade_Spray T10Spray;
+
 var bool bNoMore;
 var Controller InstigatorController;
 
 replication
 {
     reliable if (Role == ROLE_Authority)
-        CloudSpawnLoc;
+        CloudSpawnLoc, SprayLocation, SprayRotation, bSprayDataReady;
 }
 
 function PostBeginPlay()
@@ -26,6 +33,42 @@ function PostBeginPlay()
         SetTimer(0.15, True);
         ServerSpawnCloud();
     }
+}
+
+simulated function PostNetBeginPlay()
+{
+    Super.PostNetBeginPlay();
+
+    StartClientEffects();
+}
+
+simulated function PostNetReceive()
+{
+    Super.PostNetReceive();
+
+    if (CloudSpawnLoc != OldCloudSpawnLoc)
+    {
+        OldCloudSpawnLoc = CloudSpawnLoc;
+        SpawnCloud(CloudSpawnLoc);
+    }
+
+    StartClientEffects();
+}
+
+simulated function StartClientEffects()
+{
+    if (Level.NetMode == NM_DedicatedServer || !bSprayDataReady || bClientEffectsStarted)
+		return;
+
+    bClientEffectsStarted = True;
+
+    T10Spray = Spawn(class'Utility_T10Grenade_Spray', Self,, SprayLocation, SprayRotation);
+
+    if (T10Spray != None && Owner != None)
+		Owner.AttachToBone(T10Spray, 'Tip');
+
+    PlaySound(Sound'BWKF_T10_SN.T10.T10-Ignite',, 0.7,, 128, 1.0, True);
+    AmbientSound = Sound'BWKF_T10_SN.T10.T10-toxinLoop';
 }
 
 function ServeCustomers()
@@ -71,6 +114,7 @@ simulated function Tick(float DeltaTime)
 
     Super.Tick(DeltaTime);
 
+    // Gradually increase the density of the newest gas cloud.
     if (Clouds.Length > 0 && Clouds[Clouds.Length - 1] != None && Clouds[Clouds.Length - 1].Density < 1.5)
     {
         Clouds[Clouds.Length - 1].Density = FMin(1.5, Clouds[Clouds.Length - 1].Density + DeltaTime);
@@ -79,6 +123,21 @@ simulated function Tick(float DeltaTime)
             Clouds[Clouds.Length - 1].Emitters[0].InitialParticlesPerSecond = Clouds[Clouds.Length - 1].Density * 0.7;
     }
 
+    // Stop client effects when the gas cloud is ending.
+    if (Level.NetMode == NM_Client && LifeSpan < 3.0 && !bClientEffectsStopped)
+    {
+        bClientEffectsStopped = True;
+
+        AmbientSound = None;
+
+        if (T10Spray != None)
+        {
+            T10Spray.Destroy();
+            T10Spray = None;
+        }
+    }
+
+    // Stop producing gas and kill existing clouds near the end of the effect.
     if (LifeSpan < 3.0 && !bNoMore)
     {
         bNoMore = True;
@@ -172,18 +231,17 @@ function ServerSpawnCloud()
     SpawnCloud(HitLocation);
 }
 
-simulated function PostNetReceive()
-{
-    if (CloudSpawnLoc != OldCloudSpawnLoc)
-    {
-        OldCloudSpawnLoc = CloudSpawnLoc;
-        SpawnCloud(CloudSpawnLoc);
-    }
-}
-
 simulated function Destroyed()
 {
     local int i;
+
+    AmbientSound = None;
+
+    if (T10Spray != None)
+    {
+        T10Spray.Destroy();
+        T10Spray = None;
+    }
 
     for (i = 0; i < Clouds.Length; i++)
     {

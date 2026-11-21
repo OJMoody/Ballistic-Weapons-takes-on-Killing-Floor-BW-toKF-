@@ -137,7 +137,7 @@ defaultproperties
         DrawStyle=PTDS_AlphaBlend
         Texture=Texture'BWKF_Core_T.Particles.NewSmoke1g'
         SecondsBeforeInactive=0.000000
-        LifetimeRange=(Min=3.000000,Max=3.000000)
+        LifetimeRange=(Min=7.000000,Max=7.000000)
         StartVelocityRange=(X=(Min=-15.000000,Max=15.000000),Y=(Min=-15.000000,Max=15.000000),Z=(Min=-10.000000))
     End Object
     Emitters(0)=SpriteEmitter'BW_WD000_KF.Utility_G28Aerosol_GasCloud.SpriteEmitter1'
@@ -169,7 +169,7 @@ defaultproperties
         DrawStyle=PTDS_AlphaBlend
         Texture=Texture'BWKF_Core_T.Particles.Smoke6'
         SecondsBeforeInactive=0.000000
-        LifetimeRange=(Min=2.500000,Max=2.500000)
+        LifetimeRange=(Min=6.500000,Max=6.500000)
     End Object
     Emitters(1)=SpriteEmitter'BW_WD000_KF.Utility_G28Aerosol_GasCloud.SpriteEmitter0'
 

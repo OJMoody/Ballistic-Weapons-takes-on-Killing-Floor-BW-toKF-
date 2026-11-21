@@ -331,9 +331,9 @@ simulated function ClientStartWeaponSwitch(Weapon NewWeapon)
 {
     local BallisticHandGrenade Grenade;
 
-    if (Role == ROLE_Authority || NewWeapon == None || Weapon == None)
-        return;
-
+    if ((Role == ROLE_Authority && Level.NetMode != NM_Standalone) || NewWeapon == None || Weapon == None)
+		return;
+		
     if (PendingWeapon != None || NewWeapon == Weapon)
         return;
 

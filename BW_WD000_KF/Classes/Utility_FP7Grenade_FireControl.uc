@@ -28,8 +28,6 @@ replication
 
 function PostBeginPlay()
 {
-    Log("FP7 FireControl PostBeginPlay: Role="$Role$" RemoteRole="$RemoteRole$" NetMode="$Level.NetMode$" AlwaysRelevant="$bAlwaysRelevant$" Hidden="$bHidden);
-
     Super.PostBeginPlay();
 
     if (Role == ROLE_Authority)
@@ -92,7 +90,7 @@ simulated function PostNetBeginPlay()
 {
     Super.PostNetBeginPlay();
 
-    if (Level.NetMode == NM_Client)
+    if (Level.NetMode != NM_DedicatedServer)
     {
         PlaySound(Sound'BWKF_FP7_SN.FP7.FP7Ignition',, 1.0,, DamageRadius);
         SpawnClientFires();
@@ -113,18 +111,12 @@ simulated function SpawnClientFires()
         {
             FireCount++;
 
-            Log("FP7 Client Fire Spawn: Index="$i$" Location="$GroundFireSpots[i]);
-
             GF = Spawn(class'BW_WD000_KF.Utility_FP7Grenade_GroundFire', self,, GroundFireSpots[i], rot(0,0,0));
-
-            Log("FP7 Client Fire Spawn Result: "$GF);
 
             if (GF != None)
                 GF.Velocity = GroundFireSpots[i] - Location;
         }
     }
-
-    Log("FP7 Client Fire Positions Received: "$FireCount);
 
     if (FireCount > 0)
         bClientFiresSpawned = True;

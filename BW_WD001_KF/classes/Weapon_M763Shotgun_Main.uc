@@ -51,13 +51,14 @@ function GiveTo(Pawn Other, optional Pickup Pickup)
 
 simulated function name GetShovelReloadEndAnimation()
 {
-	if (bM763UseEmptyReloadEnd &&
-		bShovelLoadEmptyEnd &&
-		ShovelReloadEmptyEndAnimation != '' &&
-		HasAnim(ShovelReloadEmptyEndAnimation))
-		return ShovelReloadEmptyEndAnimation;
+    if (bShovelReloadEmptyStart &&
+        AltAmmoLoaded <= 0 &&
+        bShovelLoadEmptyEnd &&
+        ShovelReloadEmptyEndAnimation != '' &&
+        HasAnim(ShovelReloadEmptyEndAnimation))
+        return ShovelReloadEmptyEndAnimation;
 
-	return ShovelReloadEndAnimation;
+    return ShovelReloadEndAnimation;
 }
 
 function BeginBallisticShovelReload()

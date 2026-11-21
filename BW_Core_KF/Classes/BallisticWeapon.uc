@@ -156,6 +156,51 @@ var bool bSkipPutAwaySound;
 
 var() bool bPlusOne;
 
+var float ShovelReloadFireBlockTime;
+
+
+//=============================================================================
+// WEAPON INERTIA
+//=============================================================================
+
+var() bool bWeaponInertiaEnabled;
+
+var() float WeaponInertiaLookTime;
+var() float WeaponInertiaMoveScale;
+var() float WeaponInertiaMoveRollScale;
+
+var() float WeaponInertiaMaxYaw;
+var() float WeaponInertiaMaxPitch;
+var() float WeaponInertiaMaxRoll;
+var() float WeaponInertiaMaxMoveOffset;
+
+var() float WeaponInertiaSpringStrength;
+var() float WeaponInertiaSpringDamping;
+
+var() float WeaponInertiaADSScale;
+
+var float WeaponInertiaLastUpdateTime;
+var rotator WeaponInertiaLastViewRotation;
+var bool bWeaponInertiaInitialized;
+
+var float WeaponInertiaYaw;
+var float WeaponInertiaPitch;
+var float WeaponInertiaRoll;
+
+var float WeaponInertiaYawVelocity;
+var float WeaponInertiaPitchVelocity;
+var float WeaponInertiaRollVelocity;
+
+var vector WeaponInertiaWorldOffset;
+
+var float WeaponInertiaMoveX;
+var float WeaponInertiaMoveY;
+
+var float WeaponInertiaMoveXVelocity;
+var float WeaponInertiaMoveYVelocity;
+
+var rotator WeaponInertiaRotation;
+
 
 //=============================================================================
 // SHARED LASER
@@ -1407,17 +1452,23 @@ simulated function CheckPendingMelee()
 
 exec function ReloadMeNow()
 {
-	if (ClientState == WS_BringUp)
-		return;
+    if (ClientState == WS_BringUp)
+        return;
 
-	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
-		return;
+    // Prevent another reload from starting during a shovel reload.
+    if (bShovelReload || bBallisticReload)
+    {
+        return;
+    }
 
-	if (IsActionLocked())
-		return;
+    if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+        return;
 
-	if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn)
-		return;
+    if (IsActionLocked())
+        return;
+
+    if (bIsReloading || bBallisticReload || bBallisticAltReload || bBallisticReloadClipIn)
+        return;
 
 	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
@@ -1735,6 +1786,7 @@ function BeginBallisticShovelReload()
 {
     CurrentShovelLoadAmount = GetShovelLoadAmount();
 
+	ShovelReloadFireBlockTime = Level.TimeSeconds + 0.5;
     bShovelReload = true;
     bShovelReloadCancelRequested = false;
     bShovelReloadEndRequested = false;
@@ -2978,6 +3030,9 @@ simulated function bool StartFire(int Mode)
 
 	if (bShovelReload)
 	{
+		if (Level.TimeSeconds < ShovelReloadFireBlockTime)
+			return false;
+
 		bShovelReloadStopRequested = true;
 
 		if (Role < ROLE_Authority)
@@ -3179,6 +3234,22 @@ simulated function bool PutDown()
 	return bResult;
 }
 
+function ServerRequestAutoReload()
+{
+    if (bShovelReload || bBallisticReload || bIsReloading)
+    {
+        return;
+    }
+
+    if (AllowReload())
+    {
+        ReloadMeNow();
+        return;
+    }
+
+    NumClicks++;
+}
+
 
 //=============================================================================
 // Scope Code
@@ -3346,11 +3417,53 @@ simulated function SetScopeBlendColor(Canvas C)
     C.DrawColor = Clr;
 }
 
+simulated function float ClampWeaponInertia(float Value, float Limit)
+{
+    return FMax(-Limit, FMin(Value, Limit));
+}
+
+simulated function UpdateInertiaSpring(out float Current, out float CurrentVelocity, float Target, float SpringStrength, float Damping, float DeltaTime)
+{
+    local float Omega;
+    local float Acceleration;
+    local float StepTime;
+    local int Steps, i;
+
+    if (DeltaTime <= 0.0 || SpringStrength <= 0.0)
+        return;
+
+    // Critical damping: removes overshoot and bouncing.
+    Omega = 2.0 * Sqrt(SpringStrength);
+
+    // Subdivide the update for stability at higher spring strengths.
+    Steps = int(DeltaTime / 0.005) + 1;
+    StepTime = DeltaTime / float(Steps);
+
+    for (i = 0; i < Steps; i++)
+    {
+        Acceleration = (Target - Current) * SpringStrength
+                     - (Omega * CurrentVelocity);
+
+        CurrentVelocity += Acceleration * StepTime;
+        Current += CurrentVelocity * StepTime;
+    }
+
+    // Settle completely when sufficiently close to the target.
+    if (Abs(Target - Current) < 0.01 && Abs(CurrentVelocity) < 0.05)
+    {
+        Current = Target;
+        CurrentVelocity = 0.0;
+    }
+}
+
 simulated event RenderOverlays(Canvas Canvas)
 {
     local int M;
     local PlayerController PC;
     local vector ScopeDrawOffset;
+	local rotator ViewRotation;
+	local float DeltaTime;
+	local float CurrentTime;
 
     if (Instigator == None)
         return;
@@ -3362,6 +3475,52 @@ simulated event RenderOverlays(Canvas Canvas)
 
     if (Hand < -1.0 || Hand > 1.0)
         return;
+		
+	//=============================================================================
+	// WEAPON INERTIA
+	//=============================================================================
+
+	ViewRotation = Instigator.GetViewRotation();
+
+	if (bWeaponInertiaEnabled)
+	{
+		CurrentTime = Level.TimeSeconds;
+
+		if (!bWeaponInertiaInitialized)
+		{
+			bWeaponInertiaInitialized = True;
+			WeaponInertiaLastUpdateTime = CurrentTime;
+			WeaponInertiaLastViewRotation = ViewRotation;
+		}
+		else
+		{
+			DeltaTime = CurrentTime - WeaponInertiaLastUpdateTime;
+			WeaponInertiaLastUpdateTime = CurrentTime;
+
+			// Prevent large jumps after weapon inactivity or frame stalls.
+			if (DeltaTime > 0.1)
+			{
+				DeltaTime = 0.0;
+				WeaponInertiaLastViewRotation = ViewRotation;
+			}
+			else
+			{
+				DeltaTime = FMin(DeltaTime, 0.05);
+			}
+
+			if (DeltaTime > 0.0)
+				UpdateWeaponInertia(ViewRotation, DeltaTime);
+		}
+	}
+	else
+	{
+		WeaponInertiaWorldOffset = vect(0,0,0);
+		WeaponInertiaRotation = rot(0,0,0);
+	}
+	
+	//=============================================================================
+	// Scope
+	//=============================================================================
 
     if (bScoped && (ScopeScriptedTexture == None || ScopeScriptedCombiner == None || ScopeScriptedShader == None))
     {
@@ -3377,8 +3536,8 @@ simulated event RenderOverlays(Canvas Canvas)
             FireMode[M].DrawMuzzleFlash(Canvas);
     }
 
-    SetLocation(Instigator.Location + Instigator.CalcDrawOffset(self));
-    SetRotation(Instigator.GetViewRotation() + ZoomRotInterp);
+    SetLocation(Instigator.Location + Instigator.CalcDrawOffset(self) + WeaponInertiaWorldOffset);
+	SetRotation(ViewRotation + ZoomRotInterp + WeaponInertiaRotation);
 
     PreDrawFPWeapon();
 
@@ -3402,7 +3561,7 @@ simulated event RenderOverlays(Canvas Canvas)
             else
                 ScopeDrawOffset = Instigator.CalcZoomedDrawOffset(self) + ScopeViewOffset;
 
-            Canvas.DrawBoundActor(self, false, false, DisplayFOV, PC.Rotation, rot(0,0,0), ScopeDrawOffset);
+            Canvas.DrawBoundActor(self, false, false, DisplayFOV, PC.Rotation, WeaponInertiaRotation, ScopeDrawOffset);
 
             bDrawingFirstPerson = false;
         }
@@ -3451,6 +3610,97 @@ simulated event RenderOverlays(Canvas Canvas)
 simulated function bool UsesModelScope()
 {
     return bScoped && (KFScopeDetail == KF_ModelScope || KFScopeDetail == KF_ModelScopeHigh);
+}
+
+//=============================================================================
+// Inertia
+//=============================================================================
+
+simulated function UpdateWeaponInertia(rotator ViewRotation, float DeltaTime)
+{
+	local rotator ViewDelta, MoveRotation;
+    local vector ForwardAxis, RightAxis, UpAxis;
+
+    local float MassScale, AimScale;
+    local float SpringStrength;
+
+    local float ForwardSpeed, SideSpeed;
+
+    local float TargetYaw, TargetPitch, TargetRoll;
+    local float TargetMoveX, TargetMoveY;
+
+    if (Instigator == None || DeltaTime <= 0.0)
+        return;
+
+    // Weight scaling. Default weapon weight is 4.
+    MassScale = FMax(0.5, Weight / 4.0);
+
+    // Reduce inertia considerably while aiming.
+    AimScale = 1.0;
+
+    if (bAimingRifle)
+		AimScale = WeaponInertiaADSScale;
+
+    // Heavier weapons respond more slowly.
+    SpringStrength = WeaponInertiaSpringStrength / MassScale;
+
+	if (bAimingRifle)
+		SpringStrength *= 16.0;
+
+    // Calculate camera movement.
+    ViewDelta = Normalize(ViewRotation - WeaponInertiaLastViewRotation);
+
+    TargetYaw = -(float(ViewDelta.Yaw) / DeltaTime) * WeaponInertiaLookTime;
+    TargetPitch = -(float(ViewDelta.Pitch) / DeltaTime) * WeaponInertiaLookTime;
+
+    TargetYaw = ClampWeaponInertia(TargetYaw * MassScale * AimScale, WeaponInertiaMaxYaw);
+    TargetPitch = ClampWeaponInertia(TargetPitch * MassScale * AimScale, WeaponInertiaMaxPitch);
+
+    // Calculate horizontal movement relative to player view.
+    MoveRotation = ViewRotation;
+    MoveRotation.Pitch = 0;
+    MoveRotation.Roll = 0;
+
+    // Avoid the zero-rotation GetAxes edge case.
+    if (MoveRotation.Yaw == 0)
+        MoveRotation.Yaw = 1;
+
+    GetAxes(MoveRotation, ForwardAxis, RightAxis, UpAxis);
+
+    ForwardSpeed = Instigator.Velocity dot ForwardAxis;
+    SideSpeed = Instigator.Velocity dot RightAxis;
+
+    // Weapon moves opposite to player movement.
+    TargetMoveX = -ForwardSpeed * WeaponInertiaMoveScale * MassScale * AimScale;
+    TargetMoveY = -SideSpeed * WeaponInertiaMoveScale * MassScale * AimScale;
+
+    TargetMoveX = ClampWeaponInertia(TargetMoveX, WeaponInertiaMaxMoveOffset);
+    TargetMoveY = ClampWeaponInertia(TargetMoveY, WeaponInertiaMaxMoveOffset);
+
+    // Strafing also produces a slight weapon roll.
+    TargetRoll = -SideSpeed * WeaponInertiaMoveRollScale * MassScale * AimScale;
+    TargetRoll = ClampWeaponInertia(TargetRoll, WeaponInertiaMaxRoll);
+
+    // Rotational spring.
+    UpdateInertiaSpring(WeaponInertiaYaw, WeaponInertiaYawVelocity, TargetYaw, SpringStrength, WeaponInertiaSpringDamping, DeltaTime);
+    UpdateInertiaSpring(WeaponInertiaPitch, WeaponInertiaPitchVelocity, TargetPitch, SpringStrength, WeaponInertiaSpringDamping, DeltaTime);
+    UpdateInertiaSpring(WeaponInertiaRoll, WeaponInertiaRollVelocity, TargetRoll, SpringStrength, WeaponInertiaSpringDamping, DeltaTime);
+
+    // Positional spring.
+    UpdateInertiaSpring(WeaponInertiaMoveX, WeaponInertiaMoveXVelocity, TargetMoveX, SpringStrength, WeaponInertiaSpringDamping, DeltaTime);
+    UpdateInertiaSpring(WeaponInertiaMoveY, WeaponInertiaMoveYVelocity, TargetMoveY, SpringStrength, WeaponInertiaSpringDamping, DeltaTime);
+
+    // Build final rotation.
+    WeaponInertiaRotation.Pitch = WeaponInertiaPitch;
+    WeaponInertiaRotation.Yaw = WeaponInertiaYaw;
+    WeaponInertiaRotation.Roll = WeaponInertiaRoll;
+
+    // Convert local movement offsets into world space.
+    WeaponInertiaWorldOffset =
+        (ForwardAxis * WeaponInertiaMoveX) +
+        (RightAxis * WeaponInertiaMoveY);
+
+    WeaponInertiaLastViewRotation = ViewRotation;
 }
 
 
@@ -3789,6 +4039,23 @@ defaultproperties
 	ShovelReloadEmptyStartAnimation="ReloadEmptyStart"
 	ShovelReloadEmptyLoopAnimation="ReloadEmptyLoop"
 	ShovelReloadEmptyEndAnimation="ReloadEmptyEnd"
+	
+	// Weapon Inertia
+	bWeaponInertiaEnabled=True
+
+	WeaponInertiaLookTime=0.080000
+	WeaponInertiaMoveScale=0.012000
+	WeaponInertiaMoveRollScale=0.600000
+
+	WeaponInertiaMaxYaw=910.000000
+	WeaponInertiaMaxPitch=600.000000
+	WeaponInertiaMaxRoll=500.000000
+	WeaponInertiaMaxMoveOffset=5.000000
+
+	WeaponInertiaSpringStrength=60.000000
+	WeaponInertiaSpringDamping=16.000000
+
+	WeaponInertiaADSScale=0.18
 	
 	//BScoped Related Defaults
 	bScoped=False

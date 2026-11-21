@@ -245,7 +245,7 @@ defaultproperties
     TrailOffset=(X=-8.000000)
 
     StaticMesh=StaticMesh'BWKF_M50_SM.pickups.M50_GrenadeProj_SM'
-	DrawScale=2.000000
+	DrawScale=3.000000
 
     Speed=2700.000000
     MaxSpeed=0.000000

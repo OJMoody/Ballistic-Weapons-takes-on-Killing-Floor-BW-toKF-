@@ -7,10 +7,18 @@ var vector CloudSpawnLoc;
 var vector OldCloudSpawnLoc;
 var bool bNoMore;
 
+var vector SprayLocation;
+var rotator SprayRotation;
+var bool bSprayDataReady;
+var bool bClientEffectsStarted;
+var bool bClientEffectsStopped;
+
+var Utility_G28Aerosol_Spray AerosolTrail;
+
 replication
 {
     reliable if (Role == ROLE_Authority)
-        CloudSpawnLoc;
+        CloudSpawnLoc, SprayLocation, SprayRotation, bSprayDataReady;
 }
 
 //=============================================================================
@@ -26,6 +34,29 @@ function PostBeginPlay()
         SetTimer(0.2, true);
         ServerSpawnCloud();
     }
+}
+
+simulated function PostNetBeginPlay()
+{
+    Super.PostNetBeginPlay();
+
+    StartClientEffects();
+}
+
+simulated function StartClientEffects()
+{
+    if (Level.NetMode == NM_DedicatedServer || !bSprayDataReady || bClientEffectsStarted)
+        return;
+
+    bClientEffectsStarted = True;
+
+    AerosolTrail = Spawn(class'BW_WD000_KF.Utility_G28Aerosol_Spray', Self,, SprayLocation, SprayRotation);
+
+	if (AerosolTrail != None && Owner != None)
+		Owner.AttachToBone(AerosolTrail, 'Tip');
+
+    PlaySound(Sound'BWKF_G28M_SN.G28.G28-Ignite',, 0.7,, 128, 1.0, True);
+    AmbientSound = Sound'BWKF_G28M_SN.G28.G28-ToxinLoop';
 }
 
 //=============================================================================
@@ -86,8 +117,11 @@ function ServeCustomers()
 
 simulated function Tick(float DeltaTime)
 {
-    local int LastCloud;
+    local int i, LastCloud;
 
+    Super.Tick(DeltaTime);
+
+    // Gradually increase the density of the newest gas cloud.
     if (Clouds.Length > 0)
     {
         LastCloud = Clouds.Length - 1;
@@ -105,10 +139,30 @@ simulated function Tick(float DeltaTime)
         }
     }
 
+    // Stop client effects when the gas cloud is ending.
+    if (Level.NetMode == NM_Client && LifeSpan < 3.0 && !bClientEffectsStopped)
+    {
+        bClientEffectsStopped = True;
+
+        AmbientSound = None;
+
+        if (AerosolTrail != None)
+        {
+            AerosolTrail.Destroy();
+            AerosolTrail = None;
+        }
+    }
+
+    // Stop producing gas and kill existing clouds near the end.
     if (LifeSpan < 3.0 && !bNoMore)
     {
-        bNoMore = true;
-        KillClouds();
+        bNoMore = True;
+
+        for (i = 0; i < Clouds.Length; i++)
+        {
+            if (Clouds[i] != None)
+                Clouds[i].Kill();
+        }
     }
 }
 
@@ -232,21 +286,33 @@ simulated function KillClouds()
 // REPLICATION AND CLEANUP
 //=============================================================================
 
-simulated event PostNetReceive()
+simulated function PostNetReceive()
 {
+    Super.PostNetReceive();
+
     if (CloudSpawnLoc != OldCloudSpawnLoc)
     {
         OldCloudSpawnLoc = CloudSpawnLoc;
         SpawnCloud(CloudSpawnLoc);
     }
+
+    StartClientEffects();
 }
 
 simulated function Destroyed()
 {
+    AmbientSound = None;
+
+    if (AerosolTrail != None)
+    {
+        AerosolTrail.Destroy();
+        AerosolTrail = None;
+    }
+
     KillClouds();
+
     Super.Destroyed();
 }
-
 defaultproperties
 {
     HealAmount=3
