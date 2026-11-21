@@ -62,6 +62,8 @@ defaultproperties
     bHasAimingMode=True
 	bShowAltAmmoChamber=True
 	
+	bAutoAltReloadOnEmpty=True
+	
 	HudImage=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DB_Unselected'
     SelectedHudImage=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DB_Selected'
 	TraderInfoTexture=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DB'

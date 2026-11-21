@@ -158,6 +158,8 @@ var() bool bPlusOne;
 
 var float ShovelReloadFireBlockTime;
 
+var() bool bAutoAltReloadOnEmpty;
+
 
 //=============================================================================
 // WEAPON INERTIA
@@ -344,10 +346,10 @@ var() float FPBrassScale;
 replication
 {
     reliable if (Role < ROLE_Authority)
-    ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerCancelShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff;
+		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerCancelShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff, ServerReloadAlt;
 
     reliable if (Role == ROLE_Authority)
-        ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode;
+		ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, ClientPlayAltReloadAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode, bBallisticAltReload;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -1056,6 +1058,9 @@ simulated function MeleeHoldImpl()
 
 function ServerMeleeHold()
 {
+    if (IsActionLocked())
+        return;
+
     if (MeleeFireMode == None)
         return;
 
@@ -1534,6 +1539,7 @@ exec function ReloadMeNow()
 	//=========================================================================
 	// ALTERNATE RELOAD
 	//=========================================================================
+	
 	if (AllowAltReload())
 	{
 		bReloadCancelRequested = false;
@@ -1589,44 +1595,89 @@ function GiveTo(Pawn Other, optional Pickup Pickup)
 exec function ReloadAlt()
 {
 	if (ClientState == WS_BringUp)
-		return;
-	
-	if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
-		return;
+        return;
 
-	if (IsActionLocked())
-		return;
+    if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+        return;
 
-	if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
-		return;
+    if (IsActionLocked())
+        return;
 
-	if (!AllowAltReload())
-		return;
+    if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
+        return;
 
-	bReloadCancelRequested = false;
-	bReloadResumePending = false;
-	bBallisticClipOut = false;
-	ResetDualFireAnimationChannels();
-	bBallisticAltReload = true;
-	BallisticReloadStage = 0;
+    if (Role < ROLE_Authority)
+    {
+		ServerReloadAlt();
+        return;
+    }
 
-	PlayAltReloadAnimation();
+    StartAltReload();
+}
+
+function ServerReloadAlt()
+{
+	if (Role != ROLE_Authority)
+        return;
+
+    if (ClientState == WS_BringUp)
+        return;
+
+    if (MeleeState == MS_Held || MeleeState == MS_Pending || MeleeState == MS_Strike || MeleeState == MS_StrikePending)
+        return;
+
+    if (IsActionLocked())
+        return;
+
+    if (bIsReloading || bBallisticReload || bBallisticReloadClipIn)
+        return;
+
+    StartAltReload();
+}
+
+function StartAltReload()
+{
+    if (!AllowAltReload())
+        return;
+
+    bReloadCancelRequested = false;
+    bReloadResumePending = false;
+    bBallisticClipOut = false;
+    ResetDualFireAnimationChannels();
+    bBallisticAltReload = true;
+    BallisticReloadStage = 0;
+
+    PlayAltReloadAnimation();
 }
 
 simulated function PlayAltReloadAnimation()
 {
-	if (bAimingRifle)
-		PerformZoom(false);
+    if (bAimingRifle)
+        PerformZoom(false);
 
-	if (WeaponReloadAltAnimation != '' && HasAnim(WeaponReloadAltAnimation))
-		PlayAnim(WeaponReloadAltAnimation, ReloadAnimRate, 0.0);
-	else
-	{
-		bBallisticAltReload = false;
-		bBallisticReloadClipIn = false;
-		BallisticReloadStage = 0;
-		PlayIdle();
-	}
+    if (WeaponReloadAltAnimation != '' && HasAnim(WeaponReloadAltAnimation))
+    {
+        if (Role == ROLE_Authority)
+            ClientPlayAltReloadAnimation(WeaponReloadAltAnimation);
+
+        PlayAnim(WeaponReloadAltAnimation, ReloadAnimRate, 0.0);
+    }
+    else
+    {
+        bBallisticAltReload = false;
+        bBallisticReloadClipIn = false;
+        BallisticReloadStage = 0;
+        PlayIdle();
+    }
+}
+
+simulated function ClientPlayAltReloadAnimation(name AnimName)
+{
+    if (bAimingRifle)
+        PerformZoom(false);
+
+    if (AnimName != '' && HasAnim(AnimName))
+        PlayAnim(AnimName, ReloadAnimRate, 0.0);
 }
 
 simulated function WeaponTick(float dt)
@@ -3052,9 +3103,10 @@ simulated function bool StartFire(int Mode)
 		return StartAltFire(Mode);
 	}
 	
-	if (Mode == 1 && bAltLoadEnabled)
+	if (Mode == 1 && bAutoAltReloadOnEmpty && AltAmmoLoaded <= 0 && AllowAltReload())
 	{
-		return StartAltLoad();
+		ReloadAlt();
+		return true;
 	}
 
 	if (Mode == 1 && (bIsReloading || bBallisticReload || bBallisticReloadClipIn))
@@ -3425,7 +3477,7 @@ simulated function float ClampWeaponInertia(float Value, float Limit)
 simulated function UpdateInertiaSpring(out float Current, out float CurrentVelocity, float Target, float SpringStrength, float Damping, float DeltaTime)
 {
     local float Omega;
-    local float Acceleration;
+    local float SpringAccel;
     local float StepTime;
     local int Steps, i;
 
@@ -3441,10 +3493,10 @@ simulated function UpdateInertiaSpring(out float Current, out float CurrentVeloc
 
     for (i = 0; i < Steps; i++)
     {
-        Acceleration = (Target - Current) * SpringStrength
-                     - (Omega * CurrentVelocity);
+        SpringAccel = (Target - Current) * SpringStrength
+                    - (Omega * CurrentVelocity);
 
-        CurrentVelocity += Acceleration * StepTime;
+        CurrentVelocity += SpringAccel * StepTime;
         Current += CurrentVelocity * StepTime;
     }
 

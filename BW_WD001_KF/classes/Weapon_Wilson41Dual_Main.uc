@@ -1,5 +1,24 @@
 class Weapon_Wilson41Dual_Main extends BallisticWeapon;
 
+var byte LastAltAmmoLoaded;
+
+simulated event PostNetReceive()
+{
+    Super.PostNetReceive();
+
+    // Reset the alternate firing hand when a shell is loaded.
+    if (AltAmmoLoaded > LastAltAmmoLoaded)
+    {
+        if (FireMode[1] != None)
+        {
+            Weapon_Wilson41Dual_SecondaryFire(FireMode[1]).bAltFireLeft = (AltAmmoLoaded == 1 && AmmoAmount(1) == 0);
+            Weapon_Wilson41Dual_SecondaryFire(FireMode[1]).bLastDualFireLeft = false;
+        }
+    }
+
+    LastAltAmmoLoaded = AltAmmoLoaded;
+}
+
 simulated function int GetAltAmmoChamber()
 {
     return AltAmmoLoaded;
@@ -153,6 +172,12 @@ simulated function bool AllowAltReload()
 
 simulated function PlayAltReloadAnimation()
 {
+	if (FireMode[1] != None)
+    {
+        Weapon_Wilson41Dual_SecondaryFire(FireMode[1]).bAltFireLeft = (AltAmmoLoaded == 0 && AmmoAmount(1) == 1);
+        Weapon_Wilson41Dual_SecondaryFire(FireMode[1]).bLastDualFireLeft = false;
+    }
+
     if (AltAmmoLoaded == 0 && AmmoAmount(1) == 1)
     {
         WeaponReloadAltAnimation = 'ReloadAltLeft';
@@ -241,6 +266,7 @@ defaultproperties
 	bShowAltAmmoChamber=True
 	
 	bDualWeapon=True
+	bAutoAltReloadOnEmpty=True
 	
 	HudImage=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DBDual_Unselected'
     SelectedHudImage=Texture'BWKF_Wilson_T.Icons.MedIcon_Wilson41DBDual_Selected'

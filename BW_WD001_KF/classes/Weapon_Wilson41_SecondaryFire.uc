@@ -8,6 +8,17 @@ class Weapon_Wilson41_SecondaryFire extends BallisticShotgunFire;
 simulated event ModeDoFire()
 {
 	local float Rec;
+	local BallisticWeapon BW;
+	
+	BW = BallisticWeapon(Weapon);
+	
+	if (BW != None && BW.AltAmmoLoaded <= 0)
+	{
+		if (BW.AllowAltReload())
+			BW.ReloadAlt();
+
+		return;
+	}
 
 	if (!AllowFire())
 		return;
@@ -115,12 +126,7 @@ simulated function bool AllowFire()
 		return false;
 
 	if (BW.AltAmmoLoaded <= 0)
-	{
-		if (BW.AllowAltReload())
-			BW.ReloadAlt();
-
 		return false;
-	}
 
 	if (bBurstMode && bBurstComplete)
 		return false;

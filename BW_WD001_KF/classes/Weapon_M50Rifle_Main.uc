@@ -30,7 +30,7 @@ replication
         ServerCancelM50GrenadePrep, ServerStartM50GrenadeReload;
 		
 	reliable if (Role == ROLE_Authority)
-		ClientPlayM50GrenadeReload;
+		ClientPlayM50GrenadeReload, bM50GrenadeReloading;
 }
 
 //=============================================================================
@@ -39,6 +39,9 @@ replication
 
 simulated function bool StartFire(int Mode)
 {
+	if (bM50GrenadeReloading)
+		return false;
+	
 	if (bLaserToggleInProgress)
 		return false;
 	
@@ -480,7 +483,7 @@ simulated function ClientReload()
 
 simulated function MeleeHoldImpl()
 {
-    if (bLaserToggleInProgress || IsM50GrenadeActionLocked() || MeleeState != MS_None)
+    if (bLaserToggleInProgress || bM50GrenadeReloading || IsM50GrenadeActionLocked() || MeleeState != MS_None)
         return;
 
     Super.MeleeHoldImpl();

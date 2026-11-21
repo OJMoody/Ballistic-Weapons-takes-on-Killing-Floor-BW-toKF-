@@ -19,7 +19,7 @@ replication
         ServerCancelM46MinePrep;
 		
 	reliable if (Role == ROLE_Authority)
-        ClientPlayM46GrenadeReload;
+		ClientPlayM46GrenadeReload, bM46GrenadeReloading;
 }
 
 //=============================================================================
@@ -28,7 +28,10 @@ replication
 
 simulated function bool StartFire(int Mode)
 {
-    if (bM46MinePrimed)
+    if (bM46GrenadeReloading)
+		return false;
+	
+	if (bM46MinePrimed)
     {
         if (bM46MineLaunching)
             return false;
@@ -278,7 +281,7 @@ exec function ReloadAlt()
 
 simulated function MeleeHoldImpl()
 {
-    if (IsM46MineActionLocked() || MeleeState != MS_None)
+    if (bM46GrenadeReloading || IsM46MineActionLocked() || MeleeState != MS_None)
         return;
 
     Super.MeleeHoldImpl();
