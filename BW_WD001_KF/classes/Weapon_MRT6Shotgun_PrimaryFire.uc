@@ -47,12 +47,12 @@ simulated event ModeDoFire()
     local Sound OldFireSound;
     local Sound OldStereoFireSound;
     local int OldProjPerFire;
+	
+	BW = BallisticWeapon(Weapon);
+	MRT6 = Weapon_MRT6Shotgun_Main(BW);
 
-    BW = BallisticWeapon(Weapon);
-    MRT6 = Weapon_MRT6Shotgun_Main(BW);
-
-    if (BW == None || MRT6 == None)
-        return;
+	if (BW == None || MRT6 == None)
+		return;
 
     // Primary normally fires both barrels.
     MRT6.ThirdPersonFireBarrel = 0;

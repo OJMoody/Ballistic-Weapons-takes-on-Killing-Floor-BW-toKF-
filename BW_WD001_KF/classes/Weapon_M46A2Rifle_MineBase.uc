@@ -5,6 +5,8 @@ var() Sound DetonateSound;
 var float TriggerStartTime;
 var() Sound AttachSound;
 
+var bool bDetonationEffectsPlayed;
+
 simulated function bool IsStationary()
 {
     return True;
@@ -54,23 +56,36 @@ event TakeDamage(int Damage,Pawn EventInstigator,vector HitLocation,vector Momen
     Destroy();
 }
 
+simulated function SpawnMineDetonationEffects()
+{
+    if (bDetonationEffectsPlayed || Level.NetMode == NM_DedicatedServer)
+        return;
+
+    bDetonationEffectsPlayed = True;
+
+    if (ImpactManager != None)
+        ImpactManager.static.StartSpawn(Location, TearOffHitNormal, 0, self);
+}
+
 function FinishMineDetonation()
 {
     if (Role != ROLE_Authority)
         return;
 
     TearOffHitNormal = Vector(Rotation);
+
+    // Play effects locally on standalone and listen servers.
+    SpawnMineDetonationEffects();
+
+    // Notify remote clients.
     bTearOff = True;
     GoToState('NetTrapped');
 }
 
 simulated event TornOff()
 {
-    if (Level.NetMode == NM_DedicatedServer)
-        return;
-
-    if (ImpactManager != None)
-        ImpactManager.static.StartSpawn(Location, TearOffHitNormal, 0, self);
+    // Play effects on clients receiving the tear-off notification.
+    SpawnMineDetonationEffects();
 }
 
 defaultproperties

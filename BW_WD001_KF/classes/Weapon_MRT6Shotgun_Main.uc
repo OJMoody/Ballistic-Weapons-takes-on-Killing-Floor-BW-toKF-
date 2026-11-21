@@ -56,7 +56,7 @@ simulated function ResetSecondaryFireAnim()
 
 simulated function ActuallyFinishReloading()
 {
-    if (bReloadEmptyPlaying)
+    if (Role < ROLE_Authority && bReloadEmptyPlaying)
     {
         bReloadEmptyFinishPending = true;
         return;
@@ -73,7 +73,7 @@ simulated function ActuallyFinishReloading()
 
 simulated function bool StartFire(int Mode)
 {
-    if (bIsReloading || bBallisticReload || bReloadResumePlaying)
+	if (bIsReloading || bBallisticReload || bReloadResumePlaying)
         return false;
 
     return Super.StartFire(Mode);
@@ -81,7 +81,15 @@ simulated function bool StartFire(int Mode)
 
 exec function ReloadMeNow()
 {
-    if (MagAmmoRemaining == 0)
+    local name SavedReloadAnim;
+
+    if (bIsReloading || bBallisticReload || bBallisticAltReload ||
+        bBallisticReloadClipIn || bReloadPending)
+        return;
+
+    SavedReloadAnim = ReloadAnim;
+
+    if (MagAmmoRemaining <= 0)
         ReloadAnim = 'ReloadEmpty';
     else
         ReloadAnim = 'Reload';
@@ -90,10 +98,31 @@ exec function ReloadMeNow()
 
     Super.ReloadMeNow();
 
-    if (MagAmmoRemaining == 0 && bIsReloading)
+    ReloadAnim = SavedReloadAnim;
+
+    // Only lock the weapon if the reload actually started.
+    if (Role < ROLE_Authority && MagAmmoRemaining <= 0 && (bIsReloading || bBallisticReload))
+		bReloadEmptyPlaying = true;
+	else
+		bReloadEmptyPlaying = false;
+}
+
+simulated function ClientReload()
+{
+    local name SavedReloadAnim;
+
+    SavedReloadAnim = ReloadAnim;
+
+    if (MagAmmoRemaining <= 0)
+    {
+        ReloadAnim = 'ReloadEmpty';
         bReloadEmptyPlaying = true;
-    else
-        bReloadEmptyPlaying = false;
+        bReloadEmptyFinishPending = false;
+    }
+
+    Super.ClientReload();
+
+    ReloadAnim = SavedReloadAnim;
 }
 
 simulated function bool IsActionLocked()
@@ -102,7 +131,7 @@ simulated function bool IsActionLocked()
     local float AnimFrame;
     local float AnimRate;
 
-    if (bReloadEmptyPlaying)
+    if (Role < ROLE_Authority && bReloadEmptyPlaying)
         return true;
 
     GetAnimParams(0, AnimName, AnimFrame, AnimRate);
@@ -117,6 +146,8 @@ simulated function bool IsActionLocked()
 simulated function AnimEnd(int Channel)
 {
     local name AnimName;
+    local name SavedReloadAnim;
+    local name SavedResumeAnim;
     local float AnimFrame;
     local float AnimRate;
 
@@ -124,7 +155,7 @@ simulated function AnimEnd(int Channel)
     {
         GetAnimParams(0, AnimName, AnimFrame, AnimRate);
 
-        if (bReloadEmptyPlaying && AnimName == 'ReloadEmpty')
+        if (bReloadEmptyPlaying && (AnimName == 'ReloadEmpty' || AnimName == 'Reload'))
         {
             bReloadEmptyPlaying = false;
 
@@ -146,9 +177,7 @@ simulated function AnimEnd(int Channel)
         if (bReloadResumePlaying && AnimName == 'ReloadResumeEmpty')
         {
             bReloadResumePlaying = false;
-            Super.AnimEnd(Channel);
-            WeaponReloadResumeAnimation = 'ReloadResume';
-            return;
+            WeaponReloadResumeAnimation = 'ReloadResumeEmpty';
         }
 
         if (AnimName == 'Fire' ||
@@ -160,6 +189,21 @@ simulated function AnimEnd(int Channel)
             PlayIdle();
             return;
         }
+
+        SavedReloadAnim = ReloadAnim;
+        SavedResumeAnim = WeaponReloadResumeAnimation;
+
+        if (AnimName == 'ReloadEmpty')
+            ReloadAnim = 'ReloadEmpty';
+
+        if (AnimName == 'ReloadResumeEmpty')
+            WeaponReloadResumeAnimation = 'ReloadResumeEmpty';
+
+        Super.AnimEnd(Channel);
+
+        ReloadAnim = SavedReloadAnim;
+        WeaponReloadResumeAnimation = SavedResumeAnim;
+        return;
     }
 
     Super.AnimEnd(Channel);
