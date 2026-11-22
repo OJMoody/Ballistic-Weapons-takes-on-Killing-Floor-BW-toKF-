@@ -6,38 +6,38 @@ var() class<Projectile> MedicalProjectileClass;
 
 simulated function bool AllowFire()
 {
-	local BallisticWeapon BW;
-	local Weapon_BOGPistol_Main BOGP;
+    local BallisticWeapon BW;
+    local Weapon_BOGPistol_Main BOGP;
 
-	BW = BallisticWeapon(Weapon);
-	BOGP = Weapon_BOGPistol_Main(Weapon);
+    BW = BallisticWeapon(Weapon);
+    BOGP = Weapon_BOGPistol_Main(Weapon);
 
-	if (BW != None && BW.IsHoldingMelee())
-		return false;
+    if (BW != None && BW.IsHoldingMelee())
+        return false;
 
-	if (BW != None && BW.IsActionLocked())
-		return false;
+    if (BW != None && BW.IsActionLocked())
+        return false;
 
-	if (BOGP != None && BOGP.bIsReloading)
-		return false;
+    if (BOGP != None && BOGP.bIsReloading)
+        return false;
 
-	if (BOGP != None && BOGP.bChangingFireMode)
-		return false;
+    if (BOGP != None && BOGP.bChangingFireMode)
+        return false;
 
-	if (BOGP != None &&
-		(BOGP.MeleeState == MS_Held ||
-		 BOGP.MeleeState == MS_Pending ||
-		 BOGP.MeleeState == MS_Strike ||
-		 BOGP.MeleeState == MS_StrikePending))
-		return false;
+    if (BOGP != None &&
+        (BOGP.MeleeState == MS_Held ||
+         BOGP.MeleeState == MS_Pending ||
+         BOGP.MeleeState == MS_Strike ||
+         BOGP.MeleeState == MS_StrikePending))
+        return false;
 
-	if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
-		return false;
+    if (BW != None && BW.MagAmmoRemaining < AmmoPerFire)
+        return false;
 
-	if (Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire)
-		return false;
+    if (Weapon.AmmoAmount(ThisModeNum) < AmmoPerFire)
+        return false;
 
-	return true;
+    return true;
 }
 
 function PlayFiring()
@@ -59,33 +59,33 @@ function float MaxRange()
 
 function DoFireEffect()
 {
-	local Weapon_BOGPistol_Main BOGP;
+    local Weapon_BOGPistol_Main BOGP;
 
-	BOGP = Weapon_BOGPistol_Main(Weapon);
+    BOGP = Weapon_BOGPistol_Main(Weapon);
 
-	if (BOGP != None)
-	{
-		switch (BOGP.CurrentWeaponMode)
-		{
-		case 0:
-			ProjectileClass = GrenadeProjectileClass;
-			break;
+    if (BOGP != None)
+    {
+        switch (BOGP.CurrentWeaponMode)
+        {
+            case 0:
+                ProjectileClass = GrenadeProjectileClass;
+                break;
 
-		case 1:
-			ProjectileClass = FlareProjectileClass;
-			break;
+            case 1:
+                ProjectileClass = FlareProjectileClass;
+                break;
 
-		case 2:
-			ProjectileClass = MedicalProjectileClass;
-			break;
+            case 2:
+                ProjectileClass = MedicalProjectileClass;
+                break;
 
-		default:
-			ProjectileClass = GrenadeProjectileClass;
-			break;
-		}
-	}
+            default:
+                ProjectileClass = GrenadeProjectileClass;
+                break;
+        }
+    }
 
-	Super(KFShotgunFire).DoFireEffect();
+    Super(KFShotgunFire).DoFireEffect();
 }
 
 defaultproperties

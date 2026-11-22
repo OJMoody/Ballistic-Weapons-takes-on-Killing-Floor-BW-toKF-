@@ -12,6 +12,7 @@ var bool bAmpAnimating;
 var float AMPBattery;
 var bool bAMPDrainStarted;
 var bool bAMPDepleted;
+var bool bClientAMPDepleted;
 
 var() BUtil.FullSound AMPTurnSound;
 var() BUtil.FullSound AMPOnSound;
@@ -31,6 +32,7 @@ simulated function PostBeginPlay()
     if (Role == ROLE_Authority)
         Class'FreezeRules'.static.FindOrSpawnMe(Level.Game);
 }
+
 
 //=============================================================================
 // SECONDARY FIRE - AMP ATTACHMENT
@@ -92,8 +94,12 @@ simulated function MeleeHoldImpl()
 
 exec function ReloadMeNow()
 {
+    local name SavedReloadAnim;
+
     if (bAmpAnimating)
         return;
+
+    SavedReloadAnim = ReloadAnim;
 
     if (MagAmmoRemaining <= 0)
     {
@@ -107,6 +113,22 @@ exec function ReloadMeNow()
     }
 
     Super.ReloadMeNow();
+
+    ReloadAnim = SavedReloadAnim;
+}
+
+simulated function ClientReload()
+{
+    local name SavedReloadAnim;
+
+    SavedReloadAnim = ReloadAnim;
+
+    if (MagAmmoRemaining <= 0)
+        ReloadAnim = 'ReloadEmpty';
+
+    Super.ClientReload();
+
+    ReloadAnim = SavedReloadAnim;
 }
 
 simulated function string GetCurrentWeaponModeName()
@@ -123,36 +145,35 @@ function StartAMPDrain()
         return;
 
     bAMPDrainStarted = true;
-    SetTimer(1.0, true);
+    SetTimer(1.0, false);
 }
 
-function Timer()
+simulated function Timer()
 {
     Super.Timer();
 
     if (!bAMPDrainStarted || bAMPDepleted || !bAmpAttached)
-    {
-        SetTimer(0.0, false);
         return;
-    }
 
     AMPBattery -= 4.0;
-	UpdateBatteryHUD();
+    UpdateBatteryHUD();
 
     if (AMPBattery <= 0.0)
     {
         AMPBattery = 0.0;
         bAMPDepleted = true;
-		class'BUtil'.static.PlayFullSound(self, AMPDeactivateSound, true);
-		AltAmmoLoaded = 0;
-		UpdateAMPMaterials();
-		UpdateBatteryHUD();
+        class'BUtil'.static.PlayFullSound(self, AMPDeactivateSound, true);
+        AltAmmoLoaded = 0;
+        UpdateAMPMaterials();
+        UpdateBatteryHUD();
         bAMPDrainStarted = false;
 
-        SetTimer(0.0, false);
-
         UpdateAMPFlashBone();
+        return;
     }
+
+    // Schedule the next battery drain.
+    SetTimer(1.0, false);
 }
 
 simulated function UpdateAMPMaterials()
@@ -166,6 +187,24 @@ simulated function UpdateAMPMaterials()
     {
         Skins[3] = Shader'BWKF_Core_T.AMP.Amp-FinalCyan';
         Skins[4] = Shader'BWKF_Core_T.AMP.Amp-GlowCyanShader';
+    }
+}
+
+simulated event PostNetReceive()
+{
+    Super.PostNetReceive();
+
+    UpdateBatteryHUD();
+
+    if (bClientAMPDepleted != bAMPDepleted)
+    {
+        bClientAMPDepleted = bAMPDepleted;
+
+        UpdateAMPMaterials();
+        UpdateAMPFlashBone();
+
+        if (bAMPDepleted)
+            class'BUtil'.static.PlayFullSound(self, AMPDeactivateSound, true);
     }
 }
 
@@ -189,17 +228,18 @@ simulated function bool PutDown()
 {
     local bool bResult;
 
+    Log("XK2 PUTDOWN: ENTERED. Role="$Role$" bPuttingDown="$bPuttingDown);
+
     bResult = Super.PutDown();
+
+    Log("XK2 PUTDOWN: SUPER RETURNED. Role="$Role$" Result="$bResult$" bPuttingDown="$bPuttingDown);
 
     if (bResult)
     {
         if (Role == ROLE_Authority)
         {
-            // Pause the battery countdown.
-            SetTimer(0.0, false);
             bAMPDrainStarted = false;
 
-            // Deduct 10%, but never reduce the battery below 5%.
             if (bAmpAttached && !bAMPDepleted && AMPBattery > 5.0)
             {
                 AMPBattery -= 10.0;
@@ -237,6 +277,17 @@ function DropFrom(vector StartLocation)
     Super.DropFrom(StartLocation);
 }
 
+simulated function Tick(float DeltaTime)
+{
+    Super.Tick(DeltaTime);
+
+    if (Role == ROLE_Authority && Instigator != None)
+    {
+        Log("XK2 SERVER TICK: CurrentWeapon="$Instigator.Weapon);
+        Log("XK2 SERVER TICK: PendingWeapon="$Instigator.PendingWeapon);
+    }
+}
+
 
 //=============================================================================
 // ANIMATION END
@@ -244,8 +295,34 @@ function DropFrom(vector StartLocation)
 
 simulated function AnimEnd(int Channel)
 {
+    local name AnimName;
+    local name SavedReloadAnim;
+    local name SavedResumeAnim;
+    local float AnimFrame;
+    local float AnimRate;
+
     if (Channel == 0 && bAmpAnimating)
         bAmpAnimating = false;
+
+    if (Channel == 0)
+    {
+        GetAnimParams(0, AnimName, AnimFrame, AnimRate);
+
+        SavedReloadAnim = ReloadAnim;
+        SavedResumeAnim = WeaponReloadResumeAnimation;
+
+        if (AnimName == 'ReloadEmpty')
+            ReloadAnim = 'ReloadEmpty';
+
+        if (AnimName == 'ReloadResumeEmpty')
+            WeaponReloadResumeAnimation = 'ReloadResumeEmpty';
+
+        Super.AnimEnd(Channel);
+
+        ReloadAnim = SavedReloadAnim;
+        WeaponReloadResumeAnimation = SavedResumeAnim;
+        return;
+    }
 
     Super.AnimEnd(Channel);
 }

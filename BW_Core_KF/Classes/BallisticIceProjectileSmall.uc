@@ -149,8 +149,7 @@ simulated function ProcessTouch(Actor Other, Vector HitLocation)
 
 simulated function HitWall(Vector HitNormal, Actor Wall)
 {
-    if (Role == ROLE_Authority)
-        Explode(Location, HitNormal);
+    Explode(Location, HitNormal);
 }
 
 

@@ -346,10 +346,10 @@ var() float FPBrassScale;
 replication
 {
     reliable if (Role < ROLE_Authority)
-		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerCancelShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff, ServerReloadAlt;
+        ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerCancelMeleeHold, ServerSwitchWeaponMode, ServerClipIn, ServerReloadAnimationFinished, ServerShovelShellIn, ServerBeginShovelReload, ServerCancelShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff, ServerReloadAlt;
 
     reliable if (Role == ROLE_Authority)
-		ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, ClientPlayAltReloadAnimation, ClientPlayFireAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded,ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode, bBallisticAltReload;
+        ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, ClientPlayAltReloadAnimation, ClientPlayFireAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode, bBallisticAltReload;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -1224,6 +1224,39 @@ simulated function bool IsActionLocked()
     return bLaserToggleInProgress || bBallisticAltReload || bAltLoadPlaying;
 }
 
+simulated function CancelMeleeHold()
+{
+    if (MeleeState != MS_Held)
+        return;
+
+    MeleeState = MS_None;
+
+    MeleeHoldTime = 0.0;
+    MeleeFireMode.HoldTime = 0.0;
+    MeleeFireMode.HoldStartTime = 0.0;
+    MeleeFireMode.bIsFiring = false;
+
+    SetDefaultGunLength();
+
+    if (Role < ROLE_Authority)
+        ServerCancelMeleeHold();
+}
+
+function ServerCancelMeleeHold()
+{
+    if (MeleeState != MS_Held)
+        return;
+
+    MeleeState = MS_None;
+
+    MeleeHoldTime = 0.0;
+    MeleeFireMode.HoldTime = 0.0;
+    MeleeFireMode.HoldStartTime = 0.0;
+    MeleeFireMode.bIsFiring = false;
+
+    SetDefaultGunLength();
+}
+
 
 //=============================================================================
 // SHARED LASER
@@ -1486,7 +1519,7 @@ simulated function CheckPendingMelee()
 
 exec function ReloadMeNow()
 {
-    if (ClientState == WS_BringUp)
+	if (ClientState == WS_BringUp)
         return;
 
     // Prevent another reload from starting during a shovel reload.
@@ -2155,9 +2188,25 @@ function ServerClipIn()
     bBallisticReload = false;
     bReloadEffectDone = false;
     bReloadResumePending = false;
-    bIsReloading = false;
+    bIsReloading = true;
+    bBallisticReloadClipIn = true;
+
     BallisticReloadStage = 0;
 }
+
+function ServerReloadAnimationFinished()
+{
+    if (Role != ROLE_Authority)
+        return;
+
+    bIsReloading = false;
+    bBallisticReload = false;
+    bBallisticReloadClipIn = false;
+    bReloadEffectDone = false;
+    bReloadResumePending = false;
+    BallisticReloadStage = 0;
+}
+
 
 //=============================================================================
 // RELOAD FINISH
@@ -2365,6 +2414,9 @@ simulated function Notify_ShellAlt()
 
 simulated function Notify_SwipePoint1()
 {
+    if (Role != ROLE_Authority)
+        return;
+
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
         MeleeFireMode.ProcessSwipePoint(0);
@@ -2381,6 +2433,9 @@ simulated function Notify_SwipePoint1()
 
 simulated function Notify_SwipePoint2()
 {
+    if (Role != ROLE_Authority)
+        return;
+
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
         MeleeFireMode.ProcessSwipePoint(1);
@@ -2397,6 +2452,9 @@ simulated function Notify_SwipePoint2()
 
 simulated function Notify_SwipePoint3()
 {
+    if (Role != ROLE_Authority)
+        return;
+
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
         MeleeFireMode.ProcessSwipePoint(2);
@@ -2413,6 +2471,9 @@ simulated function Notify_SwipePoint3()
 
 simulated function Notify_SwipePoint4()
 {
+    if (Role != ROLE_Authority)
+        return;
+
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
         MeleeFireMode.ProcessSwipePoint(3);
@@ -2429,6 +2490,9 @@ simulated function Notify_SwipePoint4()
 
 simulated function Notify_SwipePoint5()
 {
+    if (Role != ROLE_Authority)
+        return;
+
     if (MeleeState != MS_None && MeleeFireMode != none)
     {
         MeleeFireMode.ProcessSwipePoint(4);
@@ -3051,46 +3115,46 @@ simulated function DoAltFire()
 
 simulated function bool StartAltFire(int InputMode)
 {
-	local BallisticShotgunFire AltFire;
-	local BallisticShotgunFire PrimaryFire;
-	local bool Result;
+    local BallisticShotgunFire AltFire;
+    local BallisticShotgunFire PrimaryFire;
+    local bool Result;
 
-	if (!bAltLoaded || bAltFirePlaying)
-		return false;
+    if (!bAltLoaded || bAltFirePlaying)
+        return false;
 
-	if (ClientState == WS_BringUp)
-		return false;
+    if (ClientState == WS_BringUp)
+        return false;
 
-	if (bIsReloading || bBallisticReload || bBallisticReloadClipIn || bShovelReload)
-		return false;
+    if (bIsReloading || bBallisticReload || bBallisticReloadClipIn || bShovelReload)
+        return false;
 
-	AltFire = BallisticShotgunFire(FireMode[InputMode]);
-	PrimaryFire = BallisticShotgunFire(FireMode[0]);
+    AltFire = BallisticShotgunFire(FireMode[InputMode]);
+    PrimaryFire = BallisticShotgunFire(FireMode[0]);
 
-	if (AltFire == None)
-		return false;
+    if (AltFire == None)
+        return false;
 
-	AltFire.bAltFire = true;
+    AltFire.bAltFire = true;
 
-	if (PrimaryFire != None)
-		PrimaryFire.bAltFire = true;
+    if (PrimaryFire != None)
+        PrimaryFire.bAltFire = true;
 
-	bAltFirePlaying = true;
+    bAltFirePlaying = true;
 
-	Result = Super.StartFire(InputMode);
+    Result = Super.StartFire(InputMode);
 
-	if (AltFire != None)
-		AltFire.bAltFire = false;
+    if (AltFire != None)
+        AltFire.bAltFire = false;
 
-	if (PrimaryFire != None && PrimaryFire != AltFire)
-		PrimaryFire.bAltFire = false;
+    if (PrimaryFire != None && PrimaryFire != AltFire)
+        PrimaryFire.bAltFire = false;
 
-	if (!Result)
-	{
-		bAltFirePlaying = false;
-	}
+    if (Result)
+        CancelMeleeHold();
+    else
+        bAltFirePlaying = false;
 
-	return Result;
+    return Result;
 }
 
 simulated function bool StartFire(int Mode)
@@ -3185,6 +3249,8 @@ simulated function bool StartFire(int Mode)
 
 	if (RetVal)
 	{
+		CancelMeleeHold();
+		
 		if (Mode == 0 && ForceZoomOutOnFireTime > 0)
 			ForceZoomOutTime = Level.TimeSeconds + ForceZoomOutOnFireTime;
 		else if (Mode == 1 && ForceZoomOutOnAltFireTime > 0)
@@ -3937,6 +4003,9 @@ simulated function AnimEnd(int Channel)
 				AnimName == WeaponReloadResumeAnimation2 ||
 				AnimName == WeaponReloadAltResumeAnimation))
 		{
+			if (Role < ROLE_Authority)
+				ServerReloadAnimationFinished();
+
 			bIsReloading = false;
 			bReloadEffectDone = false;
 			bReloadResumePending = false;

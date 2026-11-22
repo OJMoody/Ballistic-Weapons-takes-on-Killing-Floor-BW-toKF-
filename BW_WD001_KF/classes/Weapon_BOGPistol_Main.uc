@@ -8,8 +8,15 @@ var bool bFireModeReloading;
 var bool bServerBOGClipInReady;
 var float ServerBOGClipInTime;
 var() float ServerClipInDelay;
+var bool bServerBOGFireModeClipInPending;
 
 var bool bFireModeResumePending;
+
+replication
+{
+    reliable if (Role == ROLE_Authority)
+        ClientSetDefaultFireMode;
+}
 
 //=============================================================================
 // SERVER FIRE
@@ -142,10 +149,13 @@ simulated function Notify_ClipIn()
         UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
         if (MagAmmoRemaining <= 0)
-        {
-            if (Role == ROLE_Authority)
-                AddReloadedAmmo();
-        }
+		{
+			if (Role == ROLE_Authority)
+			{
+				bServerBOGFireModeClipInPending = false;
+				AddReloadedAmmo();
+			}
+		}
 
         class'BUtil'.static.PlayFullSound(self, ClipInSound, true);
         return;
@@ -179,32 +189,44 @@ simulated function Notify_ClipOut()
 
 function ServerClipIn()
 {
-	if (Role != ROLE_Authority)
-		return;
+    if (Role != ROLE_Authority)
+        return;
 
-	if (!bIsReloading)
-		return;
+    if (!bIsReloading)
+        return;
 
-	if (!bServerBOGClipInReady)
-		return;
+    if (!bServerBOGClipInReady)
+        return;
 
-	if (MagAmmoRemaining >= MagCapacity)
-	{
-		bServerBOGClipInReady = false;
-		return;
-	}
+    if (MagAmmoRemaining >= MagCapacity)
+    {
+        bServerBOGClipInReady = false;
 
-	UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+        bBallisticReload = false;
+        bReloadEffectDone = false;
+        bReloadResumePending = false;
+        bIsReloading = false;
+        BallisticReloadStage = 0;
+        return;
+    }
 
-	if (AmmoAmount(0) >= MagCapacity)
-		MagAmmoRemaining = MagCapacity;
-	else
-		MagAmmoRemaining = AmmoAmount(0);
+    UpdateMagCapacity(Instigator.PlayerReplicationInfo);
 
-	if (MagAmmoRemaining > MagCapacity)
-		MagAmmoRemaining = MagCapacity;
+    if (AmmoAmount(0) >= MagCapacity)
+        MagAmmoRemaining = MagCapacity;
+    else
+        MagAmmoRemaining = AmmoAmount(0);
 
-	bServerBOGClipInReady = false;
+    if (MagAmmoRemaining > MagCapacity)
+        MagAmmoRemaining = MagCapacity;
+
+    // Match BallisticWeapon.ServerClipIn() cleanup.
+    bServerBOGClipInReady = false;
+    bBallisticReload = false;
+    bReloadEffectDone = false;
+    bReloadResumePending = false;
+    bIsReloading = false;
+    BallisticReloadStage = 0;
 }
 
 simulated function WeaponTick(float DeltaTime)
@@ -214,6 +236,29 @@ simulated function WeaponTick(float DeltaTime)
 	if (Role == ROLE_Authority && bIsReloading && !bServerBOGClipInReady &&
 		Level.TimeSeconds >= ServerBOGClipInTime)
 		bServerBOGClipInReady = true;
+		
+	if (Role == ROLE_Authority && bServerBOGFireModeClipInPending &&
+		Level.TimeSeconds >= ServerBOGClipInTime)
+	{
+		bServerBOGFireModeClipInPending = false;
+
+		UpdateMagCapacity(Instigator.PlayerReplicationInfo);
+
+		if (MagAmmoRemaining <= 0)
+		{
+			AddReloadedAmmo();
+		}
+
+		bChangingFireMode = false;
+		bFireModeReloading = false;
+		bFireAnimPlaying = false;
+
+		bBallisticClipOut = false;
+		bBallisticReloadClipIn = false;
+		bBallisticReload = false;
+		bReloadResumePending = false;
+		BallisticReloadStage = 0;
+	}
 }
 
 simulated function AnimEnd(int Channel)
@@ -324,6 +369,24 @@ simulated function Notify_ChangeFireMode()
 	}
 }
 
+simulated function ClientSetDefaultFireMode(byte NewMode)
+{
+    if (NewMode >= WeaponModes.Length)
+        return;
+
+    CurrentWeaponMode = NewMode;
+
+    if (FireMode[0] != None)
+    {
+        if (BallisticInstantFire(FireMode[0]) != None)
+            BallisticInstantFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+        else if (BallisticShotgunFire(FireMode[0]) != None)
+            BallisticShotgunFire(FireMode[0]).SwitchWeaponMode(CurrentWeaponMode);
+    }
+
+    CheckBurstMode();
+}
+
 simulated function ClientSwitchWeaponMode(byte NewMode)
 {
 	if (bIsReloading)
@@ -355,9 +418,29 @@ simulated function ClientSwitchWeaponMode(byte NewMode)
 			bChangingFireMode = true;
 			bFireModeReloading = true;
 			bIsReloading = false;
+
+			if (Role == ROLE_Authority)
+			{
+				bServerBOGFireModeClipInPending = true;
+				ServerBOGClipInTime = Level.TimeSeconds + ServerClipInDelay;
+			}
+
 			PlayAnim(ReloadAnim, 1.0, 0.0);
 		}
 	}
+}
+
+function ServerSwitchWeaponMode(byte NewMode)
+{
+    Super.ServerSwitchWeaponMode(NewMode);
+
+    if (Role == ROLE_Authority && MagAmmoRemaining <= 0 && !bIsReloading)
+    {
+        bChangingFireMode = true;
+        bFireModeReloading = true;
+        bServerBOGFireModeClipInPending = true;
+        ServerBOGClipInTime = Level.TimeSeconds + ServerClipInDelay;
+    }
 }
 
 simulated function ZoomIn(bool bClient)
@@ -544,6 +627,9 @@ function SetDefaultFireMode()
 	}
 
 	CheckBurstMode();
+	
+	if (Role == ROLE_Authority)
+		ClientSetDefaultFireMode(CurrentWeaponMode);
 }
 
 function float GetAIRating()
