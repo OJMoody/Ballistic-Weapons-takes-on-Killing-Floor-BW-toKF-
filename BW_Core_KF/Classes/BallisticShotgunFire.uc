@@ -11,6 +11,7 @@ var Emitter FlashEmitterLeft;
 var bool bBerserk;
 
 var bool bAltFire;
+var bool bSkipFireAnimation;
 
 var() name LastShotAnim;
 var() float LastShotAnimRate;
@@ -277,6 +278,18 @@ simulated function bool AllowFire()
 	return Super(WeaponFire).AllowFire();
 }
 
+function PlayWeaponFireAnimation(name AnimName, float AnimRate, float TweenTime)
+{
+    local BallisticWeapon BW;
+
+    BW = BallisticWeapon(Weapon);
+
+    if (BW != None)
+        BW.PlayFireAnimation(AnimName, AnimRate, TweenTime, 0);
+    else
+        Weapon.PlayAnim(AnimName, AnimRate, TweenTime);
+}
+
 function PlayFiring()
 {
 	local float RandPitch;
@@ -303,11 +316,11 @@ function PlayFiring()
 			DualFireAnim = FireAnim;
 	}
 
-	if (Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
+	if (!bSkipFireAnimation && Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
 	{
 		if (BW != None && !BW.bDualWeapon && BW.MagAmmoRemaining <= 0 && LastShotAnim != '' && Weapon.HasAnim(LastShotAnim))
 		{
-			Weapon.PlayAnim(LastShotAnim, LastShotAnimRate, TweenTime);
+			PlayWeaponFireAnimation(LastShotAnim, LastShotAnimRate, TweenTime);
 		}
 		else if (FireCount > 0)
 		{
@@ -316,33 +329,33 @@ function PlayFiring()
 				if (BW != None && BW.bDualWeapon)
 				{
 					if (bAltFire)
-						Weapon.PlayAnim(BW.GetDualAltSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+						PlayWeaponFireAnimation(BW.GetDualAltSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 					else
-						Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+						PlayWeaponFireAnimation(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 				}
 				else if (Weapon.HasAnim(FireLoopAimedAnim))
 				{
-					Weapon.PlayAnim(FireLoopAimedAnim, FireLoopAnimRate, 0.0);
+					PlayWeaponFireAnimation(FireLoopAimedAnim, FireLoopAnimRate, 0.0);
 				}
 				else if (Weapon.HasAnim(FireAimedAnim))
 				{
-					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAimedAnim, FireAnimRate, TweenTime);
 				}
 				else
 				{
-					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAnim, FireAnimRate, TweenTime);
 				}
 			}
 			else
 			{
 				if (BW != None && BW.bDualWeapon)
-					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(DualFireAnim, FireAnimRate, TweenTime);
 				else if (bAltFire)
-					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(DualFireAnim, FireAnimRate, TweenTime);
 				else if (Weapon.HasAnim(FireLoopAnim))
-					Weapon.PlayAnim(FireLoopAnim, FireLoopAnimRate, 0.0);
+					PlayWeaponFireAnimation(FireLoopAnim, FireLoopAnimRate, 0.0);
 				else
-					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAnim, FireAnimRate, TweenTime);
 			}
 		}
 		else
@@ -352,21 +365,21 @@ function PlayFiring()
 				if (BW != None && BW.bDualWeapon)
 				{
 					if (bAltFire)
-						Weapon.PlayAnim(BW.GetDualAltSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+						PlayWeaponFireAnimation(BW.GetDualAltSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 					else
-						Weapon.PlayAnim(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
+						PlayWeaponFireAnimation(BW.GetDualSightFireAnim(bLastDualFireLeft), FireAnimRate, TweenTime);
 				}
 				else if (Weapon.HasAnim(FireAimedAnim))
-					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAimedAnim, FireAnimRate, TweenTime);
 				else
-					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAnim, FireAnimRate, TweenTime);
 			}
 			else
 			{
 				if (BW != None && BW.bDualWeapon)
-					Weapon.PlayAnim(DualFireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(DualFireAnim, FireAnimRate, TweenTime);
 				else
-					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAnim, FireAnimRate, TweenTime);
 			}
 		}
 	}

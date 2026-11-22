@@ -161,7 +161,11 @@ simulated function bool AllowFire()
     {
         Weapon.GetAnimParams(0, AnimName, AnimFrame, AnimRate);
 
-        if (AnimName == 'Fire')
+        if (AnimName == 'Fire' ||
+            AnimName == 'FireLeft' ||
+            AnimName == 'FireRight' ||
+            AnimName == 'FireNoCock' ||
+            AnimName == 'FireRightNoCock')
             return false;
     }
 

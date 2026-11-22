@@ -197,30 +197,30 @@ simulated function bool IsChamberOpen()
 
 simulated function name GetDualFireAnim(bool bLeft)
 {
-	if (MagAmmoRemaining <= 0)
-		return 'FireLeftOpen';
+    if (bLeft && MagAmmoRemaining == 1)
+        return 'FireLeftOpen';
 
-	if (MagAmmoRemaining == 1 && !bLeft)
-		return 'FireRightOpen';
+    if (!bLeft && MagAmmoRemaining == 2)
+        return 'FireRightOpen';
 
-	if (bLeft)
-		return 'FireLeft';
+    if (bLeft)
+        return 'FireLeft';
 
-	return 'FireRight';
+    return 'FireRight';
 }
 
 simulated function name GetDualSightFireAnim(bool bLeft)
 {
-	if (MagAmmoRemaining <= 0)
-		return 'SightFireLeftOpen';
+    if (bLeft && MagAmmoRemaining == 1)
+        return 'SightFireLeftOpen';
 
-	if (MagAmmoRemaining == 1 && !bLeft)
-		return 'SightFireRightOpen';
+    if (!bLeft && MagAmmoRemaining == 2)
+        return 'SightFireRightOpen';
 
-	if (bLeft)
-		return 'SightFireLeft';
+    if (bLeft)
+        return 'SightFireLeft';
 
-	return 'SightFireRight';
+    return 'SightFireRight';
 }
 
 simulated function UpdateM806AnimationSet()

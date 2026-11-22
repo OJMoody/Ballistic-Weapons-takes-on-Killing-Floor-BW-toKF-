@@ -22,7 +22,12 @@ simulated function DoAltFire()
     AltFire.bAltFire = false;
 
     if (Role == ROLE_Authority)
-        AltAmmoLoaded = 0;
+		AltAmmoLoaded = 0;
+
+	ConsumeAltLoaded();
+	
+	if (Role == ROLE_Authority)
+		bAltFirePlaying = false;
 }
 
 simulated function PostBeginPlay()

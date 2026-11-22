@@ -3,6 +3,57 @@
 //=============================================================================
 class Weapon_M806DualPistol_PrimaryFire extends BallisticInstantFire;
 
+function PlayFiring()
+{
+    if (Weapon.Level.NetMode == NM_Client)
+        bSkipFireAnimation = true;
+
+    Super.PlayFiring();
+
+    bSkipFireAnimation = false;
+}
+
+event ModeDoFire()
+{
+    local Weapon_M806DualPistol_Main M806;
+    local name M806FireAnim;
+    local int FireChannel;
+
+    M806 = Weapon_M806DualPistol_Main(Weapon);
+
+    if (M806 != None && AllowFire())
+    {
+        if (M806.Role == ROLE_Authority && M806.Level.NetMode != NM_Standalone)
+        {
+            // SELECT PISTOL FROM REMAINING AMMO
+            if ((M806.MagAmmoRemaining % 2) == 0)
+            {
+                // EVEN AMMO = RIGHT PISTOL
+                FireChannel = 2;
+
+                if (M806.bAimingRifle)
+                    M806FireAnim = M806.GetDualSightFireAnim(false);
+                else
+                    M806FireAnim = M806.GetDualFireAnim(false);
+            }
+            else
+            {
+                // ODD AMMO = LEFT PISTOL
+                FireChannel = 1;
+
+                if (M806.bAimingRifle)
+                    M806FireAnim = M806.GetDualSightFireAnim(true);
+                else
+                    M806FireAnim = M806.GetDualFireAnim(true);
+            }
+
+            M806.ClientPlayFireAnimation(M806FireAnim, FireAnimRate, TweenTime, FireChannel);
+        }
+    }
+
+    Super.ModeDoFire();
+}
+
 defaultproperties
 {
     DamageType=Class'KFMod.DamTypeDualies'

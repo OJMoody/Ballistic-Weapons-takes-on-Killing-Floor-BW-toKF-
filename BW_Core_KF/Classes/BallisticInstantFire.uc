@@ -20,6 +20,8 @@ var() bool bAltFire;
 
 var int ClientStartAmmo;
 
+var bool bSkipFireAnimation;
+
 //=============================================================================
 // BRASS EJECTION
 //=============================================================================
@@ -206,6 +208,18 @@ simulated function bool AllowFire()
 	return Super(WeaponFire).AllowFire();
 }
 
+function PlayWeaponFireAnimation(name AnimName, float AnimRate, float TweenTime)
+{
+    local BallisticWeapon BW;
+
+    BW = BallisticWeapon(Weapon);
+
+    if (BW != None)
+        BW.PlayFireAnimation(AnimName, AnimRate, TweenTime, 0);
+    else
+        Weapon.PlayAnim(AnimName, AnimRate, TweenTime);
+}
+
 function PlayFiring()
 {
 	local float RandPitch;
@@ -216,7 +230,7 @@ function PlayFiring()
 	if (BW != None && BW.bDualWeapon)
 		bLastDualFireLeft = bDualFireLeft;
 
-	if (Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
+	if (!bSkipFireAnimation && Weapon.Mesh != None && (BW == None || (!BW.bIsReloading && !BW.bBallisticReload)))
 	{
 		if (FireCount > 0)
 		{
@@ -227,18 +241,18 @@ function PlayFiring()
 				else if (Weapon.HasAnim(FireLoopAimedAnim))
 					Weapon.PlayAnim(FireLoopAimedAnim, FireLoopAnimRate, 0.0);
 				else if (Weapon.HasAnim(FireAimedAnim))
-					Weapon.PlayAnim(FireAimedAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAimedAnim, FireAnimRate, TweenTime);
 				else
-					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAnim, FireAnimRate, TweenTime);
 			}
 			else
 			{
 				if (BW != None && BW.bDualWeapon)
 					BW.PlayDualFireAnimation(bLastDualFireLeft);
 				else if (Weapon.HasAnim(FireLoopAnim))
-					Weapon.PlayAnim(FireLoopAnim, FireLoopAnimRate, 0.0);
+					PlayWeaponFireAnimation(FireLoopAnim, FireLoopAnimRate, 0.0);
 				else
-					Weapon.PlayAnim(FireAnim, FireAnimRate, TweenTime);
+					PlayWeaponFireAnimation(FireAnim, FireAnimRate, TweenTime);
 			}
 		}
 		else

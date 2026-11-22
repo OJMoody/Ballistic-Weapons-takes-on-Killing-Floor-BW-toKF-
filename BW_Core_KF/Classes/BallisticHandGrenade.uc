@@ -385,6 +385,17 @@ simulated function CancelGrenadeAction()
 // PUT DOWN
 //=============================================================================
 
+simulated function bool IsActionLocked()
+{
+    if (bGrenadeCharging ||
+        bGrenadeThrowPending ||
+        bGrenadeReleased ||
+        bGrenadePulloutPlaying)
+        return true;
+
+    return Super.IsActionLocked();
+}
+
 simulated function bool PutDown()
 {
     local bool bResult;

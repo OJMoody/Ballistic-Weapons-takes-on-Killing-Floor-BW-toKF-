@@ -1,5 +1,51 @@
 class Weapon_M763Shotgun_PrimaryFire extends BallisticShotgunFire;
 
+function PlayFiring()
+{
+    if (Weapon.Level.NetMode == NM_Client)
+        bSkipFireAnimation = true;
+
+    Super.PlayFiring();
+
+    bSkipFireAnimation = false;
+}
+
+simulated event ModeDoFire()
+{
+    local BallisticWeapon BW;
+    local name M763FireAnim;
+
+    BW = BallisticWeapon(Weapon);
+
+    // Do not interfere with gas-shell firing.
+    if (bAltFire || (BW != None && BW.bAltLoaded && BW.bAltFirePlaying))
+    {
+        Super.ModeDoFire();
+        return;
+    }
+
+    if (BW != None && BW.Role == ROLE_Authority
+        && BW.Level.NetMode != NM_Standalone && AllowFire())
+    {
+        // Final round: select the empty firing animation.
+        if (BW.MagAmmoRemaining == 1 && LastShotAnim != '')
+            M763FireAnim = LastShotAnim;
+        else if (KFWeap != None && KFWeap.bAimingRifle
+            && Weapon.HasAnim(FireAimedAnim))
+            M763FireAnim = FireAimedAnim;
+        else
+            M763FireAnim = FireAnim;
+
+        Log("M763 SERVER: Ammo="$BW.MagAmmoRemaining
+            $" Selected animation="$M763FireAnim);
+
+        BW.ClientPlayFireAnimation(M763FireAnim, FireAnimRate, TweenTime, 0);
+    }
+
+    Super.ModeDoFire();
+}
+
+
 //=============================================================================
 // DEFAULT PROPERTIES
 //=============================================================================

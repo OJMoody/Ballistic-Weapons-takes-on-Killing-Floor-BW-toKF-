@@ -1,6 +1,6 @@
 class Weapon_MRT6Shotgun_SecondaryFire extends BallisticShotgunFire;
 
-var bool bFireRight;
+var bool bMRT6PredictedFireLocked;
 
 simulated function InitEffects()
 {
@@ -24,7 +24,10 @@ simulated function InitEffects()
 
 function FlashMuzzleFlash()
 {
-    if (bFireRight)
+    if (Weapon == None || Weapon.Role < ROLE_Authority)
+        return;
+
+    if (Weapon_MRT6Shotgun_Main(Weapon).bMRT6FireRight)
     {
         if (FlashEmitter != None)
             FlashEmitter.Trigger(Weapon, Instigator);
@@ -47,12 +50,45 @@ simulated function DestroyEffects()
     }
 }
 
+simulated function ClientPlayConfirmedFire(byte Barrel)
+{
+    if (Weapon == None || Weapon.Role == ROLE_Authority)
+        return;
+		
+    if (Barrel == 2)
+    {
+        if (FlashEmitter != None)
+            FlashEmitter.Trigger(Weapon, Instigator);
+    }
+    else
+    {
+        if (FlashEmitterLeft != None)
+            FlashEmitterLeft.Trigger(Weapon, Instigator);
+    }
+	
+	if (Instigator != None && Instigator.IsLocallyControlled())
+		ShakeView();
+
+    if (Instigator != None && Instigator.IsLocallyControlled() &&
+		Instigator.IsFirstPerson() && StereoFireSound != None)
+	{
+		Weapon.PlayOwnedSound(StereoFireSound, SLOT_Interact,
+			TransientSoundVolume * 0.85,, TransientSoundRadius, 1.0, false);
+	}
+	else
+	{
+		Weapon.PlayOwnedSound(FireSound, SLOT_Interact,
+			TransientSoundVolume,, TransientSoundRadius, 1.0, false);
+	}
+}
+
 simulated event ModeDoFire()
 {
     local BallisticWeapon BW;
     local Weapon_MRT6Shotgun_Main MRT6;
     local int OldAmmo;
     local bool bWasFireRight;
+    local byte ConfirmedBarrel;
 
     BW = BallisticWeapon(Weapon);
     MRT6 = Weapon_MRT6Shotgun_Main(BW);
@@ -61,16 +97,25 @@ simulated event ModeDoFire()
         return;
 
     OldAmmo = BW.MagAmmoRemaining;
-    bWasFireRight = bFireRight;
 
-    if (bFireRight)
+    if (Weapon.Role < ROLE_Authority)
+        bWasFireRight = MRT6.bMRT6PredictedFireRight;
+    else
+        bWasFireRight = MRT6.bMRT6FireRight;
+
+    ConfirmedBarrel = 1;
+    if (bWasFireRight)
+        ConfirmedBarrel = 2;
+
+    MRT6.bMRT6PredictedBarrel = ConfirmedBarrel;
+
+    if (bWasFireRight)
     {
         FireAnim = 'FireRight';
 
         if (BW.MagAmmoRemaining <= 1)
             FireAnim = 'FireRightNoCock';
 
-        // Secondary shot is coming from the right barrel.
         MRT6.ThirdPersonFireBarrel = 2;
     }
     else
@@ -80,42 +125,79 @@ simulated event ModeDoFire()
         if (BW.MagAmmoRemaining <= 1)
             FireAnim = 'FireNoCock';
 
-        // Secondary shot is coming from the left barrel.
         MRT6.ThirdPersonFireBarrel = 1;
     }
 
     Super.ModeDoFire();
 
-    if (BW.MagAmmoRemaining < OldAmmo)
+    if (Weapon.Role == ROLE_Authority && BW.MagAmmoRemaining < OldAmmo)
+    {
+        BW.PlayFireAnimation(FireAnim, FireAnimRate, TweenTime, 0);
+        MRT6.ClientPlayMRT6FireEffects(ConfirmedBarrel);
+    }
+
+    if (Weapon.Role == ROLE_Authority && BW.MagAmmoRemaining < OldAmmo)
     {
         if (bWasFireRight)
         {
             MRT6.bOneBarrelFired = false;
             MRT6.ResetSecondaryFireAnim();
-            bFireRight = false;
         }
         else
         {
             MRT6.bOneBarrelFired = true;
-            bFireRight = true;
+            MRT6.bMRT6FireRight = true;
         }
+    }
+}
+
+simulated function PlayFiring()
+{
+    if (Weapon != None && Weapon.Role < ROLE_Authority &&
+		Instigator != None && Instigator.IsLocallyControlled())
+		bMRT6PredictedFireLocked = true;
+
+	Super.PlayFiring();
+	
+    if (Weapon != None && Weapon.Role < ROLE_Authority &&
+        Instigator != None && Instigator.IsLocallyControlled())
+    {
+        Weapon_MRT6Shotgun_Main(Weapon).bMRT6PredictedFireRight =
+            (Weapon_MRT6Shotgun_Main(Weapon).bMRT6PredictedBarrel == 1);
     }
 }
 
 simulated function bool AllowFire()
 {
     local BallisticWeapon BW;
+    local Weapon_MRT6Shotgun_Main MRT6;
     local name AnimName;
     local float AnimFrame;
     local float AnimRate;
+    local bool bAllowed;
+    local bool bActionLocked;
+    local bool bIsFireAnim;
 
     BW = BallisticWeapon(Weapon);
+    MRT6 = Weapon_MRT6Shotgun_Main(Weapon);
 
-    if (BW == None)
+    if (BW == None || MRT6 == None)
         return false;
 
-    if (BW.IsHoldingMelee() || BW.IsActionLocked())
+    if (BW.IsHoldingMelee())
         return false;
+
+    Weapon.GetAnimParams(0, AnimName, AnimFrame, AnimRate);
+
+    bIsFireAnim = (AnimName == 'FireLeft' ||
+                   AnimName == 'FireRight' ||
+                   AnimName == 'FireNoCock' ||
+                   AnimName == 'FireRightNoCock');
+
+    bActionLocked = BW.IsActionLocked();
+
+    if (bActionLocked && (!bIsFireAnim || Level.NetMode == NM_Standalone))
+		return false;
 
     if (bBurstMode && bBurstComplete)
         return false;
@@ -126,16 +208,16 @@ simulated function bool AllowFire()
         return false;
     }
 
-    if (Weapon != None)
+    if (Weapon.Role < ROLE_Authority &&
+        Instigator != None && Instigator.IsLocallyControlled())
     {
-        Weapon.GetAnimParams(0, AnimName, AnimFrame, AnimRate);
-
-        if (AnimName == 'FireLeft' || AnimName == 'FireRight' ||
-            AnimName == 'FireNoCock' || AnimName == 'FireRightNoCock')
+        if (bMRT6PredictedFireLocked)
             return false;
     }
 
-    return Super(WeaponFire).AllowFire();
+    bAllowed = Super(WeaponFire).AllowFire();
+
+    return bAllowed;
 }
 
 defaultproperties
@@ -153,7 +235,7 @@ defaultproperties
     FireSoundRef="BWKF_MRT6_SN.MRT6.MRT6SingleFire"
     StereoFireSoundRef="BWKF_MRT6_SN.MRT6.MRT6SingleFire"
     NoAmmoSoundRef="KF_PumpSGSnd.SG_DryFire"
-    FireRate=0.12
+    FireRate=0.07
     FireAnimRate=1.0
 	BotRefireRate=0.200000
     aimerror=1.000000

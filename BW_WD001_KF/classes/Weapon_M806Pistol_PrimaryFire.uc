@@ -23,32 +23,63 @@ function PlayFiring()
     SavedFireAnim = FireAnim;
     SavedFireAimedAnim = FireAimedAnim;
 
-    if (bM806LastRound)
+    if (Weapon.Level.NetMode == NM_Client)
     {
-        FireAnim = 'FireOpen';
-        FireAimedAnim = 'SightFireOpen';
+        bSkipFireAnimation = true;
     }
     else
     {
-        FireAnim = 'Fire';
-        FireAimedAnim = 'SightFire';
+        if (bM806LastRound)
+        {
+            FireAnim = 'FireOpen';
+            FireAimedAnim = 'SightFireOpen';
+        }
+        else
+        {
+            FireAnim = 'Fire';
+            FireAimedAnim = 'SightFire';
+        }
     }
 
     Super.PlayFiring();
+
+    bSkipFireAnimation = false;
 
     FireAnim = SavedFireAnim;
     FireAimedAnim = SavedFireAimedAnim;
 }
 
-
 event ModeDoFire()
 {
+    local name M806FireAnim;
+
     if (KFWeapon(Weapon) != None)
+    {
         bM806LastRound = KFWeapon(Weapon).MagAmmoRemaining == 1;
+
+        if (BallisticWeapon(Weapon).Role == ROLE_Authority && Weapon.Level.NetMode != NM_Standalone)
+        {
+            if (KFWeap.bAimingRifle)
+            {
+                if (bM806LastRound)
+                    M806FireAnim = 'SightFireOpen';
+                else
+                    M806FireAnim = 'SightFire';
+            }
+            else
+            {
+                if (bM806LastRound)
+                    M806FireAnim = 'FireOpen';
+                else
+                    M806FireAnim = 'Fire';
+            }
+
+            BallisticWeapon(Weapon).ClientPlayFireAnimation(M806FireAnim, FireAnimRate, TweenTime, 0);
+        }
+    }
 
     Super.ModeDoFire();
 }
-
 
 defaultproperties
 {

@@ -6,10 +6,23 @@ var bool bReloadEmptyFinishPending;
 
 var byte ThirdPersonFireBarrel;
 
+var bool bMRT6FireRight;
+var bool bMRT6PredictedFireRight;
+var byte bMRT6PredictedBarrel;
+
 replication
 {
     reliable if (Role == ROLE_Authority)
-        ThirdPersonFireBarrel;
+        ThirdPersonFireBarrel, bMRT6FireRight, bOneBarrelFired, ClientPlayMRT6FireEffects;
+}
+
+simulated function ClientPlayMRT6FireEffects(byte Barrel)
+{
+    if (Role == ROLE_Authority)
+        return;
+
+    if (FireMode[1] != None)
+        Weapon_MRT6Shotgun_SecondaryFire(FireMode[1]).ClientPlayConfirmedFire(Barrel);
 }
 
 simulated function bool ConsumeAmmo(int Mode, float Load, optional bool bAmountNeededIsMax)
@@ -43,7 +56,7 @@ simulated function int GetSecondaryProjPerFire()
 
 simulated function name GetSecondaryFireAnim()
 {
-    if (Weapon_MRT6Shotgun_SecondaryFire(FireMode[1]).bFireRight)
+    if (bMRT6FireRight)
         return 'FireRight';
 
     return 'FireLeft';
@@ -51,7 +64,9 @@ simulated function name GetSecondaryFireAnim()
 
 simulated function ResetSecondaryFireAnim()
 {
-    Weapon_MRT6Shotgun_SecondaryFire(FireMode[1]).bFireRight = false;
+    bMRT6FireRight = false;
+    bMRT6PredictedFireRight = false;
+    bMRT6PredictedBarrel = 1;
 }
 
 simulated function ActuallyFinishReloading()
@@ -152,8 +167,8 @@ simulated function AnimEnd(int Channel)
     local float AnimRate;
 
     if (Channel == 0)
-    {
-        GetAnimParams(0, AnimName, AnimFrame, AnimRate);
+	{
+		GetAnimParams(0, AnimName, AnimFrame, AnimRate);
 
         if (bReloadEmptyPlaying && (AnimName == 'ReloadEmpty' || AnimName == 'Reload'))
         {
@@ -181,14 +196,17 @@ simulated function AnimEnd(int Channel)
         }
 
         if (AnimName == 'Fire' ||
-            AnimName == 'FireLeft' ||
-            AnimName == 'FireRight' ||
-            AnimName == 'FireNoCock' ||
-            AnimName == 'FireRightNoCock')
-        {
-            PlayIdle();
-            return;
-        }
+			AnimName == 'FireLeft' ||
+			AnimName == 'FireRight' ||
+			AnimName == 'FireNoCock' ||
+			AnimName == 'FireRightNoCock')
+		{
+			if (Weapon_MRT6Shotgun_SecondaryFire(FireMode[1]) != None)
+				Weapon_MRT6Shotgun_SecondaryFire(FireMode[1]).bMRT6PredictedFireLocked = false;
+
+			PlayIdle();
+			return;
+		}
 
         SavedReloadAnim = ReloadAnim;
         SavedResumeAnim = WeaponReloadResumeAnimation;

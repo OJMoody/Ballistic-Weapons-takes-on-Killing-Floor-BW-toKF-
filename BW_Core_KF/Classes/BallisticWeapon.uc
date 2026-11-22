@@ -349,7 +349,7 @@ replication
 		ServerMeleeHold, ServerMeleeRelease, ServerMeleeQueue, ServerMeleeQueueCancel, ServerSwitchWeaponMode, ServerClipIn, ServerShovelShellIn, ServerBeginShovelReload, ServerCancelShovelReload, ServerSetAltLoaded, ServerToggleLaser, ServerSetLaserOff, ServerReloadAlt;
 
     reliable if (Role == ROLE_Authority)
-		ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, ClientPlayAltReloadAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded, ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode, bBallisticAltReload;
+		ClientSwitchWeaponMode, ClientPlayShovelReloadAnimation, ClientPlayAltReloadAnimation, ClientPlayFireAnimation, MeleeTPAnimState, MeleeTPAnimCount, AltAmmoLoaded,ClientSetAltLoaded, bLaserOn, GrenadeTPFireMode, bBallisticAltReload;
 }
 
 simulated function SetupDualFireAnimationChannels()
@@ -359,6 +359,45 @@ simulated function SetupDualFireAnimationChannels()
 
 	AnimBlendParams(DualFireLeftChannel, 0.0, 0.0, 0.0, DualFireLeftBone);
 	AnimBlendParams(DualFireRightChannel, 0.0, 0.0, 0.0, DualFireRightBone);
+}
+
+simulated function PlayFireAnimation(name AnimName, float AnimRate, float TweenTime, int Channel)
+{
+    if (AnimName == '' || !HasAnim(AnimName))
+        return;
+
+    if (Role == ROLE_Authority)
+    {
+        ClientPlayFireAnimation(AnimName, AnimRate, TweenTime, Channel);
+    }
+
+    PlayFireAnimationLocal(AnimName, AnimRate, TweenTime, Channel);
+}
+
+simulated function ClientPlayFireAnimation(name AnimName, float AnimRate, float TweenTime, int Channel)
+{
+	PlayFireAnimationLocal(AnimName, AnimRate, TweenTime, Channel);
+}
+
+simulated function PlayFireAnimationLocal(name AnimName, float AnimRate, float TweenTime, int Channel)
+{
+    if (AnimName == '' || !HasAnim(AnimName))
+    {
+        return;
+    }
+
+    if (Channel == DualFireLeftChannel)
+    {
+        bDualFireLeftPlaying = true;
+        AnimBlendParams(DualFireLeftChannel, 1.0, 0.0, 0.0, DualFireLeftBone);
+    }
+    else if (Channel == DualFireRightChannel)
+    {
+        bDualFireRightPlaying = true;
+        AnimBlendParams(DualFireRightChannel, 1.0, 0.0, 0.0, DualFireRightBone);
+    }
+
+    PlayAnim(AnimName, AnimRate, TweenTime, Channel);
 }
 
 simulated function PlayDualFireAnimation(bool bLeft)
@@ -403,17 +442,7 @@ simulated function PlayDualFireAnimation(bool bLeft)
 			AnimRate = BIF.FireAnimRate;
 	}
 
-	if (bLeft)
-	bDualFireLeftPlaying = true;
-	else
-		bDualFireRightPlaying = true;
-
-	if (bLeft)
-		AnimBlendParams(DualFireLeftChannel, 1.0, 0.0, 0.0, DualFireLeftBone);
-	else
-		AnimBlendParams(DualFireRightChannel, 1.0, 0.0, 0.0, DualFireRightBone);
-
-	PlayAnim(AnimName, AnimRate, 0.0, Channel);
+	PlayFireAnimation(AnimName, AnimRate, 0.0, Channel);
 }
 
 simulated function ResetDualFireAnimationChannels()
@@ -3050,12 +3079,14 @@ simulated function bool StartAltFire(int InputMode)
 
 	Result = Super.StartFire(InputMode);
 
+	if (AltFire != None)
+		AltFire.bAltFire = false;
+
 	if (PrimaryFire != None && PrimaryFire != AltFire)
 		PrimaryFire.bAltFire = false;
 
 	if (!Result)
 	{
-		AltFire.bAltFire = false;
 		bAltFirePlaying = false;
 	}
 
@@ -3102,6 +3133,9 @@ simulated function bool StartFire(int Mode)
 
 		return StartAltFire(Mode);
 	}
+	
+	if (Mode == 1 && bAltLoadEnabled)
+		return StartAltLoad();
 	
 	if (Mode == 1 && bAutoAltReloadOnEmpty && AltAmmoLoaded <= 0 && AllowAltReload())
 	{
